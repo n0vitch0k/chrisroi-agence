@@ -1,0 +1,82 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+dist2/
+dist3/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.zip
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OCR/images transitoires (analyses ponctuelles)
+/IMG_*.jpg
+/IMG_*.png
+/page*.png
+/crop_*.png
+/doc*.png
+/contrat_upscaled.png
+
+# Archives et gros fichiers
+/cmdline-tools.zip
+
+# Scripts d'administration ponctuels (analyses one-shot, non importants)
+/check_*.js
+/fix_*.js
+/set_*.js
+/create_*.js
+/setup_*.js
+/index.js
+
+# PocketBase runtime (fichiers générés au démarrage, non du code)
+pocketbase/pb_data/*.db-wal
+pocketbase/pb_data/*.db-shm
+pocketbase/pb_data/*.db.backup
+pocketbase/pb_data/*.db-journal
+
+# PocketBase deployment (binaires, migrations copiées, tar.gz — regénérables)
+deployment/
+
+# PocketBase binaire Windows (31MB)
+pocketbase/pocketbase.exe
+pocketbase/pocketbase
+*.exe

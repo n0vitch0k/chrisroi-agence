@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registre — Explorateur de fichiers v2</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #1A56DB;
+      --primary-light: #EBF4FF;
+      --primary-dark: #1E40AF;
+      --success: #059669;
+      --success-light: #ECFDF5;
+      --warning: #D97706;
+      --warning-light: #FFFBEB;
+      --danger: #DC2626;
+      --danger-light: #FEF2F2;
+      --info: #0284C7;
+      --info-light: #E0F2FE;
+      --purple: #7C3AED;
+      --purple-light: #F3E8FF;
+      --bg: #F1F3F5;
+      --surface: #FFFFFF;
+      --text-primary: #1A1D21;
+      --text-secondary: #5E6268;
+      --text-tertiary: #9CA3AF;
+      --border: #E2E5E9;
+      --border-light: #F1F3F5;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      max-width: 420px;
+      margin: 0 auto;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ══════════════════════════════════════════
+       HEADER — Barre de navigation du dossier
+       ══════════════════════════════════════════ */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-title .icon { font-size: 22px; }
+    .header-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      background: var(--bg);
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+
+    /* ── Fil d'Ariane (breadcrumb) ── */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .breadcrumb-item {
+      cursor: pointer;
+      color: var(--primary);
+      font-weight: 500;
+    }
+    .breadcrumb-item:hover { text-decoration: underline; }
+    .breadcrumb-sep { color: var(--text-tertiary); }
+    .breadcrumb-current { color: var(--text-primary); font-weight: 600; }
+
+    /* ── Barre de recherche ── */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--primary); background: var(--surface); }
+    .search-input::placeholder { color: var(--text-tertiary); }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+      font-size: 14px;
+      pointer-events: none;
+    }
+    .filter-btn {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      position: relative;
+    }
+    .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-btn.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .filter-badge {
+      position: absolute;
+      top: -4px; right: -4px;
+      width: 16px; height: 16px;
+      border-radius: 8px;
+      background: var(--danger);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ══════════════════════════════════════════
+       FILTRES — Panneau déroulant
+       ══════════════════════════════════════════ */
+    .filters-panel {
+      display: none;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+    }
+    .filters-panel.open { display: block; }
+    .filters-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .filters-row:last-child { margin-bottom: 0; }
+    .filter-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      width: 100%;
+      margin-bottom: 2px;
+    }
+    .filter-chip {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-chip.selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .filter-date {
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--surface);
+      cursor: pointer;
+    }
+    .filter-date:focus { border-color: var(--primary); outline: none; }
+
+    /* ══════════════════════════════════════════
+       VUE PRINCIPALE — Les 3 dossiers
+       ══════════════════════════════════════════ */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .folders-grid {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .folder-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .folder-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .folder-card:active { transform: scale(0.98); }
+
+    .folder-icon-big {
+      width: 56px; height: 52px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .folder-tab-big {
+      position: absolute;
+      top: 0; left: 0;
+      width: 22px; height: 9px;
+      border-radius: 4px 4px 0 0;
+    }
+    .folder-body-big {
+      position: absolute;
+      top: 7px; left: 0; right: 0; bottom: 0;
+      border-radius: 4px 6px 6px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .folder-card-info { flex: 1; }
+    .folder-card-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+    .folder-card-desc {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      line-height: 1.4;
+    }
+    .folder-card-meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .meta-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .meta-tag .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+
+    .folder-card-arrow {
+      font-size: 18px;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    /* Folder colors */
+    .fc-green .folder-tab-big { background: #34D399; }
+    .fc-green .folder-body-big { background: var(--success); }
+    .fc-blue .folder-tab-big { background: #60A5FA; }
+    .fc-blue .folder-body-big { background: var(--primary); }
+    .fc-amber .folder-tab-big { background: #FBBF24; }
+    .fc-amber .folder-body-big { background: var(--warning); }
+
+    /* ══════════════════════════════════════════
+       VUE SOUS-DOSSIER — Liste de fichiers
+       ══════════════════════════════════════════ */
+    .sub-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .back-btn {
+      width: 32px; height: 32px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--text-secondary);
+    }
+    .back-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .sub-title {
+      font-size: 15px;
+      font-weight: 700;
+      flex: 1;
+    }
+    .sort-btn {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sort-btn:hover { color: var(--primary); }
+
+    /* ── File items ── */
+    .file-list {
+      padding: 8px 12px;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.1s;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .file-item:hover { background: var(--primary-light); }
+    .file-item:last-child { border-bottom: none; }
+
+    .file-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .file-meta .sep { color: var(--border); }
+    .file-status {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .status-active { background: var(--success-light); color: var(--success); }
+    .status-pending { background: var(--warning-light); color: var(--warning); }
+    .status-ended { background: var(--danger-light); color: var(--danger); }
+
+    /* ── Sub-sections inside a folder ── */
+    .sub-section {
+      padding: 4px 16px 2px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sub-section::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-light);
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-title { font-size: 15px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+    .empty-desc { font-size: 13px; color: var(--text-tertiary); }
+
+    /* ── Result count bar ── */
+    .result-bar {
+      padding: 8px 16px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .result-bar strong { color: var(--text-primary); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       VIEW 1 : Racine — Les 3 dossiers
+       ══════════════════════════════════════ -->
+  <div class="view active" id="viewRoot">
+    <div class="header">
+      <div class="header-top">
+        <div class="header-title">
+          <span class="icon">📁</span> Registre
+        </div>
+        <span class="header-count">3 dossiers</span>
+      </div>
+      <div class="breadcrumb">
+        <span class="breadcrumb-current">🏠 Registre</span>
+      </div>
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" type="text" placeholder="Rechercher un dossier, un nom, un numéro..." />
+        </div>
+        <button class="filter-btn" onclick="toggleFilters()" id="filterToggle">
+          ⚙️
+          <span class="filter-badge" id="filterBadge" style="display:none;">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Panneau filtres -->
+    <div class="filters-panel" id="filtersPanel">
+      <div class="filters-row">
+        <div class="filter-label">Type de dossier</div>
+        <button class="filter-chip selected" onclick="toggleChip(this)">📋 Fiches</button>
+        <button class="filter-chip selected" onclick="toggleChip(this)">📝 Contrats</button>
+        <button class="filter-chip selected" onclick="toggleChip(this)">🏢 Employeurs</button>
+      </div>
+      <div class="filters-row">
+        <div class="filter-label">Statut</div>
+        <button class="filter-chip" onclick="toggleChip(this)">🟢 Actif</button>
+        <button class="filter-chip" onclick="toggleChip(this)">🟡 En attente</button>
+        <button class="filter-chip" onclick="toggleChip(this)">🔴 Terminé</button>
+      </div>
+      <div class="filters-row">
+        <div class="filter-label">Période</div>
+        <input type="date" class="filter-date" value="2026-01-01" />
+        <span style="color:var(--text-tertiary);font-size:12px;align-self:center;">→</span>
+        <input type="date" class="filter-date" value="2026-06-30" />
+      </div>
+    </div>
+
+    <div class="folders-grid">
+      <!-- DOSSIER 1 : Fiches d'inscription -->
+      <div class="folder-card fc-green" onclick="showView('viewFiches')">
+        <div class="folder-icon-big">
+          <div class="folder-tab-big"></div>
+          <div class="folder-body-big">📋</div>
+        </div>
+        <div class="folder-card-info">
+          <div class="folder-card-name">Fiches d'inscription</div>
+          <div class="folder-card-desc">Candidats enregistrés, demandes de recrutement</div>
+          <div class="folder-card-meta">
+            <span class="meta-tag" style="background:var(--success-light);color:var(--success);">
+              <span class="dot" style="background:var(--success);"></span> 47 fiches
+            </span>
+            <span class="meta-tag" style="background:var(--info-light);color:var(--info);">
+              <span class="dot" style="background:var(--info);"></span> 12 demandes
+            </span>
+          </div>
+        </div>
+        <span class="folder-card-arrow">›</span>
+      </div>
+
+      <!-- DOSSIER 2 : Contrats -->
+      <div class="folder-card fc-blue" onclick="showView('viewContrats')">
+        <div class="folder-icon-big">
+          <div class="folder-tab-big"></div>
+          <div class="folder-body-big">📝</div>
+        </div>
+        <div class="folder-card-info">
+          <div class="folder-card-name">Contrats</div>
+          <div class="folder-card-desc">Contrats de placement, hébergés et non hébergés</div>
+          <div class="folder-card-meta">
+            <span class="meta-tag" style="background:var(--success-light);color:var(--success);">
+              <span class="dot" style="background:var(--success);"></span> 18 actifs
+            </span>
+            <span class="meta-tag" style="background:var(--danger-light);color:var(--danger);">
+              <span class="dot" style="background:var(--danger);"></span> 5 terminés
+            </span>
+          </div>
+        </div>
+        <span class="folder-card-arrow">›</span>
+      </div>
+
+      <!-- DOSSIER 3 : Employeurs -->
+      <div class="folder-card fc-amber" onclick="showView('viewEmployeurs')">
+        <div class="folder-icon-big">
+          <div class="folder-tab-big"></div>
+          <div class="folder-body-big">🏢</div>
+        </div>
+        <div class="folder-card-info">
+          <div class="folder-card-name">Employeurs</div>
+          <div class="folder-card-desc">Particuliers, entreprises et commerces</div>
+          <div class="folder-card-meta">
+            <span class="meta-tag" style="background:var(--warning-light);color:var(--warning);">
+              <span class="dot" style="background:var(--warning);"></span> 31 employeurs
+            </span>
+            <span class="meta-tag" style="background:var(--info-light);color:var(--info);">
+              <span class="dot" style="background:var(--info);"></span> 8 demandes
+            </span>
+          </div>
+        </div>
+        <span class="folder-card-arrow">›</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       VIEW 2 : Fiches d'inscription
+       ══════════════════════════════════════ -->
+  <div class="view" id="viewFiches">
+    <div class="header">
+      <div class="breadcrumb">
+        <span class="breadcrumb-item" onclick="showView('viewRoot')">🏠 Registre</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">📋 Fiches d'inscription</span>
+      </div>
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" type="text" placeholder="Nom, prénom, catégorie, statut..." />
+        </div>
+        <button class="filter-btn">⚙️</button>
+      </div>
+    </div>
+    <div class="result-bar">
+      <span><strong>47</strong> fiches trouvées</span>
+      <span class="sort-btn">Trier par date ↓</span>
+    </div>
+
+    <!-- Sous-section : En attente -->
+    <div class="sub-section">🟡 En attente de placement — 8 candidats</div>
+    <div class="file-list">
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--warning-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Kouassi Marie</div>
+          <div class="file-meta">
+            <span>Cuisinière</span>
+            <span class="sep">•</span>
+            <span>27/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-pending">En attente</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--warning-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Traoré Fatou</div>
+          <div class="file-meta">
+            <span>Femme de ménage</span>
+            <span class="sep">•</span>
+            <span>25/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-pending">En attente</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--warning-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Diallo Amadou</div>
+          <div class="file-meta">
+            <span>Jardinier</span>
+            <span class="sep">•</span>
+            <span>22/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-pending">En attente</span>
+      </div>
+    </div>
+
+    <!-- Sous-section : Disponibles -->
+    <div class="sub-section">🟢 Disponibles — 24 candidats</div>
+    <div class="file-list">
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--success-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Bamba Aïcha</div>
+          <div class="file-meta">
+            <span>Gouvernante</span>
+            <span class="sep">•</span>
+            <span>20/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-active">Disponible</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--success-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Koné Ibrahim</div>
+          <div class="file-meta">
+            <span>Majordome</span>
+            <span class="sep">•</span>
+            <span>18/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-active">Disponible</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--success-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Ouattara Mariam</div>
+          <div class="file-meta">
+            <span>Nounou</span>
+            <span class="sep">•</span>
+            <span>15/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-active">Disponible</span>
+      </div>
+    </div>
+
+    <!-- Sous-section : En poste -->
+    <div class="sub-section">🔵 En poste — 15 candidats</div>
+    <div class="file-list">
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--primary-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Sylla Moussa</div>
+          <div class="file-meta">
+            <span>Cuisinier</span>
+            <span class="sep">•</span>
+            <span>CHR-2026-00412</span>
+          </div>
+        </div>
+        <span class="file-status status-active">En poste</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--primary-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Fofana Awa</div>
+          <div class="file-meta">
+            <span>Gouvernante</span>
+            <span class="sep">•</span>
+            <span>CHR-2026-00398</span>
+          </div>
+        </div>
+        <span class="file-status status-active">En poste</span>
+      </div>
+    </div>
+
+    <!-- Demandes de recrutement -->
+    <div class="sub-section">📞 Demandes de recrutement — 12 demandes</div>
+    <div class="file-list">
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--info-light);">📩</div>
+        <div class="file-info">
+          <div class="file-name">Demande Diallo Fatou</div>
+          <div class="file-meta">
+            <span>Cuisinière • Hébergée</span>
+            <span class="sep">•</span>
+            <span>26/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-pending">En attente</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--info-light);">📩</div>
+        <div class="file-info">
+          <div class="file-name">Demande Société Ivoire</div>
+          <div class="file-meta">
+            <span>Agent d'entretien • Non hébergé</span>
+            <span class="sep">•</span>
+            <span>24/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-active">Pourvue</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       VIEW 3 : Contrats
+       ══════════════════════════════════════ -->
+  <div class="view" id="viewContrats">
+    <div class="header">
+      <div class="breadcrumb">
+        <span class="breadcrumb-item" onclick="showView('viewRoot')">🏠 Registre</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">📝 Contrats</span>
+      </div>
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" type="text" placeholder="N° dossier, employé, employeur, type..." />
+        </div>
+        <button class="filter-btn">⚙️</button>
+      </div>
+    </div>
+
+    <!-- Filtres internes contrats -->
+    <div class="filters-panel open">
+      <div class="filters-row">
+        <div class="filter-label">Type</div>
+        <button class="filter-chip selected" onclick="toggleChip(this)">🏠 Hébergé</button>
+        <button class="filter-chip" onclick="toggleChip(this)">🚶 Non hébergé</button>
+        <button class="filter-chip" onclick="toggleChip(this)">✨ Personnalisé</button>
+      </div>
+      <div class="filters-row">
+        <div class="filter-label">Statut</div>
+        <button class="filter-chip selected" onclick="toggleChip(this)">🟢 Actif</button>
+        <button class="filter-chip" onclick="toggleChip(this)">🔴 Terminé</button>
+      </div>
+      <div class="filters-row">
+        <div class="filter-label">Période</div>
+        <input type="date" class="filter-date" value="2026-01-01" />
+        <span style="color:var(--text-tertiary);font-size:12px;align-self:center;">→</span>
+        <input type="date" class="filter-date" value="2026-06-30" />
+      </div>
+    </div>
+
+    <div class="result-bar">
+      <span><strong>23</strong> contrats</span>
+      <span class="sort-btn">Trier par date ↓</span>
+    </div>
+
+    <div class="sub-section">🟢 Actifs — 18 contrats</div>
+    <div class="file-list">
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--primary-light);">📝</div>
+        <div class="file-info">
+          <div class="file-name">CHR-2026-00412</div>
+          <div class="file-meta">
+            <span>Sylla Moussa</span>
+            <span class="sep">•</span>
+            <span>Diallo Fatou</span>
+            <span class="sep">•</span>
+            <span>15/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-active">Actif</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--primary-light);">📝</div>
+        <div class="file-info">
+          <div class="file-name">CHR-2026-00398</div>
+          <div class="file-meta">
+            <span>Fofana Awa</span>
+            <span class="sep">•</span>
+            <span>Société Ivoire</span>
+            <span class="sep">•</span>
+            <span>01/06/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-active">Actif</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--primary-light);">📝</div>
+        <div class="file-info">
+          <div class="file-name">CHR-2026-00385</div>
+          <div class="file-meta">
+            <span>Koné Ibrahim</span>
+            <span class="sep">•</span>
+            <span>Bamba Christian</span>
+            <span class="sep">•</span>
+            <span>20/05/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-active">Actif</span>
+      </div>
+    </div>
+
+    <div class="sub-section">🔴 Terminés — 5 contrats</div>
+    <div class="file-list">
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--danger-light);">📝</div>
+        <div class="file-info">
+          <div class="file-name">CHR-2026-00341</div>
+          <div class="file-meta">
+            <span>Ouattara Mariam</span>
+            <span class="sep">•</span>
+            <span>Traoré Salif</span>
+            <span class="sep">•</span>
+            <span>10/03/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-ended">Terminé</span>
+      </div>
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--danger-light);">📝</div>
+        <div class="file-info">
+          <div class="file-name">CHR-2026-00312</div>
+          <div class="file-meta">
+            <span>Diallo Amadou</span>
+            <span class="sep">•</span>
+            <span>Mamadou Restaurant</span>
+            <span class="sep">•</span>
+            <span>15/02/2026</span>
+          </div>
+        </div>
+        <span class="file-status status-ended">Terminé</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       VIEW 4 : Employeurs
+       ══════════════════════════════════════ -->
+  <div class="view" id="viewEmployeurs">
+    <div class="header">
+      <div class="breadcrumb">
+        <span class="breadcrumb-item" onclick="showView('viewRoot')">🏠 Registre</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">🏢 Employeurs</span>
+      </div>
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" type="text" placeholder="Nom, type, adresse, téléphone..." />
+        </div>
+        <button class="filter-btn">⚙️</button>
+      </div>
+    </div>
+
+    <div class="filters-panel open">
+      <div class="filters-row">
+        <div class="filter-label">Type</div>
+        <button class="filter-chip selected" onclick="toggleChip(this)">👤 Particulier</button>
+        <button class="filter-chip" onclick="toggleChip(this)">🏢 Entreprise</button>
+        <button class="filter-chip" onclick="toggleChip(this)">🏪 Commerce</button>
+      </div>
+      <div class="filters-row">
+        <div class="filter-label">Avec demande</div>
+        <button class="filter-chip" onclick="toggleChip(this)">📞 Avec demande en cours</button>
+        <button class="filter-chip" onclick="toggleChip(this)">✅ Tous</button>
+      </div>
+    </div>
+
+    <div class="result-bar">
+      <span><strong>31</strong> employeurs</span>
+      <span class="sort-btn">Trier par nom ↑</span>
+    </div>
+
+    <div class="file-list">
+      <!-- Particuliers -->
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--warning-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Diallo Fatou</div>
+          <div class="file-meta">
+            <span>Particulier</span>
+            <span class="sep">•</span>
+            <span>Cocody, Abidjan</span>
+            <span class="sep">•</span>
+            <span>📞 07 08 09 10</span>
+          </div>
+        </div>
+        <span class="meta-tag" style="background:var(--info-light);color:var(--info);font-size:10px;">2 demandes</span>
+      </div>
+
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--warning-light);">👤</div>
+        <div class="file-info">
+          <div class="file-name">Bamba Christian</div>
+          <div class="file-meta">
+            <span>Particulier</span>
+            <span class="sep">•</span>
+            <span>Plateau, Abidjan</span>
+            <span class="sep">•</span>
+            <span>📞 05 06 07 08</span>
+          </div>
+        </div>
+        <span class="meta-tag" style="background:var(--success-light);color:var(--success);font-size:10px;">0 demande</span>
+      </div>
+
+      <!-- Entreprises -->
+      <div class="sub-section" style="margin-top:8px;">Entreprises</div>
+
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--primary-light);">🏢</div>
+        <div class="file-info">
+          <div class="file-name">Société Ivoire SA</div>
+          <div class="file-meta">
+            <span>Entreprise</span>
+            <span class="sep">•</span>
+            <span>Zone Industrielle, Abidjan</span>
+          </div>
+        </div>
+        <span class="meta-tag" style="background:var(--info-light);color:var(--info);font-size:10px;">3 demandes</span>
+      </div>
+
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--primary-light);">🏢</div>
+        <div class="file-info">
+          <div class="file-name">Hôtel Ivoire Sofitel</div>
+          <div class="file-meta">
+            <span>Entreprise</span>
+            <span class="sep">•</span>
+            <span>Cocody, Abidjan</span>
+          </div>
+        </div>
+        <span class="meta-tag" style="background:var(--success-light);color:var(--success);font-size:10px;">0 demande</span>
+      </div>
+
+      <!-- Commerces -->
+      <div class="sub-section" style="margin-top:8px;">Commerces</div>
+
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--danger-light);">🏪</div>
+        <div class="file-info">
+          <div class="file-name">Restaurant Chez Maman</div>
+          <div class="file-meta">
+            <span>Commerce</span>
+            <span class="sep">•</span>
+            <span>Yopougon, Abidjan</span>
+          </div>
+        </div>
+        <span class="meta-tag" style="background:var(--info-light);color:var(--info);font-size:10px;">1 demande</span>
+      </div>
+
+      <div class="file-item">
+        <div class="file-icon" style="background:var(--danger-light);">🏪</div>
+        <div class="file-info">
+          <div class="file-name">Supermarché City Super</div>
+          <div class="file-meta">
+            <span>Commerce</span>
+            <span class="sep">•</span>
+            <span>Treichville, Abidjan</span>
+          </div>
+        </div>
+        <span class="meta-tag" style="background:var(--success-light);color:var(--success);font-size:10px;">0 demande</span>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    function toggleFilters() {
+      const panel = document.getElementById('filtersPanel');
+      const btn = document.getElementById('filterToggle');
+      panel.classList.toggle('open');
+      btn.classList.toggle('active');
+    }
+
+    function toggleChip(el) {
+      el.classList.toggle('selected');
+      updateFilterBadge();
+    }
+
+    function updateFilterBadge() {
+      const total = document.querySelectorAll('.filter-chip.selected').length;
+      const badge = document.getElementById('filterBadge');
+      if (total > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = total;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

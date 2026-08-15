@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard V5 — Warm Earth (Terracotta/Sable/Vert olive)</title>
+<style>
+:root{
+  /* Theme V5 — Warm Earth */
+  --bg:#fdf8f3;
+  --bg-elev:#fffaf5;
+  --card:#ffffff;
+  --card-alt:#fef7f0;
+  --border:#eedec9;
+  --border-soft:#f5ebe0;
+  
+  --primary:#c45a2a;       /* Terracotta principal */
+  --primary-dim:#fdebd8;
+  --primary-glow:#c45a2a33;
+  
+  --success:#5a7c3a;       /* Vert olive */
+  --success-dim:#e8f0dc;
+  
+  --warning:#b8860b;       /* Or vieilli */
+  --warning-dim:#faf3d1;
+  
+  --info:#2a7a7a;          /* Sarcelle chaude */
+  --info-dim:#d8ecec;
+  
+  --violet:#8b5a8b;        /* Prune doux */
+  --violet-dim:#f0e6f0;
+  
+  --rose:#b85454;          /* Rouge brique */
+  --rose-dim:#fdeaea;
+  
+  --text:#3d3530;
+  --text-muted:#8a7d72;
+  --text-dim:#b8a99e;
+  
+  --shadow-soft:0 2px 10px rgba(61,53,48,0.06);
+  --shadow-card:0 8px 28px rgba(61,53,48,0.08);
+  --shadow-elevated:0 16px 40px rgba(61,53,48,0.1);
+  --radius-card:22px;
+  --radius-btn:14px;
+  --transition:all 0.25s ease;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px;}
+.screen{max-width:420px;margin:0 auto;background:var(--bg);min-height:100vh;}
+.header{background:var(--bg-elev);padding:24px 24px 32px;border-radius:0 0 32px 32px;box-shadow:var(--shadow-soft);position:relative;overflow:hidden;}
+.header::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--primary),var(--success),var(--warning));}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-logo{width:46px;height:46px;border-radius:16px;background:var(--primary-dim);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);box-shadow:var(--shadow-soft);}
+.brand-logo svg{width:24px;height:24px;color:var(--primary);}
+.brand-name{font-size:21px;font-weight:700;color:var(--text);letter-spacing:-0.3px;}
+.header-actions{display:flex;gap:10px;}
+.icon-btn{width:46px;height:46px;border-radius:16px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);cursor:pointer;transition:var(--transition);}
+.icon-btn:hover{background:var(--card-alt);border-color:var(--primary-dim);transform:translateY(-2px);box-shadow:var(--shadow-card);}
+.icon-btn svg{width:22px;height:22px;color:var(--text-muted);}
+.greeting{font-size:15px;color:var(--text-muted);margin-bottom:4px;font-style:italic;}
+.user-name{font-size:27px;font-weight:700;color:var(--text);letter-spacing:-0.3px;}
+.content{padding:20px;padding-bottom:120px;}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding:0 6px;}
+.section-title{font-size:18px;font-weight:700;color:var(--text);}
+.section-link{font-size:13px;color:var(--primary);font-weight:600;cursor:pointer;}
+
+/* Card verticale */
+.card{background:var(--card);border-radius:var(--radius-card);border-left:5px solid var(--primary);padding:22px;margin-bottom:18px;border:1px solid var(--border);box-shadow:var(--shadow-card);transition:var(--transition);}
+.card:hover{box-shadow:var(--shadow-elevated);transform:translateY(-2px);}
+.card-content{}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.card-main{display:flex;align-items:center;gap:16px;}
+.card-icon{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-soft);font-size:26px;}
+.badge{padding:4px 10px;border-radius:10px;border:1px solid transparent;font-size:10px;font-weight:700;}
+.card-meta{font-size:13px;color:var(--text-muted);line-height:20px;margin-bottom:18px;font-style:italic;}
+.card-stats{display:flex;justify-content:space-between;padding-top:16px;border-top:1px solid var(--border-soft);margin-bottom:18px;}
+.stat{flex:1;}
+.stat-label{font-size:10px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.6px;}
+.stat-value{font-size:15px;font-weight:800;color:var(--text);margin-top:3px;}
+.btn{width:100%;border-radius:var(--radius-btn);padding:14px 18px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 16px var(--primary-glow);}
+.btn-primary:hover{background:#a84a22;transform:translateY(-1px);box-shadow:0 6px 22px var(--primary-glow);}
+.btn-success{background:var(--success);color:#fff;box-shadow:0 4px 16px rgba(90,124,58,0.2);}
+.btn-success:hover{background:#4a6830;}
+.btn-warning{background:var(--warning);color:#fff;box-shadow:0 4px 16px rgba(184,134,11,0.2);}
+.btn-warning:hover{background:#9a7209;}
+.btn-info{background:var(--info);color:#fff;box-shadow:0 4px 16px rgba(42,122,122,0.2);}
+.btn-info:hover{background:#226666;}
+.btn-violet{background:var(--violet);color:#fff;box-shadow:0 4px 16px rgba(139,90,139,0.2);}
+.btn-violet:hover{background:#774a77;}
+.btn-danger{background:var(--rose);color:#fff;box-shadow:0 4px 16px rgba(184,84,84,0.2);}
+.btn-danger:hover{background:#9e4444;}
+.btn-secondary{background:var(--card-alt);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--bg);}
+
+/* Variantes de fond carte */
+.card-primary{background:linear-gradient(135deg,#fdf5f0 0%,#fce7db 100%);border-left-color:var(--primary);}
+.card-success{background:linear-gradient(135deg,#f4f7ed 0%,#e8f0dc 100%);border-left-color:var(--success);}
+.card-warning{background:linear-gradient(135deg,#faf8ed 0%,#faf3d1 100%);border-left-color:var(--warning);}
+.card-info{background:linear-gradient(135deg,#f0f7f7 0%,#d8ecec 100%);border-left-color:var(--info);}
+.card-violet{background:linear-gradient(135deg,#f7f0f7 0%,#f0e6f0 100%);border-left-color:var(--violet);}
+.card-urgent{background:linear-gradient(135deg,#fdf2f2 0%,#fdeaea 100%);border-left-color:var(--rose);}
+.card-dossier{background:linear-gradient(135deg,#f4f7ed 0%,#e8f0dc 100%);border-left-color:var(--success);}
+
+/* DossiersCard */
+.dossiers-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.dossiers-header-left{display:flex;align-items:center;gap:14px;flex:1;}
+.dossiers-title{font-size:18px;font-weight:700;color:var(--text);}
+.dossiers-rows{margin-top:8px;}
+.dossier-row{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:var(--transition);}
+.dossier-row:last-child{border-bottom:none;}
+.dossier-row:hover{transform:translateX(4px);}
+.dossier-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-soft);font-size:18px;}
+.dossier-info{flex:1;min-width:0;}
+.dossier-label{font-size:16px;font-weight:600;color:var(--text);}
+.dossier-count{font-size:13px;color:var(--text-dim);margin-top:2px;}
+.dossier-divider{height:1px;background:var(--border-soft);margin:8px 0;}
+
+/* UrgentCard */
+.urgent-card{background:var(--card);border-radius:var(--radius-card);border-left:5px solid var(--rose);padding:22px;margin-bottom:18px;border:1px solid var(--border);box-shadow:var(--shadow-card);}
+
+/* Modal Dossiers */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(61,53,48,0.35);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.dossier-popup{width:88%;max-width:320px;background:var(--bg-elev);border:1px solid var(--border);border-radius:28px;padding:28px 26px;box-shadow:var(--shadow-elevated);}
+.dossier-popup-title{font-size:19px;font-weight:700;color:var(--text);text-align:center;margin-bottom:22px;}
+.dossier-popup-item{display:flex;align-items:center;padding:18px 0;cursor:pointer;transition:var(--transition);border-radius:14px;margin:0 -8px;padding-left:8px;padding-right:8px;}
+.dossier-popup-item:hover{background:var(--card-alt);}
+.popup-icon-wrap{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-right:16px;border:1px solid var(--border-soft);}
+.popup-item-text{flex:1;}
+.popup-item-label{font-size:17px;font-weight:700;color:var(--text);}
+.popup-item-count{font-size:13px;color:var(--text-dim);margin-top:3px;}
+.popup-divider{height:1px;background:var(--border-soft);margin:6px 0;}
+
+/* Empty state */
+.empty-state{text-align:center;padding:48px 20px;}
+.empty-icon{font-size:56px;margin-bottom:16px;opacity:0.3;}
+.empty-title{font-size:18px;font-weight:700;color:var(--text-muted);margin-bottom:8px;}
+.empty-text{font-size:14px;color:var(--text-dim);line-height:20px;}
+
+/* Icon colors */
+.icon-primary{color:var(--primary);background:var(--primary-dim);}
+.icon-success{color:var(--success);background:var(--success-dim);}
+.icon-warning{color:var(--warning);background:var(--warning-dim);}
+.icon-info{color:var(--info);background:var(--info-dim);}
+.icon-violet{color:var(--violet);background:var(--violet-dim);}
+.icon-rose{color:var(--rose);background:var(--rose-dim);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="screen">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="brand-name">ChrisRoi Agence</span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" title="Alertes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="badge-dot" style="position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--rose);"></span></button>
+        <button class="icon-btn" title="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+      </div>
+    </div>
+    <p class="greeting">Bienvenue,</p>
+    <h1 class="user-name">Fatou Diabaté</h1>
+  </header>
+
+  <div class="content">
+    <!-- Actions principales -->
+    <div class="section-header">
+      <h2 class="section-title">⚡ Actions principales</h2>
+    </div>
+
+    <!-- Carte 1: Inscrire -->
+    <div class="card card-primary">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-primary">👤</div>
+            <h3 class="card-title">Inscrire</h3>
+          </div>
+          <span class="badge" style="background:var(--primary-dim);color:var(--primary);border-color:var(--primary-dim);">Fiche d'inscription</span>
+        </div>
+        <p class="card-meta">Créer une nouvelle fiche candidat</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Fiches ce mois</div>
+            <div class="stat-value">24</div>
+          </div>
+        </div>
+        <button class="btn btn-primary">Ouvrir formulaire</button>
+      </div>
+    </div>
+
+    <!-- Carte 2: Créer un contrat -->
+    <div class="card card-success">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-success">📄</div>
+            <h3 class="card-title">Créer un contrat</h3>
+          </div>
+          <span class="badge" style="background:var(--success-dim);color:var(--success);border-color:var(--success-dim);">Placement</span>
+        </div>
+        <p class="card-meta">Générer un contrat de placement</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Contrats actifs</div>
+            <div class="stat-value">18</div>
+          </div>
+        </div>
+        <button class="btn btn-success">Nouveau contrat</button>
+      </div>
+    </div>
+
+    <!-- Carte 3: Scanner -->
+    <div class="card card-warning">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-warning">📸</div>
+            <h3 class="card-title">Scanner</h3>
+          </div>
+          <span class="badge" style="background:var(--warning-dim);color:var(--warning);border-color:var(--warning-dim);">OCR / Photo</span>
+        </div>
+        <p class="card-meta">Numériser pièce d'identité, CV, etc.</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Scans cette semaine</div>
+            <div class="stat-value">7</div>
+          </div>
+        </div>
+        <button class="btn btn-warning">Ouvrir caméra</button>
+      </div>
+    </div>
+
+    <!-- Carte 4: Nouvel employeur -->
+    <div class="card card-info">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-info">🏢</div>
+            <h3 class="card-title">Nouvel employeur</h3>
+          </div>
+          <span class="badge" style="background:var(--info-dim);color:var(--info);border-color:var(--info-dim);">Entreprise cliente</span>
+        </div>
+        <p class="card-meta">Ajouter une entreprise qui recrute</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Employeurs actifs</div>
+            <div class="stat-value">12</div>
+          </div>
+        </div>
+        <button class="btn btn-info">Ajouter</button>
+      </div>
+    </div>
+
+    <!-- Carte 5: Suivi commissions -->
+    <div class="card card-violet">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-violet">💰</div>
+            <h3 class="card-title">Suivi commissions</h3>
+          </div>
+          <span class="badge" style="background:var(--violet-dim);color:var(--violet);border-color:var(--violet-dim);">À percevoir</span>
+        </div>
+        <p class="card-meta">3 commissions en attente · 1 850 000 FCFA</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Total perçu</div>
+            <div class="stat-value" style="color:var(--success);">4 200 000 FCFA</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">En attente</div>
+            <div class="stat-value" style="color:var(--warning);">1 850 000 FCFA</div>
+          </div>
+        </div>
+        <button class="btn btn-violet">Voir détail</button>
+      </div>
+    </div>
+
+    <!-- Dossiers -->
+    <div class="section-header">
+      <h2 class="section-title">📁 Dossiers</h2>
+      <span class="section-link">Voir tout (54)</span>
+    </div>
+
+    <div class="card card-dossier">
+      <div class="card-content">
+        <div class="dossiers-header">
+          <div class="dossiers-header-left">
+            <div class="card-icon icon-success">📁</div>
+            <div>
+              <h3 class="dossiers-title">Dossiers</h3>
+              <p style="font-size:14px;color:var(--success);font-weight:600;">54 dossiers actifs</p>
+            </div>
+          </div>
+        </div>
+        <div class="dossiers-rows">
+          <div class="dossier-row">
+            <div class="dossier-icon icon-primary">📋</div>
+            <div class="dossier-info">
+              <div class="dossier-label">Fiches</div>
+              <div class="dossier-count">24 fiches</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="dossier-divider"></div>
+          <div class="dossier-row">
+            <div class="dossier-icon icon-warning">🏢</div>
+            <div class="dossier-info">
+              <div class="dossier-label">Employeurs</div>
+              <div class="dossier-count">12 entreprises</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="dossier-divider"></div>
+          <div class="dossier-row">
+            <div class="dossier-icon icon-success">📄</div>
+            <div class="dossier-info">
+              <div class="dossier-label">Contrats</div>
+              <div class="dossier-count">18 contrats</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Urgences -->
+    <div class="section-header">
+      <h2 class="section-title">⚠️ Urgences du jour</h2>
+      <span class="section-link">Voir tout</span>
+    </div>
+
+    <!-- Urgence 1: Contrat fin proche -->
+    <div class="card card-urgent">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-rose">⏰</div>
+            <h3 class="card-title">Aminata Diallo · Fin dans 3j</h3>
+          </div>
+          <span class="badge" style="background:var(--rose-dim);color:var(--rose);border-color:var(--rose-dim);">URGENT</span>
+        </div>
+        <p class="card-meta">Entreprise CIE · 180 000 FCFA</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Commission agence</div>
+            <div class="stat-value">60 000 FCFA</div>
+          </div>
+        </div>
+        <button class="btn btn-danger">Proposer prolongation</button>
+      </div>
+    </div>
+
+    <!-- Urgence 2: Commission à percevoir -->
+    <div class="card" style="background:linear-gradient(135deg,#faf8ed 0%,#faf3d1 100%);border-left-color:var(--warning);">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-warning">💰</div>
+            <h3 class="card-title">Koffi Kouamé · Commission à percevoir</h3>
+          </div>
+          <span class="badge" style="background:var(--warning-dim);color:var(--warning);border-color:var(--warning-dim);">À FAIRE</span>
+        </div>
+        <p class="card-meta">750 000 FCFA · Hotel Ivoire</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Contrat</div>
+            <div class="stat-value">CHR-2026-A1B2</div>
+          </div>
+        </div>
+        <button class="btn btn-warning">Percevoir</button>
+      </div>
+    </div>
+
+    <!-- Urgence 3: OK -->
+    <div class="card card-success">
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-main">
+            <div class="card-icon icon-success">✅</div>
+            <h3 class="card-title">Aucune urgence contrat</h3>
+          </div>
+          <span class="badge" style="background:var(--success-dim);color:var(--success);border-color:var(--success-dim);">OK</span>
+        </div>
+        <p class="card-meta">Tous les contrats sont à bonne échéance</p>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-label">Contrats surveillés</div>
+            <div class="stat-value">18</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary">Voir contrats</button>
+      </div>
+    </div>
+
+    <div style="height:40px;"></div>
+  </div>
+
+  <!-- Modal Dossiers (hidden by default) -->
+  <div class="modal-overlay" id="dossierModal" style="display:none;">
+    <div class="dossier-popup">
+      <h3 class="dossier-popup-title">Dossiers</h3>
+      <div class="dossier-popup-item">
+        <div class="popup-icon-wrap icon-success">📋</div>
+        <div class="popup-item-text">
+          <div class="popup-item-label">Fiches</div>
+          <div class="popup-item-count">24 fiches</div>
+        </div>
+      </div>
+      <div class="popup-divider"></div>
+      <div class="dossier-popup-item">
+        <div class="popup-icon-wrap icon-warning">🏢</div>
+        <div class="popup-item-text">
+          <div class="popup-item-label">Employeurs</div>
+          <div class="popup-item-count">12 employeurs</div>
+        </div>
+      </div>
+      <div class="popup-divider"></div>
+      <div class="dossier-popup-item">
+        <div class="popup-icon-wrap icon-primary">📄</div>
+        <div class="popup-item-text">
+          <div class="popup-item-label">Contrats</div>
+          <div class="popup-item-count">18 contrats</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

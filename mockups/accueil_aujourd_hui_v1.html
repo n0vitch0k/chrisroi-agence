@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChrisRoi Agence — Accueil Aujourd'hui (V1)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px; }
+        .phone { width: 390px; min-height: 844px; background: #f5f7fb; border-radius: 42px; box-shadow: 0 30px 80px rgba(0,0,0,0.3); overflow: hidden; position: relative; border: 12px solid #1a1a2e; }
+        .status-bar { height: 44px; background: #ffffff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 13px; font-weight: 600; color: #212121; }
+        .header { background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; padding: 20px 24px 24px; border-radius: 0 0 30px 30px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-logo { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+        .brand-text { font-size: 18px; font-weight: 700; }
+        .header-actions { display: flex; gap: 12px; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 14px; background: rgba(255,255,255,0.15); border: none; color: white; font-size: 20px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+        .badge { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; border-radius: 50%; background: #ff6b6b; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        .greeting { font-size: 14px; opacity: 0.85; margin-bottom: 4px; }
+        .user-name { font-size: 24px; font-weight: 800; }
+        .date-pill { display: inline-block; margin-top: 16px; padding: 8px 14px; background: rgba(255,255,255,0.15); border-radius: 20px; font-size: 13px; font-weight: 500; }
+        .content { padding: 20px 20px 90px; }
+        .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .section-title h2 { font-size: 18px; font-weight: 800; color: #212121; }
+        .section-title span { font-size: 13px; color: #1E88E5; font-weight: 600; }
+        .urgent-card { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%); color: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 12px 30px rgba(255,107,107,0.25); }
+        .urgent-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .urgent-header h3 { font-size: 16px; font-weight: 800; }
+        .urgent-count { background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 15px; font-size: 13px; font-weight: 700; }
+        .urgent-item { background: rgba(255,255,255,0.15); border-radius: 16px; padding: 14px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; }
+        .urgent-item:last-child { margin-bottom: 0; }
+        .urgent-icon { width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .urgent-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .urgent-info p { font-size: 12px; opacity: 0.9; line-height: 1.4; }
+        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+        .action-btn { border: none; border-radius: 20px; padding: 16px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: transform 0.2s; }
+        .action-btn:hover { transform: translateY(-2px); }
+        .action-btn.primary { background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; }
+        .action-btn.secondary { background: linear-gradient(135deg, #43A047 0%, #2E7D32 100%); color: white; }
+        .action-btn.tertiary { background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; }
+        .action-icon { font-size: 24px; }
+        .action-label { font-size: 12px; font-weight: 700; }
+        .dossier-card { background: white; border-radius: 24px; padding: 18px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.05); }
+        .dossier-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .dossier-name { font-size: 16px; font-weight: 800; color: #212121; margin-bottom: 4px; }
+        .dossier-meta { font-size: 13px; color: #757575; line-height: 1.4; }
+        .status-pill { padding: 6px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+        .status-urgent { background: #ffebee; color: #d32f2f; }
+        .status-normal { background: #e3f2fd; color: #1976d2; }
+        .dossier-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-top: 14px; border-top: 1px solid #f0f0f0; }
+        .detail { display: flex; flex-direction: column; gap: 4px; }
+        .detail-label { font-size: 11px; color: #9e9e9e; font-weight: 600; text-transform: uppercase; }
+        .detail-value { font-size: 13px; font-weight: 700; color: #212121; }
+        .dossier-actions { display: flex; gap: 8px; margin-top: 14px; }
+        .mini-btn { flex: 1; border: none; border-radius: 12px; padding: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .mini-btn.primary { background: #1E88E5; color: white; }
+        .mini-btn.secondary { background: #f5f5f5; color: #424242; }
+        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 78px; background: white; display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 28px 28px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.08); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #9e9e9e; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .nav-item.active { color: #1E88E5; }
+        .nav-icon { font-size: 22px; }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>●●●●</span></div>
+        <div class="header">
+            <div class="header-top">
+                <div class="brand"><div class="brand-logo">CR</div><div class="brand-text">ChrisRoi Agence</div></div>
+                <div class="header-actions"><button class="icon-btn">🔔<span class="badge">3</span></button><button class="icon-btn">👤</button></div>
+            </div>
+            <div class="greeting">Bonjour,</div><div class="user-name">ChrisRoi Admin</div><div class="date-pill">📅 Mardi 17 Juin 2026</div>
+        </div>
+        <div class="content">
+            <div class="section-title"><h2>⚡ Urgences du jour</h2><span>Voir tout</span></div>
+            <div class="urgent-card">
+                <div class="urgent-header"><h3>Actions prioritaires</h3><div class="urgent-count">3 à faire</div></div>
+                <div class="urgent-item"><div class="urgent-icon">🔴</div><div class="urgent-info"><h4>2 contrats finissent dans ≤ 3 jours</h4><p>Marie Diallo (Gouvernante) · Fatou Koné</p></div></div>
+                <div class="urgent-item"><div class="urgent-icon">🟠</div><div class="urgent-info"><h4>1 commission à percevoir</h4><p>50 000 FCFA · Contrat CHR-2026-0042</p></div></div>
+                <div class="urgent-item"><div class="urgent-icon">🔵</div><div class="urgent-info"><h4>1 nouvel inscrit sans contrat</h4><p>Paul Traoré · Chauffeur · Inscrit hier</p></div></div>
+            </div>
+            <div class="section-title"><h2>➕ Actions rapides</h2></div>
+            <div class="quick-actions">
+                <button class="action-btn primary"><div class="action-icon">👤</div><div class="action-label">Employé</div></button>
+                <button class="action-btn secondary"><div class="action-icon">📄</div><div class="action-label">Contrat</div></button>
+                <button class="action-btn tertiary"><div class="action-icon">🏠</div><div class="action-label">Employeur</div></button>
+            </div>
+            <div class="section-title"><h2>📁 Dossiers actifs</h2><span>Voir tout</span></div>
+            <div class="dossier-card">
+                <div class="dossier-top"><div><div class="dossier-name">Marie Diallo</div><div class="dossier-meta">Gouvernante · Chez Mme Fatou Koné</div></div><div class="status-pill status-urgent">Fin dans 2j</div></div>
+                <div class="dossier-details"><div class="detail"><div class="detail-label">Salaire</div><div class="detail-value">150 000 FCFA</div></div><div class="detail"><div class="detail-label">Commission</div><div class="detail-value">50 000 FCFA</div></div></div>
+                <div class="dossier-actions"><button class="mini-btn primary">Voir dossier</button><button class="mini-btn secondary">Prolonger</button></div>
+            </div>
+            <div class="dossier-card">
+                <div class="dossier-top"><div><div class="dossier-name">Paul Traoré</div><div class="dossier-meta">Chauffeur · Entreprise ABC</div></div><div class="status-pill status-normal">En cours</div></div>
+                <div class="dossier-details"><div class="detail"><div class="detail-label">Salaire</div><div class="detail-value">200 000 FCFA</div></div><div class="detail"><div class="detail-label">Commission</div><div class="detail-value">66 000 FCFA ✓</div></div></div>
+                <div class="dossier-actions"><button class="mini-btn primary">Voir dossier</button><button class="mini-btn secondary">Terminer</button></div>
+            </div>
+        </div>
+        <div class="bottom-nav">
+            <div class="nav-item active"><div class="nav-icon">🏠</div><div>Aujourd'hui</div></div>
+            <div class="nav-item"><div class="nav-icon">📁</div><div>Dossiers</div></div>
+            <div class="nav-item"><div class="nav-icon">📊</div><div>Stats</div></div>
+        </div>
+    </div>
+</body>
+</html>

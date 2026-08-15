@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registre — Explorateur de fichiers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #1A56DB;
+      --primary-light: #EBF4FF;
+      --success: #059669;
+      --success-light: #ECFDF5;
+      --warning: #D97706;
+      --warning-light: #FFFBEB;
+      --danger: #DC2626;
+      --danger-light: #FEF2F2;
+      --info: #0284C7;
+      --info-light: #E0F2FE;
+      --bg: #F3F4F6;
+      --surface: #FFFFFF;
+      --text-primary: #111827;
+      --text-secondary: #6B7280;
+      --text-tertiary: #9CA3AF;
+      --border: #E5E7EB;
+      --border-light: #F3F4F6;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      max-width: 420px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* ── Header bar (like file explorer toolbar) ── */
+    .explorer-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .explorer-toolbar .breadcrumb {
+      font-size: 13px;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+    .explorer-toolbar .breadcrumb span {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    .explorer-toolbar .view-toggle {
+      display: flex;
+      gap: 4px;
+    }
+    .view-btn {
+      width: 32px; height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-tertiary);
+      transition: all 0.15s;
+    }
+    .view-btn.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .view-btn:hover { background: var(--bg); }
+
+    /* ── Status bar ── */
+    .status-bar {
+      padding: 8px 16px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ── Grid view (file explorer icons) ── */
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 16px;
+    }
+
+    .folder-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 8px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      border: 2px solid transparent;
+    }
+    .folder-item:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+    }
+    .folder-item:active {
+      transform: scale(0.96);
+    }
+
+    .folder-icon-wrapper {
+      width: 64px;
+      height: 56px;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    /* Folder shape */
+    .folder-tab {
+      position: absolute;
+      top: 0; left: 0;
+      width: 24px; height: 10px;
+      border-radius: 4px 4px 0 0;
+    }
+    .folder-body {
+      position: absolute;
+      top: 8px; left: 0; right: 0; bottom: 0;
+      border-radius: 4px 6px 6px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .folder-body .folder-count {
+      font-size: 18px;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+
+    .folder-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .folder-sublabel {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    /* Folder colors */
+    .folder-green .folder-tab { background: #34D399; }
+    .folder-green .folder-body { background: var(--success); }
+    .folder-blue .folder-tab { background: #60A5FA; }
+    .folder-blue .folder-body { background: var(--primary); }
+    .folder-amber .folder-tab { background: #FBBF24; }
+    .folder-amber .folder-body { background: var(--warning); }
+    .folder-red .folder-tab { background: #F87171; }
+    .folder-red .folder-body { background: var(--danger); }
+    .folder-cyan .folder-tab { background: #22D3EE; }
+    .folder-cyan .folder-body { background: var(--info); }
+    .folder-purple .folder-tab { background: #A78BFA; }
+    .folder-purple .folder-body { background: #7C3AED; }
+
+    /* ── List view ── */
+    .folder-list {
+      display: none;
+      padding: 8px 16px;
+    }
+    .folder-list.active { display: block; }
+    .folder-grid.hidden { display: none; }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .list-item:hover { background: var(--primary-light); }
+    .list-item:last-child { border-bottom: none; }
+
+    .list-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .list-info { flex: 1; }
+    .list-name { font-size: 14px; font-weight: 600; }
+    .list-meta { font-size: 12px; color: var(--text-tertiary); }
+    .list-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* ── Variant labels ── */
+    .variant-label {
+      padding: 16px 16px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-tertiary);
+    }
+
+    /* ── Badges ── */
+    .badge-new {
+      position: absolute;
+      top: -4px; right: -4px;
+      width: 18px; height: 18px;
+      border-radius: 9px;
+      background: var(--danger);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--surface);
+    }
+
+    /* Divider */
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ VARIANT A: Grid view (icon mode) ═══ -->
+  <div class="variant-label">📁 Variante A — Grille (mode icônes)</div>
+
+  <div class="explorer-toolbar">
+    <div class="breadcrumb">🏠 Accueil / <span>Registre</span></div>
+    <div class="view-toggle">
+      <button class="view-btn active" onclick="toggleView('grid')" title="Grille">⊞</button>
+      <button class="view-btn" onclick="toggleView('list')" title="Liste">☰</button>
+    </div>
+  </div>
+  <div class="status-bar">
+    <span>6 dossiers</span>
+    <span>152 dossiers au total</span>
+  </div>
+
+  <div class="folder-grid" id="gridView">
+    <!-- Fiches d'inscription -->
+    <div class="folder-item folder-green" onclick="alert('→ Employés')">
+      <div class="folder-icon-wrapper">
+        <div class="folder-tab"></div>
+        <div class="folder-body">
+          <span class="folder-count">47</span>
+        </div>
+      </div>
+      <div class="folder-label">Fiches inscription</div>
+      <div class="folder-sublabel">47 fiches</div>
+    </div>
+
+    <!-- Contrats -->
+    <div class="folder-item folder-blue" onclick="alert('→ Contrats')">
+      <div class="folder-icon-wrapper">
+        <div class="folder-tab"></div>
+        <div class="folder-body">
+          <span class="folder-count">23</span>
+        </div>
+        <span class="badge-new">3</span>
+      </div>
+      <div class="folder-label">Contrats</div>
+      <div class="folder-sublabel">23 contrats</div>
+    </div>
+
+    <!-- Employeurs -->
+    <div class="folder-item folder-amber" onclick="alert('→ Employeurs')">
+      <div class="folder-icon-wrapper">
+        <div class="folder-tab"></div>
+        <div class="folder-body">
+          <span class="folder-count">31</span>
+        </div>
+      </div>
+      <div class="folder-label">Employeurs</div>
+      <div class="folder-sublabel">31 employeurs</div>
+    </div>
+
+    <!-- Demandes -->
+    <div class="folder-item folder-cyan" onclick="alert('→ Demandes')">
+      <div class="folder-icon-wrapper">
+        <div class="folder-tab"></div>
+        <div class="folder-body">
+          <span class="folder-count">12</span>
+        </div>
+      </div>
+      <div class="folder-label">Demandes</div>
+      <div class="folder-sublabel">12 en cours</div>
+    </div>
+
+    <!-- Commissions -->
+    <div class="folder-item folder-purple" onclick="alert('→ Commissions')">
+      <div class="folder-icon-wrapper">
+        <div class="folder-tab"></div>
+        <div class="folder-body">
+          <span class="folder-count">8</span>
+        </div>
+        <span class="badge-new">5</span>
+      </div>
+      <div class="folder-label">Commissions</div>
+      <div class="folder-sublabel">5 à percevoir</div>
+    </div>
+
+    <!-- Archive -->
+    <div class="folder-item folder-red" onclick="alert('→ Archivés')">
+      <div class="folder-icon-wrapper">
+        <div class="folder-tab"></div>
+        <div class="folder-body">
+          <span class="folder-count">31</span>
+        </div>
+      </div>
+      <div class="folder-label">Terminés</div>
+      <div class="folder-sublabel">31 archivés</div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIANT B: List view ═══ -->
+  <div class="section-divider"></div>
+  <div class="variant-label">📋 Variante B — Liste (mode détaillé)</div>
+
+  <div class="folder-list active" id="listView">
+    <div class="list-item" onclick="alert('→ Employés')">
+      <div class="list-icon" style="background: var(--success-light);">📋</div>
+      <div class="list-info">
+        <div class="list-name">Fiches d'inscription</div>
+        <div class="list-meta">Dernière fiche ajoutée il y a 2h</div>
+      </div>
+      <div class="list-count">47</div>
+    </div>
+    <div class="list-item" onclick="alert('→ Contrats')">
+      <div class="list-icon" style="background: var(--primary-light);">📝</div>
+      <div class="list-info">
+        <div class="list-name">Contrats de placement</div>
+        <div class="list-meta">3 contrats ce mois-ci</div>
+      </div>
+      <div class="list-count">23</div>
+    </div>
+    <div class="list-item" onclick="alert('→ Employeurs')">
+      <div class="list-icon" style="background: var(--warning-light);">🏢</div>
+      <div class="list-info">
+        <div class="list-name">Employeurs</div>
+        <div class="list-meta">Particuliers et entreprises</div>
+      </div>
+      <div class="list-count">31</div>
+    </div>
+    <div class="list-item" onclick="alert('→ Demandes')">
+      <div class="list-icon" style="background: var(--info-light);">📞</div>
+      <div class="list-info">
+        <div class="list-name">Demandes de recrutement</div>
+        <div class="list-meta">12 demandes en attente</div>
+      </div>
+      <div class="list-count">12</div>
+    </div>
+    <div class="list-item" onclick="alert('→ Commissions')">
+      <div class="list-icon" style="background: #F3E8FF;">💰</div>
+      <div class="list-info">
+        <div class="list-name">Commissions à percevoir</div>
+        <div class="list-meta">5 en attente de paiement</div>
+      </div>
+      <div class="list-count">8</div>
+    </div>
+    <div class="list-item" onclick="alert('→ Terminés')">
+      <div class="list-icon" style="background: var(--danger-light);">🗄️</div>
+      <div class="list-info">
+        <div class="list-name">Dossiers terminés</div>
+        <div class="list-meta">Contrats expirés ou résiliés</div>
+      </div>
+      <div class="list-count">31</div>
+    </div>
+  </div>
+
+  <script>
+    function toggleView(mode) {
+      const grid = document.getElementById('gridView');
+      const list = document.getElementById('listView');
+      const btns = document.querySelectorAll('.view-btn');
+      btns.forEach(b => b.classList.remove('active'));
+
+      if (mode === 'grid') {
+        grid.classList.remove('hidden');
+        list.classList.remove('active');
+        btns[0].classList.add('active');
+      } else {
+        grid.classList.add('hidden');
+        list.classList.add('active');
+        btns[1].classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossiers — Variante Carte d'Identité</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #fdf8f3; /* M.bg */
+  color: #3d3530; /* M.text */
+  line-height: 1.5;
+  padding: 16px;
+}
+
+/* ─── Warm Earth Theme ─── */
+:root {
+  --bg: #fdf8f3;
+  --surface: #ffffff;
+  --surface-alt: #fef7f0;
+  --primary: #c45a2a;
+  --primary-dim: #fdebd8;
+  --success: #5a7c3a;
+  --success-dim: #e8f0dc;
+  --warning: #b8860b;
+  --warning-dim: #faf3d1;
+  --info: #2a7a7a;
+  --info-dim: #d8ecec;
+  --violet: #8b5a8b;
+  --violet-dim: #f0e6f0;
+  --rose: #b85454;
+  --rose-dim: #fdeaea;
+  --text: #3d3530;
+  --text-muted: #8a7d72;
+  --text-dim: #b8a99e;
+  --border: #eedec9;
+  --border-soft: #f5ebe0;
+  --shadow: rgba(61,53,48,0.08);
+}
+
+/* ─── Header ─── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 4px 20px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--primary-dim);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.header-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+.header-count {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+.header-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.15s;
+}
+.header-btn:hover { background: var(--primary-dim); border-color: var(--primary); }
+
+/* ─── Search ─── */
+.search-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+.search-wrap input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px 0 44px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-wrap input:focus { border-color: var(--primary); }
+.search-wrap input::placeholder { color: var(--text-dim); }
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--text-dim);
+}
+
+/* ─── Filter Chips ─── */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+.filter-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.filter-chip .count {
+  font-weight: 500;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+/* ─── Card design ─── */
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 6px 20px var(--shadow);
+}
+.card-inner {
+  display: flex;
+  padding: 16px;
+  gap: 14px;
+}
+
+/* Avatar */
+.avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  border: 2px solid var(--border-soft);
+}
+.status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2.5px solid var(--surface);
+}
+
+/* Info */
+.card-info { flex: 1; min-width: 0; }
+.card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.card-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.tag {
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.tag-category {
+  background: var(--primary-dim);
+  color: var(--primary);
+}
+.tag-status {
+  background: var(--success-dim);
+  color: var(--success);
+}
+.tag-status.en-poste {
+  background: var(--info-dim);
+  color: var(--info);
+}
+.tag-status.en-attente {
+  background: var(--warning-dim);
+  color: var(--warning);
+}
+.tag-status.indisponible {
+  background: var(--rose-dim);
+  color: var(--rose);
+}
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.card-meta span { display: flex; align-items: center; gap: 4px; }
+
+/* Actions row */
+.card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-alt);
+}
+.btn {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover { background: #a84a22; }
+.btn-secondary {
+  background: var(--border-soft);
+  color: var(--text-muted);
+}
+.btn-secondary:hover { background: var(--border); color: var(--text); }
+.btn-success {
+  background: var(--success);
+  color: #fff;
+}
+.btn-success:hover { background: #4a6830; }
+
+/* ─── FAB ─── */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(196,90,42,0.35);
+  transition: all 0.2s;
+}
+.fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 28px rgba(196,90,42,0.45);
+}
+
+/* ─── Responsive ─── */
+@media (min-width: 480px) {
+  body { padding: 24px; max-width: 600px; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">📋</div>
+    <div>
+      <div class="header-title">Dossiers</div>
+      <div class="header-count">24 candidats</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="header-btn">🔍</button>
+    <button class="header-btn">⚙️</button>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="search-wrap">
+  <span class="search-icon">🔎</span>
+  <input type="text" placeholder="Nom, téléphone, catégorie..." id="searchInput" oninput="filterCards()">
+</div>
+
+<!-- Filters -->
+<div class="filters" id="filters">
+  <span class="filter-chip active" data-filter="all" onclick="setFilter(this, 'all')">Tous <span class="count">24</span></span>
+  <span class="filter-chip" data-filter="disponible" onclick="setFilter(this, 'disponible')">🟢 Disponibles <span class="count">12</span></span>
+  <span class="filter-chip" data-filter="en_poste" onclick="setFilter(this, 'en_poste')">🔵 En poste <span class="count">6</span></span>
+  <span class="filter-chip" data-filter="en_attente" onclick="setFilter(this, 'en_attente')">🟡 En attente <span class="count">4</span></span>
+  <span class="filter-chip" data-filter="indisponible" onclick="setFilter(this, 'indisponible')">🔴 Indisponibles <span class="count">2</span></span>
+</div>
+
+<!-- Card 1 -->
+<div class="card" data-status="disponible" onclick="openDetail(this)">
+  <div class="card-inner">
+    <div class="avatar-wrap">
+      <div class="avatar" style="background: linear-gradient(135deg, #c45a2a, #e07840);">KG</div>
+      <div class="status-dot" style="background: #5a7c3a;"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">Kouamé Guy</div>
+      <div class="card-tags">
+        <span class="tag tag-category">🏗️ Maçonnerie</span>
+        <span class="tag tag-status">✅ Disponible</span>
+      </div>
+      <div class="card-meta">
+        <span>📞 +225 07 12 34 567</span>
+        <span>📍 Abidjan</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button class="btn btn-success" onclick="event.stopPropagation();alert('Placer Kouamé Guy')">📋 Placer</button>
+    <button class="btn btn-secondary" onclick="event.stopPropagation();alert('Fiche Kouamé Guy')">📄 Fiche</button>
+  </div>
+</div>
+
+<!-- Card 2 -->
+<div class="card" data-status="en_poste" onclick="openDetail(this)">
+  <div class="card-inner">
+    <div class="avatar-wrap">
+      <div class="avatar" style="background: linear-gradient(135deg, #2a7a7a, #3a9a9a);">AD</div>
+      <div class="status-dot" style="background: #2a7a7a;"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">Aké Denise</div>
+      <div class="card-tags">
+        <span class="tag tag-category">🧹 Entretien</span>
+        <span class="tag tag-status en-poste">💼 En poste</span>
+      </div>
+      <div class="card-meta">
+        <span>📞 +225 05 98 76 543</span>
+        <span>📍 Cocody</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button class="btn btn-secondary" onclick="event.stopPropagation();alert('Fiche Aké Denise')">📄 Ouvrir la fiche</button>
+  </div>
+</div>
+
+<!-- Card 3 -->
+<div class="card" data-status="disponible" onclick="openDetail(this)">
+  <div class="card-inner">
+    <div class="avatar-wrap">
+      <div class="avatar" style="background: linear-gradient(135deg, #5a7c3a, #7a9c5a);">BT</div>
+      <div class="status-dot" style="background: #5a7c3a;"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">Bamba Tiecoura</div>
+      <div class="card-tags">
+        <span class="tag tag-category">🔧 Chauffage</span>
+        <span class="tag tag-status">✅ Disponible</span>
+      </div>
+      <div class="card-meta">
+        <span>📞 +225 01 23 45 678</span>
+        <span>📍 Yopougon</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button class="btn btn-success" onclick="event.stopPropagation();alert('Placer Bamba Tiecoura')">📋 Placer</button>
+    <button class="btn btn-secondary" onclick="event.stopPropagation();alert('Fiche Bamba Tiecoura')">📄 Fiche</button>
+  </div>
+</div>
+
+<!-- Card 4 -->
+<div class="card" data-status="en_attente" onclick="openDetail(this)">
+  <div class="card-inner">
+    <div class="avatar-wrap">
+      <div class="avatar" style="background: linear-gradient(135deg, #b8860b, #d4a020);">DK</div>
+      <div class="status-dot" style="background: #b8860b;"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">Diallo Kadiatou</div>
+      <div class="card-tags">
+        <span class="tag tag-category">👷 Manœuvre</span>
+        <span class="tag tag-status en-attente">⏳ En attente</span>
+      </div>
+      <div class="card-meta">
+        <span>📞 +225 04 56 78 901</span>
+        <span>📍 Adjamé</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button class="btn btn-secondary" onclick="event.stopPropagation();alert('Fiche Diallo Kadiatou')">📄 Ouvrir la fiche</button>
+  </div>
+</div>
+
+<!-- Card 5 -->
+<div class="card" data-status="disponible" onclick="openDetail(this)">
+  <div class="card-inner">
+    <div class="avatar-wrap">
+      <div class="avatar" style="background: linear-gradient(135deg, #8b5a8b, #ab7aab);">NK</div>
+      <div class="status-dot" style="background: #5a7c3a;"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">N'Guessan Kouadio</div>
+      <div class="card-tags">
+        <span class="tag tag-category">🪚 Menuiserie</span>
+        <span class="tag tag-status">✅ Disponible</span>
+      </div>
+      <div class="card-meta">
+        <span>📞 +225 02 34 56 789</span>
+        <span>📍 Port-Bouët</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button class="btn btn-success" onclick="event.stopPropagation();alert('Placer N\'Guessan Kouadio')">📋 Placer</button>
+    <button class="btn btn-secondary" onclick="event.stopPropagation();alert('Fiche N\'Guessan Kouadio')">📄 Fiche</button>
+  </div>
+</div>
+
+<!-- Card 6 -->
+<div class="card" data-status="indisponible" onclick="openDetail(this)">
+  <div class="card-inner">
+    <div class="avatar-wrap">
+      <div class="avatar" style="background: linear-gradient(135deg, #b85454, #d07474);">SF</div>
+      <div class="status-dot" style="background: #b85454;"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">Soro Fatoumata</div>
+      <div class="card-tags">
+        <span class="tag tag-category">🧑‍🍳 Restauration</span>
+        <span class="tag tag-status indisponible">❌ Indisponible</span>
+      </div>
+      <div class="card-meta">
+        <span>📞 +225 03 45 67 890</span>
+        <span>📍 Marcory</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button class="btn btn-secondary" onclick="event.stopPropagation();alert('Fiche Soro Fatoumata')">📄 Ouvrir la fiche</button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="alert('Nouveau candidat')">+</button>
+
+<script>
+function setFilter(el, filter) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  // Filter cards
+  document.querySelectorAll('.card').forEach(card => {
+    if (filter === 'all' || card.dataset.status === filter) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  // Update count
+  const visible = document.querySelectorAll('.card[style*="display: none"]');
+  const total = document.querySelectorAll('.card').length;
+  document.querySelector('.header-count').textContent = 
+    document.querySelectorAll('.card:not([style*="display: none"])').length + ' candidats';
+}
+function filterCards() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.card').forEach(card => {
+    const name = card.querySelector('.card-name').textContent.toLowerCase();
+    const meta = card.querySelector('.card-meta').textContent.toLowerCase();
+    const tags = card.querySelector('.card-tags').textContent.toLowerCase();
+    if (name.includes(q) || meta.includes(q) || tags.includes(q)) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  document.querySelector('.header-count').textContent = 
+    document.querySelectorAll('.card:not([style*="display: none"])').length + ' candidats';
+}
+function openDetail(card) {
+  const name = card.querySelector('.card-name').textContent;
+  alert('Détail de ' + name);
+}
+</script>
+
+</body>
+</html>

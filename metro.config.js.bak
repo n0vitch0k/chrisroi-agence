@@ -1,0 +1,27 @@
+const { getDefaultConfig } = require('@expo/metro-config');
+const path = require('path');
+
+/**
+ * Metro config for ChrisRoi Agence web build.
+ *
+ * Problem: Metro does static analysis on require('expo-sqlite') string literals
+ * and includes the native module in web bundles even when inside functions.
+ *
+ * Solution: Use extraNodeModules to redirect native module imports to web stubs.
+ */
+module.exports = (api) => {
+  const projectRoot = __dirname;
+  const config = getDefaultConfig(projectRoot);
+
+  if (api.platform === 'web') {
+    // Redirect expo-sqlite to our web stub
+    config.resolver.extraNodeModules = {
+      ...(config.resolver.extraNodeModules || {}),
+      'expo-sqlite': path.resolve(projectRoot, 'src/utils/expoSqliteStub.js'),
+      'expo-image-picker': path.resolve(projectRoot, 'src/utils/expoImagePickerStub.js'),
+      'uuid': path.resolve(projectRoot, 'src/utils/uuidStub.js'),
+    };
+  }
+
+  return config;
+};

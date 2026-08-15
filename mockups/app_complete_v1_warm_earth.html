@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChrisRoi Agence — Maquette complète V1 (Warm Earth)</title>
+<style>
+:root{
+  /* ─── Theme Warm Earth (V5 validé) ─── */
+  --bg:#fdf8f3;
+  --bg-elev:#fffaf5;
+  --card:#ffffff;
+  --card-alt:#fef7f0;
+  --border:#eedec9;
+  --border-soft:#f5ebe0;
+
+  --primary:#c45a2a;
+  --primary-dim:#fdebd8;
+  --primary-glow:#c45a2a33;
+
+  --success:#5a7c3a;
+  --success-dim:#e8f0dc;
+
+  --warning:#b8860b;
+  --warning-dim:#faf3d1;
+
+  --info:#2a7a7a;
+  --info-dim:#d8ecec;
+
+  --violet:#8b5a8b;
+  --violet-dim:#f0e6f0;
+
+  --rose:#b85454;
+  --rose-dim:#fdeaea;
+
+  --text:#3d3530;
+  --text-muted:#8a7d72;
+  --text-dim:#b8a99e;
+
+  --shadow-soft:0 2px 10px rgba(61,53,48,0.06);
+  --shadow-card:0 8px 28px rgba(61,53,48,0.08);
+  --shadow-elevated:0 16px 40px rgba(61,53,48,0.1);
+  --radius-card:22px;
+  --radius-btn:14px;
+  --transition:all 0.25s ease;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  background:linear-gradient(135deg,#e8d8c5 0%,#d9c4ac 100%);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+}
+/* ─── Cadre téléphone ─── */
+.phone{
+  width:400px;height:840px;max-height:94vh;background:var(--bg);
+  border-radius:44px;overflow:hidden;position:relative;
+  box-shadow:0 30px 80px rgba(61,53,48,0.35), inset 0 0 0 10px #1c1512;
+  display:flex;flex-direction:column;
+}
+.statusbar{
+  height:34px;background:var(--bg-elev);display:flex;justify-content:space-between;
+  align-items:center;padding:0 22px;font-size:13px;font-weight:700;color:var(--text);
+  flex-shrink:0;position:relative;z-index:50;
+}
+.statusbar .sb-icons{display:flex;gap:6px;align-items:center;font-size:12px}
+.app{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden}
+
+/* ─── Écrans ─── */
+.screen{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  background:var(--bg);overflow:hidden;
+}
+.screen.active{display:flex}
+.scroll{flex:1;overflow-y:auto;padding:16px 16px 110px;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{width:0;height:0}
+
+/* ─── Header général ─── */
+.hdr{background:var(--bg-elev);padding:10px 16px 18px;border-radius:0 0 28px 28px;box-shadow:var(--shadow-soft);position:relative;flex-shrink:0}
+.hdr::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--primary),var(--success),var(--warning))}
+.hdr-row{display:flex;align-items:center;gap:12px}
+.hdr-back{width:42px;height:42px;border-radius:14px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-soft);transition:var(--transition);color:var(--text);flex-shrink:0}
+.hdr-back:hover{background:var(--card-alt);transform:translateX(-2px)}
+.hdr-back svg{width:22px;height:22px}
+.hdr-title{font-size:19px;font-weight:700;color:var(--text);flex:1;letter-spacing:-0.2px}
+.hdr-sub{font-size:12px;color:var(--text-muted);font-weight:500;margin-top:2px}
+.hdr-action{width:42px;height:42px;border-radius:14px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);position:relative;flex-shrink:0}
+.hdr-action:hover{background:var(--card-alt)}
+.hdr-action svg{width:20px;height:20px;color:var(--text-muted)}
+
+/* ─── Header Dashboard ─── */
+.hdr-dash{padding:12px 20px 26px}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:46px;height:46px;border-radius:16px;background:var(--primary-dim);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);box-shadow:var(--shadow-soft)}
+.brand-logo svg{width:24px;height:24px;color:var(--primary)}
+.brand-name{font-size:20px;font-weight:700;letter-spacing:-0.3px}
+.hdr-actions{display:flex;gap:10px}
+.greeting{font-size:14px;color:var(--text-muted);margin-bottom:3px;font-style:italic}
+.user-name{font-size:26px;font-weight:700;letter-spacing:-0.3px}
+
+/* ─── Sections ─── */
+.section-header{display:flex;justify-content:space-between;align-items:center;margin:20px 4px 12px}
+.section-title{font-size:16px;font-weight:700;color:var(--text)}
+.section-link{font-size:12.5px;color:var(--primary);font-weight:600;cursor:pointer}
+
+/* ─── Cartes ─── */
+.card{background:var(--card);border-radius:var(--radius-card);border-left:5px solid var(--primary);padding:18px;margin-bottom:14px;border:1px solid var(--border);box-shadow:var(--shadow-card);transition:var(--transition);cursor:pointer}
+.card:hover{box-shadow:var(--shadow-elevated);transform:translateY(-2px)}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.card-main{display:flex;align-items:center;gap:14px}
+.card-icon{width:50px;height:50px;border-radius:15px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-soft);font-size:24px;flex-shrink:0}
+.card-title{font-size:16.5px;font-weight:700}
+.card-meta{font-size:12.5px;color:var(--text-muted);line-height:19px;font-style:italic}
+.card-stats{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border-soft);margin-top:12px}
+.stat{flex:1}
+.stat-label{font-size:9.5px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.6px}
+.stat-value{font-size:14px;font-weight:800;margin-top:3px}
+.card-primary{background:linear-gradient(135deg,#fdf5f0 0%,#fce7db 100%);border-left-color:var(--primary)}
+.card-success{background:linear-gradient(135deg,#f4f7ed 0%,#e8f0dc 100%);border-left-color:var(--success)}
+.card-warning{background:linear-gradient(135deg,#faf8ed 0%,#faf3d1 100%);border-left-color:var(--warning)}
+.card-info{background:linear-gradient(135deg,#f0f7f7 0%,#d8ecec 100%);border-left-color:var(--info)}
+.card-violet{background:linear-gradient(135deg,#f7f0f7 0%,#f0e6f0 100%);border-left-color:var(--violet)}
+.card-urgent{background:linear-gradient(135deg,#fdf2f2 0%,#fdeaea 100%);border-left-color:var(--rose)}
+.card-dossier{background:linear-gradient(135deg,#f4f7ed 0%,#e8f0dc 100%);border-left-color:var(--success)}
+
+.badge{padding:3px 9px;border-radius:9px;font-size:9.5px;font-weight:700;white-space:nowrap}
+.b-primary{background:var(--primary-dim);color:var(--primary)}
+.b-success{background:var(--success-dim);color:var(--success)}
+.b-warning{background:var(--warning-dim);color:var(--warning)}
+.b-info{background:var(--info-dim);color:var(--info)}
+.b-violet{background:var(--violet-dim);color:var(--violet)}
+.b-rose{background:var(--rose-dim);color:var(--rose)}
+
+/* ─── Boutons ─── */
+.btn{width:100%;border-radius:var(--radius-btn);padding:13px 16px;border:none;font-size:12.5px;font-weight:700;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit}
+.btn:active{transform:scale(0.98)}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 16px var(--primary-glow)}
+.btn-success{background:var(--success);color:#fff;box-shadow:0 4px 16px rgba(90,124,58,0.2)}
+.btn-warning{background:var(--warning);color:#fff;box-shadow:0 4px 16px rgba(184,134,11,0.2)}
+.btn-info{background:var(--info);color:#fff;box-shadow:0 4px 16px rgba(42,122,122,0.2)}
+.btn-violet{background:var(--violet);color:#fff;box-shadow:0 4px 16px rgba(139,90,139,0.2)}
+.btn-danger{background:var(--rose);color:#fff;box-shadow:0 4px 16px rgba(184,84,84,0.2)}
+.btn-secondary{background:var(--card-alt);color:var(--text);border:1px solid var(--border)}
+.btn-ghost{background:transparent;color:var(--primary);border:1.5px solid var(--primary);box-shadow:none}
+.btn-sm{padding:9px 14px;font-size:11.5px;border-radius:11px;width:auto}
+
+/* ─── Recherche ─── */
+.search{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:0 14px;height:46px;box-shadow:var(--shadow-soft);margin-bottom:14px}
+.search svg{width:19px;height:19px;color:var(--text-dim);flex-shrink:0}
+.search input{flex:1;border:none;outline:none;background:transparent;font-size:14px;color:var(--text);font-family:inherit}
+.search input::placeholder{color:var(--text-dim)}
+
+/* ─── Chips filtres ─── */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:6px}
+.chips::-webkit-scrollbar{width:0}
+.chip{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;cursor:pointer;transition:var(--transition)}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.chip.active{background:var(--primary-dim);border-color:var(--primary);color:var(--primary)}
+.chip.active .dot{background:var(--primary)}
+
+/* ─── Lignes de liste ─── */
+.row{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:13px 14px;margin-bottom:10px;box-shadow:var(--shadow-soft);cursor:pointer;transition:var(--transition)}
+.row:hover{box-shadow:var(--shadow-card);transform:translateX(2px)}
+.avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.6);box-shadow:var(--shadow-soft)}
+.av-primary{background:linear-gradient(135deg,#d97a4a,#c45a2a)}
+.av-success{background:linear-gradient(135deg,#7d9c58,#5a7c3a)}
+.av-warning{background:linear-gradient(135deg,#cf9f2e,#b8860b)}
+.av-info{background:linear-gradient(135deg,#4d9b9b,#2a7a7a)}
+.av-violet{background:linear-gradient(135deg,#a97ca9,#8b5a8b)}
+.av-rose{background:linear-gradient(135deg,#cd7a7a,#b85454)}
+.row-info{flex:1;min-width:0}
+.row-name{font-size:15px;font-weight:700;color:var(--text)}
+.row-meta{font-size:12px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-chev{color:var(--text-dim);flex-shrink:0}
+.pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:9px;white-space:nowrap;flex-shrink:0}
+
+/* ─── FAB ─── */
+.fab{position:absolute;right:18px;bottom:86px;width:58px;height:58px;border-radius:20px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px var(--primary-glow);cursor:pointer;border:none;transition:var(--transition);z-index:20}
+.fab:hover{transform:translateY(-3px) scale(1.04)}
+.fab svg{width:26px;height:26px}
+
+/* ─── Tab bar ─── */
+.tabbar{height:66px;background:var(--card);border-top:1px solid var(--border-soft);display:none;flex-shrink:0;box-shadow:0 -4px 20px rgba(61,53,48,0.06)}
+.tabbar.show{display:flex}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--text-dim);transition:var(--transition);background:none;border:none;font-family:inherit}
+.tab svg{width:22px;height:22px}
+.tab span{font-size:10px;font-weight:600}
+.tab.active{color:var(--primary)}
+.tab.active svg{stroke-width:2.4}
+
+/* ─── Modale ─── */
+.overlay{position:absolute;inset:0;background:rgba(61,53,48,0.4);display:none;align-items:flex-end;justify-content:center;z-index:100}
+.overlay.active{display:flex}
+.sheet{width:100%;background:var(--bg-elev);border-radius:28px 28px 0 0;padding:10px 18px 24px;box-shadow:var(--shadow-elevated);animation:slideUp 0.28s ease;max-height:88%;overflow-y:auto}
+.sheet::-webkit-scrollbar{width:0}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0.4}to{transform:translateY(0);opacity:1}}
+.sheet-handle{width:44px;height:5px;border-radius:3px;background:var(--border);margin:0 auto 14px}
+.sheet-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:16px}
+.center-modal{position:absolute;inset:0;background:rgba(61,53,48,0.4);display:none;align-items:center;justify-content:center;z-index:110;padding:20px}
+.center-modal.active{display:flex}
+.popup{width:88%;max-width:320px;background:var(--bg-elev);border:1px solid var(--border);border-radius:28px;padding:24px 22px;box-shadow:var(--shadow-elevated);animation:popIn 0.22s ease}
+@keyframes popIn{from{transform:scale(0.9);opacity:0.4}to{transform:scale(1);opacity:1}}
+.popup-item{display:flex;align-items:center;padding:15px 4px;cursor:pointer;transition:var(--transition);border-radius:14px}
+.popup-item:hover{background:var(--card-alt)}
+.popup-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-right:14px;border:1px solid var(--border-soft);font-size:21px;flex-shrink:0}
+.popup-label{font-size:16px;font-weight:700}
+.popup-count{font-size:12.5px;color:var(--text-dim);margin-top:2px}
+.popup-divider{height:1px;background:var(--border-soft);margin:4px 0}
+
+/* ─── Formulaires ─── */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.input,.select,.textarea{width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--text);font-family:inherit;outline:none;transition:var(--transition)}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+.textarea{min-height:72px;resize:none}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.radio-row{display:flex;gap:8px;flex-wrap:wrap}
+.radio{display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-size:12.5px;font-weight:600;cursor:pointer;transition:var(--transition);color:var(--text-muted)}
+.radio.active{background:var(--primary-dim);border-color:var(--primary);color:var(--primary)}
+
+/* ─── Onglets ─── */
+.tabs{display:flex;background:var(--card-alt);border:1px solid var(--border-soft);border-radius:14px;padding:4px;margin-bottom:16px}
+.tab-btn{flex:1;padding:9px;border-radius:11px;border:none;background:transparent;font-size:12.5px;font-weight:700;color:var(--text-muted);cursor:pointer;transition:var(--transition);font-family:inherit}
+.tab-btn.active{background:var(--card);color:var(--primary);box-shadow:var(--shadow-soft)}
+
+/* ─── Info rows (détail) ─── */
+.detail-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-soft)}
+.detail-title{font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border-soft);gap:16px}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:12.5px;color:var(--text-muted);flex-shrink:0}
+.info-value{font-size:13.5px;font-weight:600;color:var(--text);text-align:right;word-break:break-word}
+
+/* ─── Calendrier semaine ─── */
+.cal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-card);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-soft)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.day{display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 2px;border-radius:13px;cursor:pointer;transition:var(--transition);border:1px solid transparent}
+.day:hover{background:var(--card-alt)}
+.day.today{background:var(--primary-dim);border-color:var(--primary)}
+.day-name{font-size:9.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase}
+.day-num{font-size:15px;font-weight:800;color:var(--text)}
+.day.today .day-num{color:var(--primary)}
+.day-dots{display:flex;gap:3px;height:6px}
+.dot-e{width:6px;height:6px;border-radius:50%;background:var(--success)}
+.dot-c{width:6px;height:6px;border-radius:50%;background:var(--info)}
+.dot-p{width:6px;height:6px;border-radius:50%;background:var(--warning)}
+.dot-f{width:6px;height:6px;border-radius:50%;background:var(--rose)}
+
+/* ─── Document A4 ─── */
+.doc-sheet{background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-card);padding:26px 26px 30px;margin:0 auto 16px;max-width:560px;color:#2b2b2b}
+.doc-sheet h1{font-size:17px;text-align:center;color:#1a1a1a;margin-bottom:2px}
+.doc-sheet .doc-slogan{text-align:center;font-size:10.5px;color:#777;margin-bottom:14px;border-bottom:2px solid #c45a2a;padding-bottom:10px}
+.doc-block{margin-bottom:14px}
+.doc-block h3{font-size:11px;font-weight:700;color:#c45a2a;text-transform:uppercase;letter-spacing:0.6px;border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:8px}
+.doc-row{display:flex;justify-content:space-between;font-size:12px;padding:3.5px 0;gap:12px}
+.doc-row .k{color:#666}
+.doc-row .v{font-weight:600;text-align:right}
+.doc-sign{display:flex;justify-content:space-between;margin-top:22px;gap:16px}
+.doc-sign-box{flex:1;text-align:center}
+.doc-sign-line{border-top:1px solid #999;padding-top:6px;font-size:10px;color:#555}
+.doc-num{font-size:11px;color:#c45a2a;font-weight:700;text-align:center;margin-bottom:10px}
+
+/* ─── Alertes / listes simples ─── */
+.al-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--border-soft);cursor:pointer}
+.al-item:last-child{border-bottom:none}
+.al-icon{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.al-text{flex:1}
+.al-title{font-size:14px;font-weight:700}
+.al-time{font-size:11.5px;color:var(--text-dim);margin-top:2px}
+.al-dot{width:9px;height:9px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:5px}
+
+/* ─── Settings menu ─── */
+.set-item{display:flex;align-items:center;gap:13px;padding:14px 12px;border-radius:16px;cursor:pointer;transition:var(--transition);border:1px solid transparent}
+.set-item:hover{background:var(--card);border-color:var(--border)}
+.set-icon{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.set-label{flex:1;font-size:14.5px;font-weight:600}
+.set-chev{color:var(--text-dim)}
+
+/* ─── Scan ─── */
+.scan-zone{background:var(--card);border:2px dashed var(--border);border-radius:var(--radius-card);padding:44px 20px;text-align:center;margin-bottom:16px}
+.scan-zone .big{font-size:52px;margin-bottom:12px}
+.scan-choice{display:flex;gap:10px;margin-bottom:18px}
+.scan-choice .card{flex:1;margin-bottom:0;text-align:center;padding:16px 10px}
+.scan-choice .card.active{border-left-color:var(--primary);outline:2px solid var(--primary);outline-offset:-2px}
+
+/* ─── Documents associés ─── */
+.doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.doc-type{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 10px;border-radius:16px;border:1px solid var(--border);background:var(--card);cursor:pointer;transition:var(--transition);font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text)}
+.doc-type:hover{border-color:var(--primary);background:var(--primary-dim);transform:translateY(-2px)}
+.doc-type .dt-ico{font-size:26px}
+.doc-row-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-soft)}
+.doc-row-item:last-child{border-bottom:none}
+.doc-thumb{width:46px;height:46px;border-radius:13px;background:var(--card-alt);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;box-shadow:var(--shadow-soft)}
+.doc-remove{width:34px;height:34px;border-radius:11px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--rose);flex-shrink:0;transition:var(--transition);font-size:13px;font-weight:700}
+.doc-remove:hover{background:var(--rose-dim)}
+
+/* ─── Toast ─── */
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:11px 18px;border-radius:13px;font-size:12.5px;font-weight:600;opacity:0;pointer-events:none;transition:var(--transition);z-index:200;white-space:nowrap;box-shadow:var(--shadow-elevated)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ─── Login ─── */
+.login-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:30px 28px;background:linear-gradient(160deg,var(--bg-elev) 0%,var(--bg) 55%)}
+.login-logo{width:84px;height:84px;border-radius:28px;background:var(--primary-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:var(--shadow-card)}
+.login-logo svg{width:42px;height:42px;color:var(--primary)}
+.login-title{font-size:24px;font-weight:800;text-align:center;letter-spacing:-0.4px}
+.login-sub{font-size:13.5px;color:var(--text-muted);text-align:center;margin:8px 0 28px}
+.login-hint{margin-top:16px;text-align:center;font-size:11.5px;color:var(--text-dim)}
+.login-hint b{color:var(--text-muted)}
+
+/* ─── Badge dot (notification) ─── */
+.notif-dot{position:absolute;top:8px;right:8px;width:11px;height:11px;border-radius:50%;background:var(--rose);border:2px solid var(--card)}
+
+/* helper */
+.mt-4{margin-top:4px}.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
+.muted{color:var(--text-muted)}.dim{color:var(--text-dim)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="sb-icons">📶 🔋</span>
+  </div>
+  <div class="app">
+
+    <!-- ═══════════ LOGIN ═══════════ -->
+    <section class="screen active" id="scr-login">
+      <div class="login-wrap">
+        <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <h1 class="login-title">ChrisRoi Agence</h1>
+        <p class="login-sub">Agence de Placement de Personnel<br>Connexion à votre tableau de bord</p>
+        <div class="field"><label>Email</label><input class="input" value="admin@chrisroi.com"></div>
+        <div class="field"><label>Mot de passe</label><input class="input" type="password" value="chrisroi2024"></div>
+        <button class="btn btn-primary mt-8" onclick="go('scr-dashboard',true)">Se connecter</button>
+        <button class="btn btn-ghost mt-8 btn-sm" style="width:100%" onclick="toast('Serveur : http://192.168.1.6:8090 (détection auto)')">Configurer le serveur</button>
+        <p class="login-hint">Identifiants par défaut : <b>admin@chrisroi.com / chrisroi2024</b></p>
+      </div>
+    </section>
+
+    <!-- ═══════════ DASHBOARD (Aujourd'hui) ═══════════ -->
+    <section class="screen" id="scr-dashboard">
+      <header class="hdr hdr-dash">
+        <div class="hdr-top">
+          <div class="brand">
+            <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+            <span class="brand-name">ChrisRoi Agence</span>
+          </div>
+          <div class="hdr-actions">
+            <button class="hdr-action" onclick="openSheet('sheet-alertes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot"></span></button>
+            <button class="hdr-action" onclick="openSheet('sheet-settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+          </div>
+        </div>
+        <p class="greeting">Bienvenue,</p>
+        <h1 class="user-name">Fatou Diabaté</h1>
+      </header>
+      <div class="scroll">
+        <div class="section-header"><h2 class="section-title">⚡ Actions principales</h2></div>
+
+        <div class="card card-primary" onclick="go('scr-fiche',true)">
+          <div class="card-header"><div class="card-main"><div class="card-icon icon-primary" style="background:var(--primary-dim)">👤</div><h3 class="card-title">Inscrire</h3></div><span class="badge b-primary">Fiche d'inscription</span></div>
+          <p class="card-meta">Créer une nouvelle fiche candidat</p>
+          <div class="card-stats"><div class="stat"><div class="stat-label">Fiches ce mois</div><div class="stat-value">24</div></div></div>
+          <button class="btn btn-primary mt-12" onclick="event.stopPropagation();go('scr-fiche',true)">Ouvrir formulaire</button>
+        </div>
+
+        <div class="card card-success" onclick="go('scr-contrat-doc',true)">
+          <div class="card-header"><div class="card-main"><div class="card-icon" style="background:var(--success-dim)">📄</div><h3 class="card-title">Créer un contrat</h3></div><span class="badge b-success">Placement</span></div>
+          <p class="card-meta">Générer un contrat de placement</p>
+          <div class="card-stats"><div class="stat"><div class="stat-label">Contrats actifs</div><div class="stat-value">18</div></div></div>
+          <button class="btn btn-success mt-12" onclick="event.stopPropagation();go('scr-contrat-doc',true)">Nouveau contrat</button>
+        </div>
+
+        <div class="card card-warning" onclick="go('scr-scanner',true)">
+          <div class="card-header"><div class="card-main"><div class="card-icon" style="background:var(--warning-dim)">📸</div><h3 class="card-title">Scanner</h3></div><span class="badge b-warning">OCR / Photo</span></div>
+          <p class="card-meta">Numériser une fiche ou un contrat papier</p>
+          <div class="card-stats"><div class="stat"><div class="stat-label">Scans cette semaine</div><div class="stat-value">7</div></div></div>
+          <button class="btn btn-warning mt-12" onclick="event.stopPropagation();go('scr-scanner',true)">Ouvrir caméra</button>
+        </div>
+
+        <div class="card card-info" onclick="go('scr-employeur-form',true)">
+          <div class="card-header"><div class="card-main"><div class="card-icon" style="background:var(--info-dim)">🏢</div><h3 class="card-title">Nouvel employeur</h3></div><span class="badge b-info">Entreprise cliente</span></div>
+          <p class="card-meta">Ajouter une entreprise qui recrute</p>
+          <div class="card-stats"><div class="stat"><div class="stat-label">Employeurs actifs</div><div class="stat-value">12</div></div></div>
+          <button class="btn btn-info mt-12" onclick="event.stopPropagation();go('scr-employeur-form',true)">Ajouter</button>
+        </div>
+
+        <div class="card card-violet" onclick="go('scr-suivi',true)">
+          <div class="card-header"><div class="card-main"><div class="card-icon" style="background:var(--violet-dim)">💰</div><h3 class="card-title">Suivi commissions</h3></div><span class="badge b-violet">À percevoir</span></div>
+          <p class="card-meta">3 commissions en attente · 1 850 000 FCFA</p>
+          <div class="card-stats"><div class="stat"><div class="stat-label">Total perçu</div><div class="stat-value" style="color:var(--success)">4 200 000 FCFA</div></div><div class="stat"><div class="stat-label">En attente</div><div class="stat-value" style="color:var(--warning)">1 850 000 FCFA</div></div></div>
+          <button class="btn btn-violet mt-12" onclick="event.stopPropagation();go('scr-suivi',true)">Voir détail</button>
+        </div>
+
+        <div class="section-header"><h2 class="section-title">📁 Dossiers</h2><span class="section-link" onclick="openPopup('pop-dossiers')">Voir tout (54)</span></div>
+        <div class="card card-dossier" onclick="openPopup('pop-dossiers')">
+          <div class="dossiers-header" style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+            <div class="card-icon" style="background:var(--success-dim)">📁</div>
+            <div><h3 class="card-title">Dossiers</h3><p style="font-size:12.5px;color:var(--success);font-weight:600">54 dossiers actifs</p></div>
+          </div>
+          <div class="dossier-row" style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--border-soft)">
+            <div class="dossier-icon" style="width:40px;height:40px;border-radius:12px;background:var(--primary-dim);display:flex;align-items:center;justify-content:center">📋</div>
+            <div style="flex:1"><div style="font-size:14.5px;font-weight:600">Fiches</div><div class="dim" style="font-size:12px">24 fiches</div></div>
+            <span class="row-chev">›</span>
+          </div>
+          <div class="dossier-row" style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--border-soft)">
+            <div class="dossier-icon" style="width:40px;height:40px;border-radius:12px;background:var(--warning-dim);display:flex;align-items:center;justify-content:center">🏢</div>
+            <div style="flex:1"><div style="font-size:14.5px;font-weight:600">Employeurs</div><div class="dim" style="font-size:12px">12 entreprises</div></div>
+            <span class="row-chev">›</span>
+          </div>
+          <div class="dossier-row" style="display:flex;align-items:center;gap:14px;padding:11px 0">
+            <div class="dossier-icon" style="width:40px;height:40px;border-radius:12px;background:var(--success-dim);display:flex;align-items:center;justify-content:center">📄</div>
+            <div style="flex:1"><div style="font-size:14.5px;font-weight:600">Contrats</div><div class="dim" style="font-size:12px">18 contrats</div></div>
+            <span class="row-chev">›</span>
+          </div>
+        </div>
+
+        <div class="section-header"><h2 class="section-title">⚠️ Urgences du jour</h2></div>
+        <div class="card card-urgent" onclick="go('scr-contrat-detail',true)">
+          <div class="card-header"><div class="card-main"><div class="card-icon" style="background:var(--rose-dim)">⏰</div><h3 class="card-title">Aminata Diallo · Fin dans 3j</h3></div><span class="badge b-rose">URGENT</span></div>
+          <p class="card-meta">Entreprise CIE · 180 000 FCFA</p>
+          <div class="card-stats"><div class="stat"><div class="stat-label">Commission agence</div><div class="stat-value">60 000 FCFA</div></div></div>
+          <button class="btn btn-danger mt-12" onclick="event.stopPropagation();toast('Prolongation — à implémenter')">Proposer prolongation</button>
+        </div>
+        <div class="card" style="background:linear-gradient(135deg,#faf8ed 0%,#faf3d1 100%);border-left-color:var(--warning)" onclick="go('scr-suivi',true)">
+          <div class="card-header"><div class="card-main"><div class="card-icon" style="background:var(--warning-dim)">💰</div><h3 class="card-title">Koffi Kouamé · Commission à percevoir</h3></div><span class="badge b-warning">À FAIRE</span></div>
+          <p class="card-meta">750 000 FCFA · Hotel Ivoire</p>
+          <div class="card-stats"><div class="stat"><div class="stat-label">Contrat</div><div class="stat-value">CHR-2026-A1B2</div></div></div>
+          <button class="btn btn-warning mt-12" onclick="event.stopPropagation();go('scr-suivi',true)">Percevoir</button>
+        </div>
+        <div style="height:30px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ DOSSERS (liste candidats) ═══════════ -->
+    <section class="screen" id="scr-dossiers">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dashboard',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Dossiers</div><div class="hdr-sub">54 candidats · 24 disponibles</div></div>
+          <button class="hdr-action" onclick="go('scr-recherche',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="search" style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Nom, téléphone, catégorie..."></div>
+        <div class="chips">
+          <div class="chip active" onclick="chip(this)"><span class="dot" style="background:var(--primary)"></span>Tous · 54</div>
+          <div class="chip" onclick="chip(this)"><span class="dot" style="background:var(--success)"></span>Disponibles · 36</div>
+          <div class="chip" onclick="chip(this)"><span class="dot" style="background:var(--info)"></span>En poste · 18</div>
+        </div>
+
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-primary">AD</div>
+          <div class="row-info"><div class="row-name">Aminata Diallo</div><div class="row-meta">Nounou · Abidjan · 07 08 45 12 30</div></div>
+          <span class="pill" style="background:var(--info-dim);color:var(--info)">En poste</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-success">KK</div>
+          <div class="row-info"><div class="row-name">Koffi Kouamé</div><div class="row-meta">Chauffeur · Cocody · 05 44 78 21 90</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">Disponible</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-warning">MT</div>
+          <div class="row-info"><div class="row-name">Mariam Touré</div><div class="row-meta">Femme de ménage · Yopougon · 01 02 36 54 87</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">Disponible</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-info">FB</div>
+          <div class="row-info"><div class="row-name">Fatou Bamba</div><div class="row-meta">Cuisinière · Marcory · 07 58 90 12 45</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">Disponible</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-violet">SG</div>
+          <div class="row-info"><div class="row-name">Sékou Guédé</div><div class="row-meta">Jardinier · Bingerville · 05 77 12 34 56</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">Disponible</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-rose">NK</div>
+          <div class="row-info"><div class="row-name">Nadège Kacou</div><div class="row-meta">Serveuse · Plateau · 01 09 87 65 43</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">Disponible</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-primary">YK</div>
+          <div class="row-info"><div class="row-name">Yao Kouadio</div><div class="row-meta">Garde malade · Treichville · 07 45 23 78 90</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">Disponible</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+      <button class="fab" onclick="go('scr-fiche',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    </section>
+
+    <!-- ═══════════ FICHE D'INSCRIPTION (formulaire) ═══════════ -->
+    <section class="screen" id="scr-fiche">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dossiers',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Fiche d'inscription</div><div class="hdr-sub">Nouveau candidat</div></div>
+          <button class="hdr-action" onclick="toast('Photo — Galerie / Appareil photo')">📷</button>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="tabs">
+          <div class="tab-btn active" onclick="tab(this)">Numérique</div>
+          <div class="tab-btn" onclick="tab(this)">Scanné</div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field"><label>Prénom</label><input class="input" placeholder="Aminata"></div>
+          <div class="field"><label>Nom</label><input class="input" placeholder="Diallo"></div>
+          <div class="field"><label>Date de naissance</label><input class="input" placeholder="12/03/1998"></div>
+          <div class="field"><label>Téléphone</label><input class="input" placeholder="07 08 45 12 30"></div>
+          <div class="field"><label>Nationalité</label><input class="input" value="Ivoirienne"></div>
+          <div class="field"><label>Situation matrimoniale</label><input class="input" value="Célibataire"></div>
+          <div class="field full"><label>Adresse / Lieu de résidence</label><input class="input" placeholder="Yopougon, Quartier Millionnaire"></div>
+          <div class="field"><label>Poste souhaité</label>
+            <select class="select"><option>Nounou</option><option>Serveuse</option><option>Chauffeur</option><option>Femme de ménage</option><option>Cuisinière</option><option>Jardinier</option><option>Vigile</option></select>
+          </div>
+          <div class="field"><label>Salaire souhaité (FCFA)</label><input class="input" placeholder="150 000"></div>
+          <div class="field"><label>Niveau d'étude</label>
+            <select class="select"><option>Sait lire et écrire</option><option>Primaire (CEPE)</option><option>Secondaire 1er cycle (BEPC)</option><option>Secondaire 2e cycle (BAC)</option><option>Supérieur</option></select>
+          </div>
+          <div class="field"><label>Religion</label><input class="input" placeholder="—"></div>
+          <div class="field"><label>Taille / Poids</label><input class="input" placeholder="1,65 m · 58 kg"></div>
+          <div class="field full"><label>Personne à contacter</label><input class="input" placeholder="Mariam Diallo · 07 00 11 22 33"></div>
+          <div class="field full"><label>Expériences</label><textarea class="textarea" placeholder="3 ans comme nounou à Abidjan, 1 an à Paris..."></textarea></div>
+        </div>
+        <div class="section-header"><h2 class="section-title">📎 Documents associés</h2><span class="section-link" id="doc-count">0 document</span></div>
+        <div class="card" style="cursor:default" id="doc-list">
+          <div class="doc-empty" id="doc-empty" style="text-align:center;padding:14px 0;color:var(--text-dim);font-size:13px">
+            Aucun document pour l'instant
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="openDocSheet()">📎 Ajouter un document</button>
+        <button class="btn btn-success mt-8" onclick="toast('Fiche enregistrée ✓')">Enregistrer la fiche</button>
+        <button class="btn btn-secondary mt-8" onclick="go('scr-fiche-a4',true)">Générer le document A4</button>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ FICHE A4 (aperçu document) ═══════════ -->
+    <section class="screen" id="scr-fiche-a4">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-fiche',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Fiche d'inscription</div><div class="hdr-sub">Document A4 · Aminata Diallo</div></div>
+        </div>
+      </header>
+      <div class="scroll" style="background:#efe6da">
+        <div class="doc-sheet">
+          <h1>CHRISROI AGENCE</h1>
+          <p class="doc-slogan">Agence de Placement de Personnel · Abidjan · ☎ 07 07 07 07 07</p>
+          <p class="doc-num">FICHE D'INSCRIPTION — N° CHR-2026-000124</p>
+          <div class="doc-block"><h3>Identité du candidat</h3>
+            <div class="doc-row"><span class="k">Nom &amp; prénom</span><span class="v">DIALLO Aminata</span></div>
+            <div class="doc-row"><span class="k">Date de naissance</span><span class="v">12/03/1998</span></div>
+            <div class="doc-row"><span class="k">Nationalité</span><span class="v">Ivoirienne</span></div>
+            <div class="doc-row"><span class="k">Situation matrimoniale</span><span class="v">Célibataire</span></div>
+            <div class="doc-row"><span class="k">Téléphone</span><span class="v">07 08 45 12 30</span></div>
+            <div class="doc-row"><span class="k">Adresse</span><span class="v">Yopougon, Quartier Millionnaire</span></div>
+          </div>
+          <div class="doc-block"><h3>Profil professionnel</h3>
+            <div class="doc-row"><span class="k">Poste souhaité</span><span class="v">Nounou</span></div>
+            <div class="doc-row"><span class="k">Salaire souhaité</span><span class="v">150 000 FCFA</span></div>
+            <div class="doc-row"><span class="k">Niveau d'étude</span><span class="v">Secondaire 1er cycle (BEPC)</span></div>
+            <div class="doc-row"><span class="k">Expériences</span><span class="v">3 ans comme nounou à Abidjan</span></div>
+          </div>
+          <div class="doc-block"><h3>Documents fournis</h3>
+            <div class="doc-row"><span class="k">Pièces jointes</span><span class="v">Carte d'identité · CV</span></div>
+          </div>
+          <div class="doc-sign">
+            <div class="doc-sign-box"><div style="height:34px"></div><div class="doc-sign-line">Signature du candidat</div></div>
+            <div class="doc-sign-box"><div style="height:34px"></div><div class="doc-sign-line">Cachet de l'agence</div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="toast('Enregistré ✓')">Enregistrer</button>
+          <button class="btn btn-primary" onclick="toast('Impression — aperçu papier')">Imprimer</button>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ EMPLOYÉ DÉTAIL ═══════════ -->
+    <section class="screen" id="scr-employe-detail">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dossiers',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Aminata Diallo</div><div class="hdr-sub">Nounou · Fiche CHR-2026-000124</div></div>
+          <button class="hdr-action" onclick="toast('Modifier — ouvre la fiche')">✏️</button>
+        </div>
+      </header>
+      <div class="scroll">
+        <div style="display:flex;align-items:center;gap:16px;margin:6px 4px 18px">
+          <div class="avatar av-primary" style="width:72px;height:72px;font-size:28px">AD</div>
+          <div style="flex:1">
+            <div style="font-size:19px;font-weight:800">Aminata Diallo</div>
+            <div class="muted" style="font-size:13px;margin-top:2px">Née le 12/03/1998 · Ivoirienne</div>
+            <span class="pill" style="background:var(--info-dim);color:var(--info);display:inline-block;margin-top:8px">En poste</span>
+          </div>
+        </div>
+
+        <div class="detail-card"><div class="detail-title">Contact</div>
+          <div class="info-row"><span class="info-label">Téléphone</span><span class="info-value">07 08 45 12 30</span></div>
+          <div class="info-row"><span class="info-label">Adresse</span><span class="info-value">Yopougon, Millionnaire</span></div>
+          <div class="info-row"><span class="info-label">Contact urgence</span><span class="info-value">Mariam Diallo · 07 00 11 22 33</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">Profil</div>
+          <div class="info-row"><span class="info-label">Situation</span><span class="info-value">Célibataire</span></div>
+          <div class="info-row"><span class="info-label">Études</span><span class="info-value">BEPC</span></div>
+          <div class="info-row"><span class="info-label">Salaire souhaité</span><span class="info-value">150 000 FCFA</span></div>
+          <div class="info-row"><span class="info-label">Expérience</span><span class="info-value">3 ans nounou</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">Contrat en cours</div>
+          <div class="info-row"><span class="info-label">Employeur</span><span class="info-value">Entreprise CIE</span></div>
+          <div class="info-row"><span class="info-label">Salaire</span><span class="info-value">180 000 FCFA</span></div>
+          <div class="info-row"><span class="info-label">Fin de contrat</span><span class="info-value" style="color:var(--rose)">Dans 3 jours</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">📎 Documents associés</div>
+          <div class="doc-row-item"><div class="doc-thumb">🪪</div><div style="flex:1"><div style="font-size:14px;font-weight:700">Carte d'identité</div><div style="font-size:12px;color:var(--success);font-weight:600">Photo ajoutée · 01/08/2026</div></div><button class="doc-remove" onclick="toast('Voir la photo')">👁</button></div>
+          <div class="doc-row-item"><div class="doc-thumb">📄</div><div style="flex:1"><div style="font-size:14px;font-weight:700">CV</div><div style="font-size:12px;color:var(--success);font-weight:600">Photo ajoutée · 01/08/2026</div></div><button class="doc-remove" onclick="toast('Voir la photo')">👁</button></div>
+          <button class="btn btn-secondary btn-sm mt-8" style="width:100%" onclick="openDocSheet()">+ Ajouter un document</button>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="go('scr-fiche-a4',true)">📋 Fiche A4</button>
+          <button class="btn btn-success" onclick="go('scr-contrat-doc',true)">📄 Contrat</button>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ EMPLOYEURS (liste) ═══════════ -->
+    <section class="screen" id="scr-employeurs">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dashboard',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Employeurs</div><div class="hdr-sub">12 entreprises clientes</div></div>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="search" style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Nom, contact, téléphone..."></div>
+        <div class="chips">
+          <div class="chip active" onclick="chip(this)"><span class="dot" style="background:var(--primary)"></span>Tous · 12</div>
+          <div class="chip" onclick="chip(this)"><span class="dot" style="background:var(--info)"></span>Particuliers · 7</div>
+          <div class="chip" onclick="chip(this)"><span class="dot" style="background:var(--success)"></span>Entreprises · 3</div>
+          <div class="chip" onclick="chip(this)"><span class="dot" style="background:var(--warning)"></span>Commerces · 2</div>
+        </div>
+        <div class="row" onclick="go('scr-employeur-detail',false)">
+          <div class="avatar av-info">CI</div>
+          <div class="row-info"><div class="row-name">Compagnie Ivoirienne d'Électricité</div><div class="row-meta">Entreprise · Plateau · 27 20 20 20</div></div>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employeur-detail',false)">
+          <div class="avatar av-violet">HI</div>
+          <div class="row-info"><div class="row-name">Hôtel Ivoire</div><div class="row-meta">Entreprise · Cocody · 22 44 44 44</div></div>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employeur-detail',false)">
+          <div class="avatar av-warning">SD</div>
+          <div class="row-info"><div class="row-name">M. Soro Drissa</div><div class="row-meta">Particulier · Yopougon · 07 12 12 12 12</div></div>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employeur-detail',false)">
+          <div class="avatar av-primary">MM</div>
+          <div class="row-info"><div class="row-name">Mme Mariam Koné</div><div class="row-meta">Particulier · Marcory · 05 33 33 33 33</div></div>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-employeur-detail',false)">
+          <div class="avatar av-success">SM</div>
+          <div class="row-info"><div class="row-name">Supermarché Le Marché</div><div class="row-meta">Commerce · Treichville · 21 55 55 55</div></div>
+          <span class="row-chev">›</span>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+      <button class="fab" onclick="go('scr-employeur-form',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    </section>
+
+    <!-- ═══════════ EMPLOYEUR FORM ═══════════ -->
+    <section class="screen" id="scr-employeur-form">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-employeurs',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Nouvel employeur</div><div class="hdr-sub">Entreprise ou particulier</div></div>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="field"><label>Type</label>
+          <div class="radio-row">
+            <div class="radio active" onclick="radio(this)">Particulier</div>
+            <div class="radio" onclick="radio(this)">Entreprise</div>
+            <div class="radio" onclick="radio(this)">Commerce</div>
+            <div class="radio" onclick="radio(this)">Organisation</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field full"><label>Nom complet / Raison sociale</label><input class="input" placeholder="Compagnie Ivoirienne d'Électricité"></div>
+          <div class="field"><label>Contact</label><input class="input" placeholder="M. Jean Kouassi"></div>
+          <div class="field"><label>Téléphone</label><input class="input" placeholder="27 20 20 20 20"></div>
+          <div class="field"><label>Email</label><input class="input" placeholder="contact@cie.ci"></div>
+          <div class="field"><label>Ville</label><input class="input" value="Abidjan"></div>
+          <div class="field full"><label>Adresse / Quartier</label><input class="input" placeholder="Plateau, Avenue de la République"></div>
+        </div>
+        <button class="btn btn-success" onclick="toast('Employeur enregistré ✓')">Enregistrer</button>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ EMPLOYEUR DÉTAIL ═══════════ -->
+    <section class="screen" id="scr-employeur-detail">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-employeurs',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Compagnie Ivoirienne d'Électricité</div><div class="hdr-sub">Entreprise · Plateau</div></div>
+          <button class="hdr-action" onclick="toast('Modifier')">✏️</button>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="detail-card"><div class="detail-title">Coordonnées</div>
+          <div class="info-row"><span class="info-label">Contact</span><span class="info-value">M. Jean Kouassi</span></div>
+          <div class="info-row"><span class="info-label">Téléphone</span><span class="info-value">27 20 20 20 20</span></div>
+          <div class="info-row"><span class="info-label">Email</span><span class="info-value">contact@cie.ci</span></div>
+          <div class="info-row"><span class="info-label">Adresse</span><span class="info-value">Plateau, Av. de la République</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">Activité</div>
+          <div class="info-row"><span class="info-label">Contrats en cours</span><span class="info-value">3</span></div>
+          <div class="info-row"><span class="info-label">Personnel placé</span><span class="info-value">5</span></div>
+          <div class="info-row"><span class="info-label">Dernier placement</span><span class="info-value">Aminata Diallo · Nounou</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">Demandes récentes</div>
+          <div class="info-row"><span class="info-label">12/07</span><span class="info-value">Nounou logée · 150 000 F</span></div>
+          <div class="info-row"><span class="info-label">28/06</span><span class="info-value">Chauffeur · 200 000 F</span></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="toast('Nouvelle demande — à implémenter')">+ Demande</button>
+          <button class="btn btn-secondary" onclick="go('scr-contrat-doc',true)">📄 Nouveau contrat</button>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ CONTRATS (liste) ═══════════ -->
+    <section class="screen" id="scr-contrats">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dashboard',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Contrats</div><div class="hdr-sub">18 contrats · 15 en cours</div></div>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="search" style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="N° dossier, employé, employeur..."></div>
+        <div class="chips">
+          <div class="chip active" onclick="chip(this)"><span class="dot" style="background:var(--primary)"></span>Tous · 18</div>
+          <div class="chip" onclick="chip(this)"><span class="dot" style="background:var(--success)"></span>En cours · 15</div>
+          <div class="chip" onclick="chip(this)"><span class="dot" style="background:var(--warning)"></span>Terminés · 3</div>
+        </div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-info" style="border-radius:14px">📄</div>
+          <div class="row-info"><div class="row-name">CHR-2026-A1B2</div><div class="row-meta">Aminata Diallo → Entreprise CIE</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">En cours</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-info" style="border-radius:14px">📄</div>
+          <div class="row-info"><div class="row-name">CHR-2026-A1C3</div><div class="row-meta">Koffi Kouamé → Hôtel Ivoire</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">En cours</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-info" style="border-radius:14px">📄</div>
+          <div class="row-info"><div class="row-name">CHR-2026-B4D1</div><div class="row-meta">Mariam Touré → Mme Mariam Koné</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">En cours</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-info" style="border-radius:14px">📄</div>
+          <div class="row-info"><div class="row-name">CHR-2026-B5E2</div><div class="row-meta">Fatou Bamba → Supermarché Le Marché</div></div>
+          <span class="pill" style="background:var(--warning-dim);color:var(--warning)">Terminé</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-info" style="border-radius:14px">📄</div>
+          <div class="row-info"><div class="row-name">CHR-2026-C2F4</div><div class="row-meta">Sékou Guédé → M. Soro Drissa</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">En cours</span>
+          <span class="row-chev">›</span>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+      <button class="fab" onclick="go('scr-contrat-doc',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    </section>
+
+    <!-- ═══════════ CONTRAT DÉTAIL ═══════════ -->
+    <section class="screen" id="scr-contrat-detail">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-contrats',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">CHR-2026-A1B2</div><div class="hdr-sub">Contrat de placement</div></div>
+          <button class="hdr-action" onclick="go('scr-contrat-doc',true)">🖨️</button>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="detail-card"><div class="detail-title">Contrat</div>
+          <div class="info-row"><span class="info-label">N° dossier</span><span class="info-value">CHR-2026-A1B2</span></div>
+          <div class="info-row"><span class="info-label">Type</span><span class="info-value">Hébergé sur place</span></div>
+          <div class="info-row"><span class="info-label">Début</span><span class="info-value">01/08/2026</span></div>
+          <div class="info-row"><span class="info-label">Fin</span><span class="info-value" style="color:var(--rose)">04/08/2026 (J-3)</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">Employé</div>
+          <div class="info-row"><span class="info-label">Nom</span><span class="info-value">Aminata Diallo</span></div>
+          <div class="info-row"><span class="info-label">Poste</span><span class="info-value">Nounou</span></div>
+          <div class="info-row"><span class="info-label">Salaire</span><span class="info-value">180 000 FCFA</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">Employeur</div>
+          <div class="info-row"><span class="info-label">Nom</span><span class="info-value">Entreprise CIE</span></div>
+          <div class="info-row"><span class="info-label">Contact</span><span class="info-value">M. Jean Kouassi</span></div>
+          <div class="info-row"><span class="info-label">Téléphone</span><span class="info-value">27 20 20 20 20</span></div>
+        </div>
+        <div class="detail-card"><div class="detail-title">Commission</div>
+          <div class="info-row"><span class="info-label">Commission agence</span><span class="info-value">60 000 FCFA (⅓ salaire)</span></div>
+          <div class="info-row"><span class="info-label">Commission fixe</span><span class="info-value">15 000 FCFA</span></div>
+          <div class="info-row"><span class="info-label">Frais transport</span><span class="info-value">5 000 FCFA</span></div>
+          <div class="info-row"><span class="info-label">Prélèvement</span><span class="info-value">31/08/2026</span></div>
+          <div class="info-row"><span class="info-label">Statut</span><span class="info-value" style="color:var(--warning)">À percevoir</span></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-success" onclick="toast('Commission marquée payée ✓')">💰 Marquer perçue</button>
+          <button class="btn btn-secondary" onclick="toast('Prolongation — à implémenter')">Prolonger</button>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ CONTRAT DOCUMENT A4 ═══════════ -->
+    <section class="screen" id="scr-contrat-doc">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-contrats',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Contrat de placement</div><div class="hdr-sub">Document A4 · 2 pages</div></div>
+        </div>
+      </header>
+      <div class="scroll" style="background:#efe6da">
+        <div class="card" style="margin-bottom:14px;cursor:default">
+          <div class="field" style="margin-bottom:10px"><label>Employé</label>
+            <div style="display:flex;gap:8px"><input class="input" value="Aminata Diallo" readonly style="flex:1"><button class="btn btn-secondary btn-sm" onclick="toast('Sélection employé')">Choisir</button></div>
+          </div>
+          <div class="field" style="margin-bottom:4px"><label>Employeur</label>
+            <div style="display:flex;gap:8px"><input class="input" value="Entreprise CIE" readonly style="flex:1"><button class="btn btn-secondary btn-sm" onclick="toast('Sélection employeur')">Choisir</button></div>
+          </div>
+        </div>
+
+        <div class="doc-sheet">
+          <h1>CHRISROI AGENCE</h1>
+          <p class="doc-slogan">Agence de Placement de Personnel · Abidjan · ☎ 07 07 07 07 07</p>
+          <p class="doc-num">CONTRAT DE PLACEMENT — N° CHR-2026-A1B2</p>
+          <div class="doc-block"><h3>Page 1 · Employé</h3>
+            <div class="doc-row"><span class="k">Nom &amp; prénom</span><span class="v">DIALLO Aminata</span></div>
+            <div class="doc-row"><span class="k">Date de naissance</span><span class="v">12/03/1998</span></div>
+            <div class="doc-row"><span class="k">Nationalité</span><span class="v">Ivoirienne</span></div>
+            <div class="doc-row"><span class="k">Poste</span><span class="v">Nounou</span></div>
+            <div class="doc-row"><span class="k">Salaire mensuel</span><span class="v">180 000 FCFA</span></div>
+            <div class="doc-row"><span class="k">Date de début</span><span class="v">01/08/2026</span></div>
+          </div>
+          <div class="doc-block"><h3>Type de contrat</h3>
+            <div class="doc-row"><span class="k">Type</span><span class="v">Hébergé sur place</span></div>
+            <div class="doc-row"><span class="k">Durée</span><span class="v">3 mois</span></div>
+          </div>
+          <div class="doc-sign">
+            <div class="doc-sign-box"><div style="height:30px"></div><div class="doc-sign-line">Signature de l'employé(e)</div></div>
+            <div class="doc-sign-box"><div style="height:30px"></div><div class="doc-sign-line">Signature de l'agence</div></div>
+          </div>
+        </div>
+
+        <div class="doc-sheet">
+          <h1>CHRISROI AGENCE</h1>
+          <p class="doc-slogan">Agence de Placement de Personnel · Abidjan · ☎ 07 07 07 07 07</p>
+          <p class="doc-num">CONTRAT DE PLACEMENT — N° CHR-2026-A1B2 · Page 2</p>
+          <div class="doc-block"><h3>Page 2 · Employeur &amp; commission</h3>
+            <div class="doc-row"><span class="k">Employeur</span><span class="v">Entreprise CIE</span></div>
+            <div class="doc-row"><span class="k">Adresse</span><span class="v">Plateau, Av. de la République</span></div>
+            <div class="doc-row"><span class="k">Téléphone</span><span class="v">27 20 20 20 20</span></div>
+          </div>
+          <div class="doc-block"><h3>Commission de l'agence</h3>
+            <div class="doc-row"><span class="k">Tiers (⅓) du 1ᵉʳ salaire</span><span class="v">60 000 FCFA</span></div>
+            <div class="doc-row"><span class="k">Commission fixe</span><span class="v">15 000 FCFA</span></div>
+            <div class="doc-row"><span class="k">Frais de transport</span><span class="v">5 000 FCFA</span></div>
+            <div class="doc-row"><span class="k">Total à prélever</span><span class="v" style="font-weight:800">80 000 FCFA</span></div>
+            <div class="doc-row"><span class="k">Date de prélèvement</span><span class="v">31/08/2026</span></div>
+          </div>
+          <div class="doc-sign">
+            <div class="doc-sign-box"><div style="height:30px"></div><div class="doc-sign-line">Signature de l'employeur</div></div>
+            <div class="doc-sign-box"><div style="height:30px"></div><div class="doc-sign-line">Cachet de l'agence</div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="toast('Enregistré ✓')">Enregistrer</button>
+          <button class="btn btn-primary" onclick="toast('Impression — aperçu papier')">Imprimer</button>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ SUIVI COMMISSIONS ═══════════ -->
+    <section class="screen" id="scr-suivi">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dashboard',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Suivi commissions</div><div class="hdr-sub">Août 2026</div></div>
+          <button class="hdr-action" onclick="toast('Mois précédent / suivant')">🗓️</button>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="cal-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;font-weight:700">Semaine du 27/07</span>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-secondary btn-sm" onclick="toast('Semaine précédente')">‹</button>
+              <button class="btn btn-secondary btn-sm" onclick="toast('Semaine suivante')">›</button>
+            </div>
+          </div>
+          <div class="week">
+            <div class="day"><span class="day-name">Lun</span><span class="day-num">27</span><span class="day-dots"></span></div>
+            <div class="day"><span class="day-name">Mar</span><span class="day-num">28</span><span class="day-dots"><span class="dot-e"></span></span></div>
+            <div class="day"><span class="day-name">Mer</span><span class="day-num">29</span><span class="day-dots"><span class="dot-c"></span></span></div>
+            <div class="day"><span class="day-name">Jeu</span><span class="day-num">30</span><span class="day-dots"><span class="dot-p"></span></span></div>
+            <div class="day"><span class="day-name">Ven</span><span class="day-num">31</span><span class="day-dots"><span class="dot-e"></span><span class="dot-f"></span></span></div>
+            <div class="day today"><span class="day-name">Sam</span><span class="day-num">01</span><span class="day-dots"></span></div>
+            <div class="day"><span class="day-name">Dim</span><span class="day-num">02</span><span class="day-dots"></span></div>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:12px;font-size:10.5px;color:var(--text-muted)">
+            <span style="display:flex;align-items:center;gap:5px"><span class="dot-e"></span>Inscription</span>
+            <span style="display:flex;align-items:center;gap:5px"><span class="dot-c"></span>Contrat</span>
+            <span style="display:flex;align-items:center;gap:5px"><span class="dot-p"></span>Commission</span>
+            <span style="display:flex;align-items:center;gap:5px"><span class="dot-f"></span>Fin contrat</span>
+          </div>
+        </div>
+
+        <div class="section-header"><h2 class="section-title">💰 Commissions à percevoir</h2><span class="section-link">3 en attente</span></div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-warning">KK</div>
+          <div class="row-info"><div class="row-name">Koffi Kouamé</div><div class="row-meta">Hôtel Ivoire · échéance 15/08</div></div>
+          <span style="font-size:14px;font-weight:800;color:var(--warning)">250 000 F</span>
+        </div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-warning">FB</div>
+          <div class="row-info"><div class="row-name">Fatou Bamba</div><div class="row-meta">Supermarché Le Marché · échéance 20/08</div></div>
+          <span style="font-size:14px;font-weight:800;color:var(--warning)">1 500 000 F</span>
+        </div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-warning">SG</div>
+          <div class="row-info"><div class="row-name">Sékou Guédé</div><div class="row-meta">M. Soro Drissa · échéance 25/08</div></div>
+          <span style="font-size:14px;font-weight:800;color:var(--warning)">100 000 F</span>
+        </div>
+
+        <div class="section-header"><h2 class="section-title">✅ Perçues récemment</h2></div>
+        <div class="row">
+          <div class="avatar av-success">AD</div>
+          <div class="row-info"><div class="row-name">Aminata Diallo</div><div class="row-meta">Entreprise CIE · perçue le 01/08</div></div>
+          <span style="font-size:14px;font-weight:800;color:var(--success)">60 000 F</span>
+        </div>
+        <div class="row">
+          <div class="avatar av-success">MT</div>
+          <div class="row-info"><div class="row-name">Mariam Touré</div><div class="row-meta">Mme Mariam Koné · perçue le 28/07</div></div>
+          <span style="font-size:14px;font-weight:800;color:var(--success)">50 000 F</span>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ RECHERCHE GLOBALE ═══════════ -->
+    <section class="screen" id="scr-recherche">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dossiers',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Recherche globale</div><div class="hdr-sub">Dossiers, employeurs, contrats</div></div>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="search" style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Rechercher partout..." autofocus></div>
+        <div class="section-header"><h2 class="section-title">👥 Candidats (3)</h2></div>
+        <div class="row" onclick="go('scr-employe-detail',false)">
+          <div class="avatar av-primary">AD</div>
+          <div class="row-info"><div class="row-name">Aminata Diallo</div><div class="row-meta">Nounou · Yopougon</div></div>
+          <span class="pill" style="background:var(--info-dim);color:var(--info)">En poste</span>
+        </div>
+        <div class="section-header"><h2 class="section-title">🏢 Employeurs (1)</h2></div>
+        <div class="row" onclick="go('scr-employeur-detail',false)">
+          <div class="avatar av-info">CI</div>
+          <div class="row-info"><div class="row-name">Compagnie Ivoirienne d'Électricité</div><div class="row-meta">Plateau</div></div>
+        </div>
+        <div class="section-header"><h2 class="section-title">📄 Contrats (2)</h2></div>
+        <div class="row" onclick="go('scr-contrat-detail',false)">
+          <div class="avatar av-info" style="border-radius:14px">📄</div>
+          <div class="row-info"><div class="row-name">CHR-2026-A1B2</div><div class="row-meta">Aminata Diallo → Entreprise CIE</div></div>
+          <span class="pill" style="background:var(--success-dim);color:var(--success)">En cours</span>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ SCANNER ═══════════ -->
+    <section class="screen" id="scr-scanner">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-dashboard',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Scanner un document</div><div class="hdr-sub">Extraction IA (Gemini)</div></div>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="field" style="margin-top:6px"><label>Type de document</label>
+          <div class="scan-choice">
+            <div class="card card-primary active" onclick="scanChoice(this)"><div style="font-size:30px;margin-bottom:6px">📋</div><div style="font-size:13px;font-weight:700">Fiche d'inscription</div></div>
+            <div class="card card-success" onclick="scanChoice(this)"><div style="font-size:30px;margin-bottom:6px">📄</div><div style="font-size:13px;font-weight:700">Contrat</div></div>
+          </div>
+        </div>
+        <div class="scan-zone">
+          <div class="big">📸</div>
+          <p style="font-size:14.5px;font-weight:700;margin-bottom:6px">Prendre une photo du document</p>
+          <p class="dim" style="font-size:12.5px">Cadrez bien le document · lumière naturelle</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="scanning(this)">📷 Prendre une photo</button>
+          <button class="btn btn-secondary" onclick="toast('Galerie')">🖼️ Galerie</button>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ RÉSULTAT SCAN ═══════════ -->
+    <section class="screen" id="scr-scan-result">
+      <header class="hdr">
+        <div class="hdr-row">
+          <button class="hdr-back" onclick="go('scr-scanner',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div style="flex:1"><div class="hdr-title">Résultat du scan</div><div class="hdr-sub">Vérifiez puis validez</div></div>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="card card-success" style="cursor:default">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:42px;height:42px;border-radius:13px;background:var(--success-dim);display:flex;align-items:center;justify-content:center;font-size:20px">✨</div>
+            <div><div style="font-size:14px;font-weight:700">6 champs extraits par l'IA</div><div class="dim" style="font-size:12px">Vérifiez avant de créer</div></div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Prénom</label><input class="input" value="Aminata"></div>
+          <div class="field"><label>Nom</label><input class="input" value="Diallo"></div>
+          <div class="field"><label>Date de naissance</label><input class="input" value="12/03/1998"></div>
+          <div class="field"><label>Téléphone</label><input class="input" value="07 08 45 12 30"></div>
+          <div class="field full"><label>Poste</label><input class="input" value="Nounou"></div>
+          <div class="field full"><label>Employeur</label><input class="input" value="Entreprise CIE"></div>
+        </div>
+        <div class="detail-card" style="border-left:4px solid var(--warning)">
+          <div class="info-row"><span class="info-label">Employeur existant ?</span><span class="info-value" style="color:var(--warning)">« Entreprise CIE » trouvé — sera réutilisé</span></div>
+        </div>
+        <button class="btn btn-success" onclick="toast('Candidat créé ✓ (scan enregistré)')">Créer le document</button>
+        <div style="height:20px"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ TAB BAR ═══════════ -->
+    <nav class="tabbar" id="tabbar">
+      <button class="tab" data-tab="scr-dashboard" onclick="go('scr-dashboard',true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Aujourd'hui</span></button>
+      <button class="tab" data-tab="scr-dossiers" onclick="go('scr-dossiers',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span>Dossiers</span></button>
+      <button class="tab" data-tab="scr-employeurs" onclick="go('scr-employeurs',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4"/></svg><span>Employeurs</span></button>
+      <button class="tab" data-tab="scr-contrats" onclick="go('scr-contrats',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Contrats</span></button>
+      <button class="tab" data-tab="scr-suivi" onclick="go('scr-suivi',false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg><span>Commissions</span></button>
+    </nav>
+
+    <!-- ═══════════ MODALES ═══════════ -->
+    <div class="overlay" id="sheet-alertes" onclick="closeSheets(event)">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h3 class="sheet-title">🔔 Alertes</h3>
+        <div class="al-item">
+          <div class="al-icon" style="background:var(--rose-dim)">⏰</div>
+          <div class="al-text"><div class="al-title">Contrat d'Aminata Diallo se termine dans 3 jours</div><div class="al-time">Aujourd'hui · 08:00</div></div>
+          <span class="al-dot"></span>
+        </div>
+        <div class="al-item">
+          <div class="al-icon" style="background:var(--warning-dim)">💰</div>
+          <div class="al-text"><div class="al-title">Commission Koffi Kouamé à percevoir le 15/08</div><div class="al-time">Hier · 17:30</div></div>
+          <span class="al-dot"></span>
+        </div>
+        <div class="al-item">
+          <div class="al-icon" style="background:var(--success-dim)">✅</div>
+          <div class="al-text"><div class="al-title">Commission Aminata Diallo perçue</div><div class="al-time">01/08 · 09:15</div></div>
+        </div>
+        <div class="al-item">
+          <div class="al-icon" style="background:var(--info-dim)">📋</div>
+          <div class="al-text"><div class="al-title">Nouvelle fiche créée : Fatou Bamba</div><div class="al-time">31/07 · 14:02</div></div>
+        </div>
+        <button class="btn btn-secondary mt-12" onclick="toast('Toutes les alertes marquées lues')">Tout marquer comme lu</button>
+        <div style="height:10px"></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="sheet-settings" onclick="closeSheets(event)">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h3 class="sheet-title">⚙️ Paramètres</h3>
+        <div class="set-item" onclick="toast('Profil — à implémenter')"><div class="set-icon" style="background:var(--primary-dim)">👤</div><span class="set-label">Compte</span><span class="set-chev">›</span></div>
+        <div class="set-item" onclick="toast('Serveur : http://192.168.1.6:8090')"><div class="set-icon" style="background:var(--info-dim)">🖥️</div><span class="set-label">Serveur PocketBase</span><span class="set-chev">›</span></div>
+        <div class="set-item" onclick="toast('Clé API Gemini — à configurer')"><div class="set-icon" style="background:var(--warning-dim)">✨</div><span class="set-label">Scanner IA (Gemini)</span><span class="set-chev">›</span></div>
+        <div class="set-item" onclick="toast('Notifications — à implémenter')"><div class="set-icon" style="background:var(--success-dim)">🔔</div><span class="set-label">Notifications</span><span class="set-chev">›</span></div>
+        <div class="set-item" onclick="toast('Sauvegarde — à implémenter')"><div class="set-icon" style="background:var(--violet-dim)">💾</div><span class="set-label">Sauvegarde</span><span class="set-chev">›</span></div>
+        <div class="set-item" onclick="toast('ChrisRoi Agence v2.0 — maquette')"><div class="set-icon" style="background:var(--rose-dim)">ℹ️</div><span class="set-label">À propos</span><span class="set-chev">›</span></div>
+        <button class="btn btn-danger mt-12" onclick="go('scr-login',false);closeSheets()">Se déconnecter</button>
+        <div style="height:10px"></div>
+      </div>
+    </div>
+
+    <div class="center-modal" id="pop-dossiers" onclick="closePopup(event)">
+      <div class="popup">
+        <h3 style="font-size:18px;font-weight:700;text-align:center;margin-bottom:16px">Dossiers</h3>
+        <div class="popup-item" onclick="closePopup();go('scr-dossiers',false)"><div class="popup-icon" style="background:var(--primary-dim)">📋</div><div><div class="popup-label">Fiches</div><div class="popup-count">24 fiches</div></div></div>
+        <div class="popup-divider"></div>
+        <div class="popup-item" onclick="closePopup();go('scr-employeurs',false)"><div class="popup-icon" style="background:var(--warning-dim)">🏢</div><div><div class="popup-label">Employeurs</div><div class="popup-count">12 employeurs</div></div></div>
+        <div class="popup-divider"></div>
+        <div class="popup-item" onclick="closePopup();go('scr-contrats',false)"><div class="popup-icon" style="background:var(--success-dim)">📄</div><div><div class="popup-label">Contrats</div><div class="popup-count">18 contrats</div></div></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ MODALE : AJOUTER UN DOCUMENT ═══════════ -->
+    <div class="overlay" id="sheet-doc-add" onclick="closeSheets(event)">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <!-- Étape 1 : choix du type -->
+        <div id="doc-step1">
+          <h3 class="sheet-title">📎 Ajouter un document</h3>
+          <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-bottom:16px">De quoi s'agit-il ?</p>
+          <div class="doc-grid">
+            <div class="doc-type" onclick="docPick(this,'Carte d\u2019identité','🪪')"><span class="dt-ico">🪪</span>Carte d'identité</div>
+            <div class="doc-type" onclick="docPick(this,'Carte d\u2019identité d\u2019un parent','👪')"><span class="dt-ico">👪</span>CNI d'un parent</div>
+            <div class="doc-type" onclick="docPick(this,'Extrait de naissance','👶')"><span class="dt-ico">👶</span>Extrait de naissance</div>
+            <div class="doc-type" onclick="docPick(this,'Permis de conduire','🚗')"><span class="dt-ico">🚗</span>Permis de conduire</div>
+            <div class="doc-type" onclick="docPick(this,'Passeport','🛂')"><span class="dt-ico">🛂</span>Passeport</div>
+            <div class="doc-type" onclick="docPick(this,'CV','📄')"><span class="dt-ico">📄</span>CV</div>
+          </div>
+        </div>
+        <!-- Étape 2 : photo -->
+        <div id="doc-step2" style="display:none">
+          <h3 class="sheet-title">📷 Photo du document</h3>
+          <p id="doc-type-label" style="text-align:center;font-size:14px;font-weight:700;color:var(--primary);margin-bottom:14px"></p>
+          <div class="scan-zone" style="padding:36px 20px">
+            <div class="big" id="doc-photo-icon" style="font-size:46px">🪪</div>
+            <p style="font-size:14px;font-weight:700;margin-bottom:6px">Cadrez bien le document</p>
+            <p class="dim" style="font-size:12.5px">Bonne lumière · à plat · lisible</p>
+          </div>
+          <button class="btn btn-primary" onclick="docCapture()">📷 Prendre la photo</button>
+          <button class="btn btn-secondary mt-8" onclick="docBack()">‹ Changer de type</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script>
+// ─── Router simple ───
+const TAB_SCREENS = ['scr-dashboard','scr-dossiers','scr-employeurs','scr-contrats','scr-suivi'];
+let current = 'scr-login';
+
+function go(id, tab){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const tb = document.getElementById('tabbar');
+  tb.classList.toggle('show', TAB_SCREENS.includes(id));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+  document.querySelectorAll('.overlay,.center-modal').forEach(m => m.classList.remove('active'));
+  document.getElementById(id).querySelector('.scroll')?.scrollTo?.(0,0);
+  current = id;
+}
+function openSheet(id){ document.getElementById(id).classList.add('active'); }
+function closeSheets(e){ if(!e || e.target.classList.contains('overlay')) document.querySelectorAll('.overlay').forEach(m=>m.classList.remove('active')); }
+function openPopup(id){ document.getElementById(id).classList.add('active'); }
+function closePopup(e){ if(!e || e.target.classList.contains('center-modal')) document.querySelectorAll('.center-modal').forEach(m=>m.classList.remove('active')); }
+function chip(el){ el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); }
+function tab(el){ el.parentElement.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
+function radio(el){ el.parentElement.querySelectorAll('.radio').forEach(r=>r.classList.remove('active')); el.classList.add('active'); }
+function scanChoice(el){ el.parentElement.querySelectorAll('.card').forEach(c=>c.classList.remove('active')); el.classList.add('active'); }
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function scanning(btn){
+  btn.textContent = 'Analyse en cours…';
+  setTimeout(()=>{ btn.textContent = '📷 Prendre une photo'; go('scr-scan-result',true); }, 1400);
+}
+// ─── Documents associés ───
+let docPickType = '', docPickIcon = '', docCount = 0;
+function openDocSheet(){
+  document.getElementById('doc-step1').style.display = 'block';
+  document.getElementById('doc-step2').style.display = 'none';
+  openSheet('sheet-doc-add');
+}
+function docPick(el, type, icon){
+  docPickType = type; docPickIcon = icon;
+  document.getElementById('doc-step1').style.display = 'none';
+  document.getElementById('doc-step2').style.display = 'block';
+  document.getElementById('doc-type-label').textContent = type;
+  document.getElementById('doc-photo-icon').textContent = icon;
+}
+function docBack(){
+  document.getElementById('doc-step1').style.display = 'block';
+  document.getElementById('doc-step2').style.display = 'none';
+}
+function docCapture(){
+  docCount++;
+  const empty = document.getElementById('doc-empty'); if(empty) empty.style.display = 'none';
+  const row = document.createElement('div');
+  row.className = 'doc-row-item';
+  row.innerHTML = '<div class="doc-thumb">' + docPickIcon + '</div><div style="flex:1"><div style="font-size:14px;font-weight:700">' + docPickType + '</div><div style="font-size:12px;color:var(--success);font-weight:600">Photo ajoutée ✓</div></div><button class="doc-remove" onclick="docRemove(this)" title="Retirer">✕</button>';
+  document.getElementById('doc-list').appendChild(row);
+  document.getElementById('doc-count').textContent = docCount + (docCount > 1 ? ' documents' : ' document');
+  closeSheets();
+  toast('Document ajouté ✓');
+}
+function docRemove(btn){
+  btn.closest('.doc-row-item').remove();
+  docCount--;
+  document.getElementById('doc-count').textContent = docCount + (docCount > 1 ? ' documents' : ' document');
+  if(docCount === 0) document.getElementById('doc-empty').style.display = 'block';
+}
+</script>
+</body>
+</html>

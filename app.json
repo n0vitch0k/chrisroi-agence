@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "ChrisRoi Agence",
+    "slug": "chrisroi-agence-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d0a09"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chrisroi.agence",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Cette app utilise l'appareil photo pour scanner les fiches d'inscription et les contrats.",
+        "NSPhotoLibraryUsageDescription": "Cette app accède à la galerie pour choisir un document à analyser.",
+        "NSPhotoLibraryAddUsageDescription": "Cette app enregistre les documents scannés dans votre galerie."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#0d0a09"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.chrisroi.agence",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-image-picker",
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "be00e727-aaea-4a45-b61f-cb9a5dbc0b11"
+      },
+      "pocketbaseUrl": "http://127.0.0.1:8090"
+    },
+    "owner": "novitchoks-organization"
+  }
+}

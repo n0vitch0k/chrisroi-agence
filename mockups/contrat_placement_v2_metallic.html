@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChrisRoi Agence — Contrat Placement V2 (Metallic Dark)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+body { background: #0a0f1a; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+.phone { width: 390px; min-height: 844px; background: linear-gradient(180deg, #0f172a 0%, #11192e 100%); border-radius: 42px; box-shadow: 0 0 0 1px rgba(0,212,255,0.08), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(0,212,255,0.05); overflow: hidden; position: relative; display: flex; flex-direction: column; border: 14px solid #020617; }
+.phone::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); opacity: 0.04; pointer-events: none; z-index: 100; border-radius: 28px; }
+.status-bar { height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 13px; font-weight: 600; color: #64748b; flex-shrink: 0; z-index: 10; position: relative; }
+
+/* HEADER */
+.header { padding: 14px 20px 10px; background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,212,255,0.08); position: sticky; top: 0; z-index: 10; flex-shrink: 0; }
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(145deg, #0f1a2e 0%, #1e3a5f 100%); border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #00d4ff; box-shadow: inset 0 1px 0 rgba(0,212,255,0.1), 0 2px 8px rgba(0,0,0,0.3); }
+.brand-text { font-size: 17px; font-weight: 700; color: #f1f5f9; }
+.header-title { font-size: 15px; font-weight: 600; color: #94a3b8; }
+
+/* TABS */
+.tabs { display: flex; background: #0f172a; border: 1px solid rgba(0,212,255,0.1); border-radius: 12px; padding: 4px; margin: 0 16px 16px; }
+.tab { flex: 1; padding: 10px 12px; text-align: center; font-size: 13px; font-weight: 600; color: #64748b; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.tab.active { background: linear-gradient(135deg, rgba(0,212,255,0.2) 0%, rgba(16,185,129,0.2) 100%); color: #00d4ff; box-shadow: inset 0 1px 0 rgba(0,212,255,0.1); }
+
+/* CONTENT */
+.content { flex: 1; overflow-y: auto; padding: 0 16px 100px; min-height: 0; }
+.section { margin-bottom: 24px; }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid rgba(0,212,255,0.1); }
+.section-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: rgba(0,212,255,0.15); color: #00d4ff; }
+.section-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+.section-subtitle { font-size: 12px; color: #64748b; margin-left: auto; }
+
+/* CARD */
+.card { background: #11192e; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,212,255,0.03); }
+
+/* FIELDS */
+.field-group { margin-bottom: 16px; }
+.field-row { display: flex; gap: 12px; }
+.field-group.half { flex: 1; }
+.field-label { display: block; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.field-input { width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 14px 16px; font-size: 15px; color: #f1f5f9; transition: all 0.2s; }
+.field-input:focus { outline: none; border-color: #00d4ff; box-shadow: 0 0 0 3px rgba(0,212,255,0.15); }
+.field-input::placeholder { color: #475569; }
+.field-hint { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+/* SELECT */
+.select-wrapper { position: relative; }
+.select-trigger { width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 14px 16px; font-size: 15px; color: #f1f5f9; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+.select-trigger.open { border-color: #00d4ff; box-shadow: 0 0 0 3px rgba(0,212,255,0.15); }
+.select-arrow { color: #64748b; font-size: 14px; transition: transform 0.2s; }
+.select-trigger.open .select-arrow { transform: rotate(180deg); }
+.select-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #11192e; border: 1px solid rgba(0,212,255,0.15); border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,212,255,0.1); z-index: 50; overflow: hidden; display: none; }
+.select-dropdown.open { display: block; }
+.select-option { padding: 14px 16px; font-size: 14px; color: #e2e8f0; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid #1e293b; }
+.select-option:last-child { border-bottom: none; }
+.select-option:hover { background: rgba(0,212,255,0.1); color: #00d4ff; }
+.select-option.selected { background: rgba(0,212,255,0.15); color: #00d4ff; }
+
+/* RADIO */
+.radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio-btn { flex: 1; min-width: 80px; padding: 12px 16px; text-align: center; font-size: 13px; font-weight: 600; color: #94a3b8; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+.radio-btn.active { background: linear-gradient(135deg, rgba(0,212,255,0.2) 0%, rgba(16,185,129,0.2) 100%); border-color: #00d4ff; color: #00d4ff; }
+
+/* CHECKBOX */
+.checkbox-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; }
+.checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #334155; background: #0f172a; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.checkbox.checked { background: linear-gradient(135deg, #00d4ff 0%, #10b981 100%); border-color: transparent; }
+.checkbox-label { font-size: 14px; color: #e2e8f0; font-weight: 500; }
+
+/* EMPLOYEE/EMPLOYER PICKER */
+.picker-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; }
+.picker-card:hover { border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.05); }
+.picker-avatar { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, rgba(0,212,255,0.2) 0%, rgba(16,185,129,0.2) 100%); border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #00d4ff; }
+.picker-info { flex: 1; min-width: 0; }
+.picker-name { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+.picker-detail { font-size: 12px; color: #64748b; margin-top: 2px; }
+.picker-chevron { color: #475569; font-size: 18px; }
+
+/* MONEY INPUT */
+.money-row { display: flex; gap: 12px; align-items: flex-end; }
+.money-group { flex: 1; }
+.money-prefix { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px 0 0 10px; padding: 14px 12px; color: #64748b; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+.money-input { flex: 1; background: #0f172a; border: 1px solid #1e293b; border-radius: 0 10px 10px 0; padding: 14px 16px; font-size: 15px; color: #f1f5f9; }
+.money-input:focus { outline: none; border-color: #00d4ff; box-shadow: 0 0 0 3px rgba(0,212,255,0.15); }
+
+/* CALCULATED */
+.calc-box { background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(16,185,129,0.1) 100%); border: 1px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 16px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+.calc-label { font-size: 13px; color: #94a3b8; font-weight: 600; }
+.calc-value { font-size: 20px; font-weight: 800; color: #00d4ff; text-shadow: 0 0 16px rgba(0,212,255,0.4); }
+
+/* BUTTONS */
+.btn-group { display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(0,212,255,0.1); }
+.btn { flex: 1; border: none; border-radius: 14px; padding: 16px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary { background: linear-gradient(135deg, #00d4ff 0%, #10b981 100%); color: #fff; border: 1px solid #0099cc; box-shadow: 0 6px 20px rgba(0,212,255,0.3), inset 0 1px 0 rgba(255,255,255,0.1); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-secondary { background: #0f172a; color: #94a3b8; border: 1px solid #1e293b; }
+.btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; border: 1px solid #b91c1c; }
+
+/* BOTTOM NAV */
+.bottom-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 88px; background: linear-gradient(180deg, transparent 0%, rgba(15,23,42,0.98) 30%, rgba(10,15,26,1) 100%); backdrop-filter: blur(24px); display: flex; border-top: 1px solid rgba(0,212,255,0.05); z-index: 10; padding: 8px 16px 0; }
+.nav-group { display: flex; width: 100%; gap: 12px; }
+.nav-btn { flex: 1; padding: 12px 16px; border-radius: 14px; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
+.nav-btn.prev { background: #0f172a; color: #94a3b8; border: 1px solid #1e293b; }
+.nav-btn.next { background: linear-gradient(135deg, #00d4ff 0%, #10b981 100%); color: #fff; border: 1px solid #0099cc; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(10,15,26,0.85); backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal-sheet { width: 100%; max-width: 390px; background: linear-gradient(145deg, #11192e 0%, #0f172a 100%); border: 2px solid rgba(0,212,255,0.15); border-radius: 24px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,255,0.1); }
+.modal-handle { width: 40px; height: 4px; background: #1e293b; border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-size: 17px; font-weight: 700; color: #f1f5f9; text-align: center; margin-bottom: 20px; }
+.modal-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+.modal-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.modal-item:hover { background: rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.2); }
+.modal-item-avatar { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, rgba(0,212,255,0.2) 0%, rgba(16,185,129,0.2) 100%); border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #00d4ff; }
+.modal-item-info { flex: 1; min-width: 0; }
+.modal-item-name { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+.modal-item-detail { font-size: 12px; color: #64748b; margin-top: 2px; }
+.modal-cancel { margin-top: 16px; text-align: center; color: #64748b; font-weight: 600; cursor: pointer; padding: 12px; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border-radius: 14px; font-weight: 700; font-size: 14px; box-shadow: 0 12px 40px rgba(16,185,129,0.4), 0 0 0 1px rgba(255,255,255,0.1); opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 200; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 12px 40px rgba(239,68,68,0.4), 0 0 0 1px rgba(255,255,255,0.1); }
+</style>
+</head>
+<body>
+<div class="phone">
+<div class="status-bar"><span>9:41</span><span>●●●●</span></div>
+<div class="header">
+<div class="header-row">
+<div class="brand"><div class="brand-logo">CR</div><div class="brand-text">ChrisRoi Agence</div></div>
+</div>
+<div class="header-title">Contrat de placement</div>
+</div>
+
+<div class="tabs">
+<div class="tab active" onclick="switchTab('numerique')">Numérique</div>
+<div class="tab" onclick="switchTab('scanne')">Scanné</div>
+</div>
+
+<div class="content">
+<!-- SECTION 1: EMPLOYÉ -->
+<div class="section">
+<div class="section-header">
+<div class="section-icon">👤</div>
+<div class="section-title">Employé</div>
+<span class="section-subtitle">Sélection requise</span>
+</div>
+
+<div class="card">
+<div class="picker-card" onclick="openModal('employeModal')">
+<div class="picker-avatar">👤</div>
+<div class="picker-info">
+<div class="picker-name" id="employeName">Sélectionner un employé</div>
+<div class="picker-detail" id="employeDetail">Fiche d'inscription requise</div>
+</div>
+<span class="picker-chevron">›</span>
+</div>
+</div>
+
+<div class="section" style="margin-top:8px;">
+<div class="section-header">
+<div class="section-icon">📋</div>
+<div class="section-title">Infos employé (auto-remplies)</div>
+</div>
+
+<div class="card">
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Date de naissance</label>
+<input type="text" class="field-input" id="empBirthDate" placeholder="15/03/1995" readonly>
+</div>
+<div class="field-group half">
+<label class="field-label">Lieu de naissance</label>
+<input type="text" class="field-input" id="empBirthPlace" placeholder="Abidjan" readonly>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Lieu habitation</label>
+<input type="text" class="field-input" id="empResidence" placeholder="Cocody, Abidjan" readonly>
+</div>
+<div class="field-group half">
+<label class="field-label">Situation matrimoniale</label>
+<input type="text" class="field-input" id="empMarital" placeholder="Célibataire" readonly>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Religion</label>
+<input type="text" class="field-input" id="empReligion" placeholder="Chrétienne" readonly>
+</div>
+<div class="field-group half">
+<label class="field-label">Diplôme</label>
+<input type="text" class="field-input" id="empDiploma" placeholder="BAC" readonly>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Père</label>
+<input type="text" class="field-input" id="empFather" placeholder="KOUASSI Jean" readonly>
+</div>
+<div class="field-group half">
+<label class="field-label">Mère</label>
+<input type="text" class="field-input" id="empMother" placeholder="KOUASSI Amina" readonly>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Urgence 1</label>
+<input type="text" class="field-input" id="empUrgency1" placeholder="KOUASSI Paul - 07..." readonly>
+</div>
+<div class="field-group half">
+<label class="field-label">Urgence 2</label>
+<input type="text" class="field-input" id="empUrgency2" placeholder="KOUASSI Marie - 07..." readonly>
+</div>
+</div>
+
+<div class="field-group">
+<label class="field-label">Ancien patron</label>
+<input type="text" class="field-input" id="empOldBoss" placeholder="Contact ancien employeur" readonly>
+</div>
+</div>
+</div>
+
+<!-- SECTION 2: EMPLOYEUR -->
+<div class="section">
+<div class="section-header">
+<div class="section-icon">🏢</div>
+<div class="section-title">Employeur</div>
+<span class="section-subtitle">Sélection requise</span>
+</div>
+
+<div class="card">
+<div class="picker-card" onclick="openModal('employeurModal')">
+<div class="picker-avatar" style="background:linear-gradient(135deg,rgba(245,158,11,0.2) 0%,rgba(217,119,6,0.2) 100%);color:#f59e0b;border-color:rgba(245,158,11,0.2);">🏢</div>
+<div class="picker-info">
+<div class="picker-name" id="employeurName">Sélectionner un employeur</div>
+<div class="picker-detail" id="employeurDetail">Entreprise cliente</div>
+</div>
+<span class="picker-chevron">›</span>
+</div>
+</div>
+
+<div class="section" style="margin-top:8px;">
+<div class="section-header">
+<div class="section-icon">📋</div>
+<div class="section-title">Infos employeur (auto-remplies)</div>
+</div>
+
+<div class="card">
+<div class="field-group">
+<label class="field-label">Nom / Raison sociale</label>
+<input type="text" class="field-input" id="empCompany" placeholder="Entreprise ABC" readonly>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Domicile / Adresse</label>
+<input type="text" class="field-input" id="empCompanyAddr" placeholder="Plateau, Abidjan" readonly>
+</div>
+<div class="field-group half">
+<label class="field-label">Contact / Téléphone</label>
+<input type="tel" class="field-input" id="empCompanyPhone" placeholder="07 00 00 00 00" readonly>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SECTION 3: CONTRAT -->
+<div class="section">
+<div class="section-header">
+<div class="section-icon">📄</div>
+<div class="section-title">Détails du contrat</div>
+<span class="section-subtitle">Obligatoire</span>
+</div>
+
+<div class="card">
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">N° Dossier</label>
+<input type="text" class="field-input" id="dossierNumber" placeholder="CHR-2026-0042">
+</div>
+<div class="field-group half">
+<label class="field-label">Date contrat</label>
+<div class="select-wrapper">
+<div class="select-trigger" onclick="toggleDropdown('contractDate')">
+<span id="contractDateValue">17/06/2026</span>
+<span class="select-arrow">▼</span>
+</div>
+<div class="select-dropdown" id="contractDateDropdown">
+<div class="select-option selected">17/06/2026</div>
+<div class="select-option">16/06/2026</div>
+<div class="select-option">15/06/2026</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Poste</label>
+<div class="select-wrapper">
+<div class="select-trigger" onclick="toggleDropdown('poste')">
+<span id="posteValue">Serveuse</span>
+<span class="select-arrow">▼</span>
+</div>
+<div class="select-dropdown" id="posteDropdown">
+<div class="select-option selected">Serveuse</div>
+<div class="select-option">Femme de ménage</div>
+<div class="select-option">Nounou</div>
+<div class="select-option">Chauffeur</div>
+<div class="select-option">Gardien</div>
+<div class="select-option">Jardinier</div>
+<div class="select-option">Cuisinière</div>
+</div>
+</div>
+</div>
+<div class="field-group half">
+<label class="field-label">Date début</label>
+<div class="select-wrapper">
+<div class="select-trigger" onclick="toggleDropdown('startDate')">
+<span id="startDateValue">01/07/2026</span>
+<span class="select-arrow">▼</span>
+</div>
+<div class="select-dropdown" id="startDateDropdown">
+<div class="select-option selected">01/07/2026</div>
+<div class="select-option">15/07/2026</div>
+<div class="select-option">01/08/2026</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Durée</label>
+<div class="select-wrapper">
+<div class="select-trigger" onclick="toggleDropdown('duree')">
+<span id="dureeValue">12 mois</span>
+<span class="select-arrow">▼</span>
+</div>
+<div class="select-dropdown" id="dureeDropdown">
+<div class="select-option selected">12 mois</div>
+<div class="select-option">6 mois</div>
+<div class="select-option">24 mois</div>
+<div class="select-option">CDI</div>
+</div>
+</div>
+</div>
+<div class="field-group half">
+<label class="field-label">Situation matrimoniale</label>
+<div class="radio-group">
+<button type="button" class="radio-btn active" onclick="setRadio('situation', 'celibataire', this)">Célibataire</button>
+<button type="button" class="radio-btn" onclick="setRadio('situation', 'marie', this)">Marié(e)</button>
+<button type="button" class="radio-btn" onclick="setRadio('situation', 'concubinage', this)">Concubinage</button>
+</div>
+</div>
+</div>
+
+<!-- MONEY SECTION -->
+<div class="section-header" style="margin-top:20px;">
+<div class="section-icon">💰</div>
+<div class="section-title">Rémunération & Commissions</div>
+</div>
+
+<div class="card">
+<div class="money-row">
+<div class="money-group">
+<label class="field-label">Salaire mensuel</label>
+<div style="display:flex;">
+<span class="money-prefix">FCFA</span>
+<input type="number" class="money-input" id="salaire" placeholder="150000" oninput="updateCommissions()">
+</div>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group half">
+<label class="field-label">Commission fixe agence</label>
+<div style="display:flex;">
+<span class="money-prefix">FCFA</span>
+<input type="number" class="money-input" id="commissionFixe" value="15000" readonly>
+</div>
+</div>
+<div class="field-group half">
+<label class="field-label">Frais transport</label>
+<div style="display:flex;">
+<span class="money-prefix">FCFA</span>
+<input type="number" class="money-input" id="fraisTransport" value="5000" readonly>
+</div>
+</div>
+</div>
+
+<!-- CALCULATED COMMISSION -->
+<div class="calc-box">
+<div>
+<div class="calc-label">Commission agence (1/3 salaire)</div>
+<div class="calc-value" id="commissionAgence">50 000 FCFA</div>
+</div>
+<div>
+<div class="calc-label">Total à percevoir</div>
+<div class="calc-value" id="totalPercevoir">70 000 FCFA</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SECTION 4: RESPONSABILITES -->
+<div class="section">
+<div class="section-header">
+<div class="section-icon">⚖️</div>
+<div class="section-title">Responsabilités</div>
+<span class="section-subtitle">Pré-remplies</span>
+</div>
+
+<div class="card">
+<div style="font-size:12px; color:#94a3b8; line-height:1.8; margin-bottom:16px;">
+<b>Employé :</b> Respect employeur, répondre de ses actes, durée __________, commence ________.
+</div>
+<div style="font-size:12px; color:#94a3b8; line-height:1.8;">
+<b>Employeur :</b> Connaître domicile parents, tâches signalées, soins maladie, avis agence si renvoi, paiement ≤5 du mois, pas d'arriérés, condamnation vols/violences, remplacement 1 semaine.
+</div>
+</div>
+
+<!-- SIGNATURES -->
+<div class="section" style="margin-top:16px;">
+<div class="section-header">
+<div class="section-icon">✍️</div>
+<div class="section-title">Signatures</div>
+</div>
+
+<div class="card">
+<div style="display:flex; gap:16px; margin-bottom:16px;">
+<div style="flex:1; text-align:center;">
+<div style="height:80px; border-bottom:2px solid #1e293b; margin-bottom:8px;"></div>
+<div style="font-size:12px; color:#64748b;">Employé</div>
+</div>
+<div style="flex:1; text-align:center;">
+<div style="height:80px; border-bottom:2px solid #1e293b; margin-bottom:8px;"></div>
+<div style="font-size:12px; color:#64748b;">Agence</div>
+</div>
+<div style="flex:1; text-align:center;">
+<div style="height:80px; border-bottom:2px solid #1e293b; margin-bottom:8px;"></div>
+<div style="font-size:12px; color:#64748b;">Employeur</div>
+</div>
+</div>
+
+<div class="checkbox-row">
+<div class="checkbox" onclick="toggleCheckbox(this)"></div>
+<label class="checkbox-label">J'ai lu et j'accepte les termes du contrat</label>
+</div>
+</div>
+</div>
+
+<!-- BUTTONS -->
+<div class="btn-group">
+<button class="btn btn-secondary">Annuler</button>
+<button class="btn btn-primary">Créer le contrat</button>
+</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-bar">
+<div class="nav-group">
+<button class="nav-btn prev">Précédent</button>
+<button class="nav-btn next">Suivant</button>
+</div>
+</div>
+
+<!-- EMPLOYE MODAL -->
+<div class="modal-overlay" id="employeModal">
+<div class="modal-sheet">
+<div class="modal-handle"></div>
+<div class="modal-title">Choisir un employé</div>
+<div class="modal-list" id="employeList">
+<div class="modal-item">
+<div class="modal-item-avatar">👤</div>
+<div class="modal-item-info">
+<div class="modal-item-name">KOUASSI Marie</div>
+<div class="modal-item-detail">Serveuse • Cocody • 150 000 FCFA</div>
+</div>
+</div>
+<div class="modal-item">
+<div class="modal-item-avatar">👤</div>
+<div class="modal-item-info">
+<div class="modal-item-name">TRAORE Paul</div>
+<div class="modal-item-detail">Chauffeur • Yopougon • 200 000 FCFA</div>
+</div>
+</div>
+<div class="modal-item">
+<div class="modal-item-avatar">👤</div>
+<div class="modal-item-info">
+<div class="modal-item-name">DIALLO Fatoumata</div>
+<div class="modal-item-detail">Nounou • Marcory • 180 000 FCFA</div>
+</div>
+</div>
+<div class="modal-item">
+<div class="modal-item-avatar">👤</div>
+<div class="modal-item-info">
+<div class="modal-item-name">CAMARA Ibrahim</div>
+<div class="modal-item-detail">Gardien • Adjamé • 100 000 FCFA</div>
+</div>
+</div>
+</div>
+<div class="modal-cancel" onclick="closeModal('employeModal')">Annuler</div>
+</div>
+</div>
+
+<!-- EMPLOYEUR MODAL -->
+<div class="modal-overlay" id="employeurModal">
+<div class="modal-sheet">
+<div class="modal-handle"></div>
+<div class="modal-title">Choisir un employeur</div>
+<div class="modal-list" id="employeurList">
+<div class="modal-item">
+<div class="modal-item-avatar" style="background:linear-gradient(135deg,rgba(245,158,11,0.2) 0%,rgba(217,119,6,0.2) 100%);color:#f59e0b;border-color:rgba(245,158,11,0.2);">🏢</div>
+<div class="modal-item-info">
+<div class="modal-item-name">Entreprise ABC</div>
+<div class="modal-item-detail">Plateau, Abidjan • 07 00 00 00 00</div>
+</div>
+</div>
+<div class="modal-item">
+<div class="modal-item-avatar" style="background:linear-gradient(135deg,rgba(245,158,11,0.2) 0%,rgba(217,119,6,0.2) 100%);color:#f59e0b;border-color:rgba(245,158,11,0.2);">🏢</div>
+<div class="modal-item-info">
+<div class="modal-item-name">Hôtel Royal</div>
+<div class="modal-item-detail">Cocody, Abidjan • 07 00 00 00 00</div>
+</div>
+</div>
+<div class="modal-item">
+<div class="modal-item-avatar" style="background:linear-gradient(135deg,rgba(245,158,11,0.2) 0%,rgba(217,119,6,0.2) 100%);color:#f59e0b;border-color:rgba(245,158,11,0.2);">🏢</div>
+<div class="modal-item-info">
+<div class="modal-item-name">Résidence Les Palmiers</div>
+<div class="modal-item-detail">Marcory, Abidjan • 07 00 00 00 00</div>
+</div>
+</div>
+</div>
+<div class="modal-cancel" onclick="closeModal('employeurModal')">Annuler</div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">Contrat créé !</div>
+
+<script>
+// Tab switching
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+}
+
+// Dropdowns
+function toggleDropdown(id) {
+  const dd = document.getElementById(id + 'Dropdown');
+  const trigger = dd.previousElementSibling;
+  const isOpen = dd.classList.toggle('open');
+  trigger.classList.toggle('open', isOpen);
+  document.querySelectorAll('.select-dropdown').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+  document.querySelectorAll('.select-trigger').forEach(t => { if (t !== trigger) t.classList.remove('open'); });
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.select-wrapper')) {
+    document.querySelectorAll('.select-dropdown').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.select-trigger').forEach(t => t.classList.remove('open'));
+  }
+});
+function selectOption(dropdownId, value, text) {
+  document.getElementById(dropdownId.replace('Dropdown', 'Value')).textContent = text;
+  document.getElementById(dropdownId).classList.remove('open');
+  document.getElementById(dropdownId).previousElementSibling.classList.remove('open');
+  document.getElementById(dropdownId).querySelectorAll('.select-option').forEach(o => o.classList.toggle('selected', o.textContent === text));
+}
+
+// Radio
+function setRadio(group, value, btn) {
+  document.querySelectorAll(`[onclick*="${group}"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Checkbox
+function toggleCheckbox(el) {
+  el.classList.toggle('checked');
+}
+
+// Modals
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.onclick = (e) => { if (e.target === e.currentTarget) closeModal(m.id); });
+
+// Toast
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Salary commission calculation
+function updateCommissions() {
+  const salary = parseFloat(document.getElementById('salaire').value) || 0;
+  const tiers = Math.round(salary / 3);
+  const fixe = 15000;
+  const transport = 5000;
+  document.getElementById('commissionAgence').textContent = tiers.toLocaleString() + ' FCFA';
+  document.getElementById('totalPercevoir').textContent = (tiers + fixe + transport).toLocaleString() + ' FCFA';
+}
+
+// Demo
+document.querySelectorAll('.modal-item').forEach(item => {
+  item.onclick = () => {
+    const modal = item.closest('.modal-overlay');
+    if (modal.id === 'employeModal') {
+      document.getElementById('employeName').textContent = item.querySelector('.modal-item-name').textContent;
+      document.getElementById('employeDetail').textContent = item.querySelector('.modal-item-detail').textContent;
+      document.getElementById('empBirthDate').value = '15/03/1995';
+      document.getElementById('empBirthPlace').value = 'Abidjan';
+      document.getElementById('empResidence').value = 'Cocody, Abidjan';
+      document.getElementById('empMarital').value = 'Célibataire';
+      document.getElementById('empReligion').value = 'Chrétienne';
+      document.getElementById('empDiploma').value = 'BAC';
+      document.getElementById('empFather').value = 'KOUASSI Jean';
+      document.getElementById('empMother').value = 'KOUASSI Amina';
+      document.getElementById('empUrgency1').value = 'KOUASSI Paul - 07 00 00 00 00';
+      document.getElementById('empUrgency2').value = 'KOUASSI Marie - 07 00 00 00 00';
+      document.getElementById('empOldBoss').value = 'M. Kouassi - 07 00 00 00 00';
+      document.getElementById('salaire').value = '150000';
+      updateCommissions();
+    } else {
+      document.getElementById('employeurName').textContent = item.querySelector('.modal-item-name').textContent;
+      document.getElementById('employeurDetail').textContent = item.querySelector('.modal-item-detail').textContent;
+      document.getElementById('empCompany').value = item.querySelector('.modal-item-name').textContent;
+      document.getElementById('empCompanyAddr').value = item.querySelector('.modal-item-detail').textContent.split('•')[0].trim();
+      document.getElementById('empCompanyPhone').value = item.querySelector('.modal-item-detail').textContent.split('•')[1].trim();
+    }
+    closeModal(modal.id);
+  };
+});
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Focus states
+document.querySelectorAll('.field-input, .money-input').forEach(i => {
+  i.addEventListener('focus', () => i.parentElement.classList.add('focused'));
+  i.addEventListener('blur', () => i.parentElement.classList.remove('focused'));
+});
+
+// Init
+updateCommissions();
+</script>
+</body>
+</html>

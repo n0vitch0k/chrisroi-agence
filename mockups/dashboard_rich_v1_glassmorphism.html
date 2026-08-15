@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChrisRoi Agence — Dashboard Rich V1 (Glassmorphism + Gradients)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+body { 
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); 
+  min-height: 100vh; 
+  display: flex; 
+  justify-content: center; 
+  align-items: flex-start; 
+  padding: 20px; 
+}
+.phone { 
+  width: 390px; 
+  min-height: 844px; 
+  background: linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.95) 100%);
+  border-radius: 42px; 
+  box-shadow: 
+    0 30px 80px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(148,163,184,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  overflow: hidden; 
+  position: relative; 
+  border: 12px solid #020617;
+  display: flex; 
+  flex-direction: column; 
+}
+.status-bar { height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 13px; font-weight: 600; color: #94a3b8; flex-shrink: 0; }
+
+.header { 
+  background: linear-gradient(135deg, rgba(30,58,138,0.9) 0%, rgba(59,130,246,0.8) 100%); 
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(148,163,184,0.1);
+  padding: 20px 24px 24px; 
+  border-radius: 0 0 30px 30px; 
+  flex-shrink: 0; 
+  color: #fff;
+}
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { 
+  width: 38px; height: 38px; border-radius: 12px; 
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%); 
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; 
+}
+.brand-text { font-size: 18px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.header-actions { display: flex; gap: 12px; }
+.icon-btn { 
+  width: 40px; height: 40px; border-radius: 14px; 
+  background: rgba(255,255,255,0.1); 
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.05);
+  color: #fff; font-size: 20px; 
+  display: flex; align-items: center; justify-content: center; 
+  position: relative; cursor: pointer; transition: all 0.2s;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.02); }
+.badge { position: absolute; top: -4px; right: -4px; width: 20px; height: 20px; border-radius: 10px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.4); }
+.greeting { font-size: 14px; opacity: 0.8; margin-bottom: 4px; }
+.user-name { font-size: 24px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.date-pill { display: inline-block; margin-top: 16px; padding: 8px 14px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; font-size: 13px; font-weight: 500; }
+
+.content { flex: 1; overflow-y: auto; padding: 20px 20px 100px; min-height: 0; }
+
+.section { margin-bottom: 28px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px; }
+.section-title { font-size: 18px; font-weight: 800; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+.section-link { font-size: 13px; color: #60a5fa; font-weight: 600; text-decoration: none; }
+
+/* CARD STACK - RICH TEXTURES */
+.card-stack { display: flex; flex-direction: column; gap: 16px; }
+
+.card { 
+  border-radius: 20px; 
+  padding: 20px; 
+  overflow: hidden; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border: 1px solid transparent;
+}
+.card::before { 
+  content: ''; 
+  position: absolute; 
+  left: 0; top: 0; bottom: 0; width: 5px; 
+  border-radius: 5px 0 0 5px;
+}
+.card:hover { 
+  transform: translateY(-4px) scale(1.005); 
+  box-shadow: 
+    0 20px 40px rgba(0,0,0,0.3),
+    0 0 0 1px rgba(148,163,184,0.1);
+}
+
+/* RICH GRADIENT BACKGROUNDS PER CARD */
+.card-primary { 
+  background: linear-gradient(145deg, rgba(30,64,175,0.25) 0%, rgba(30,58,138,0.15) 100%);
+  border-color: rgba(59,130,246,0.2);
+}
+.card-primary::before { background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 50%, #2563eb 100%); }
+
+.card-success { 
+  background: linear-gradient(145deg, rgba(21,128,61,0.25) 0%, rgba(22,101,52,0.15) 100%);
+  border-color: rgba(34,197,94,0.2);
+}
+.card-success::before { background: linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #15803d 100%); }
+
+.card-warning { 
+  background: linear-gradient(145deg, rgba(180,83,9,0.25) 0%, rgba(146,64,14,0.15) 100%);
+  border-color: rgba(245,158,11,0.2);
+}
+.card-warning::before { background: linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #b45309 100%); }
+
+.card-info { 
+  background: linear-gradient(145deg, rgba(3,105,161,0.25) 0%, rgba(2,76,131,0.15) 100%);
+  border-color: rgba(56,189,248,0.2);
+}
+.card-info::before { background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%); }
+
+.card-purple { 
+  background: linear-gradient(145deg, rgba(124,58,237,0.25) 0%, rgba(109,40,217,0.15) 100%);
+  border-color: rgba(168,85,247,0.2);
+}
+.card-purple::before { background: linear-gradient(180deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%); }
+
+.card-urgent { 
+  background: linear-gradient(145deg, rgba(185,28,28,0.25) 0%, rgba(153,27,27,0.15) 100%);
+  border-color: rgba(239,68,68,0.2);
+}
+.card-urgent::before { background: linear-gradient(180deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%); }
+
+.card-dossier { 
+  background: linear-gradient(145deg, rgba(21,128,61,0.25) 0%, rgba(22,101,52,0.15) 100%);
+  border-color: rgba(34,197,94,0.2);
+}
+.card-dossier::before { background: linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #15803d 100%); }
+
+/* GLASSMORPHISM OVERLAY */
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%, rgba(0,0,0,0.05) 100%);
+  pointer-events: none;
+  border-radius: 20px;
+}
+
+.card-content { position: relative; z-index: 1; }
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.card-main { display: flex; align-items: center; gap: 14px; }
+
+.card-icon { 
+  width: 50px; height: 50px; border-radius: 14px; 
+  display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.2);
+}
+.card-icon-primary { background: linear-gradient(135deg, rgba(59,130,246,0.3) 0%, rgba(37,99,235,0.2) 100%); color: #60a5fa; }
+.card-icon-success { background: linear-gradient(135deg, rgba(34,197,94,0.3) 0%, rgba(22,163,74,0.2) 100%); color: #4ade80; }
+.card-icon-warning { background: linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(217,119,6,0.2) 100%); color: #fbbf24; }
+.card-icon-info { background: linear-gradient(135deg, rgba(14,165,233,0.3) 0%, rgba(2,132,199,0.2) 100%); color: #38bdf8; }
+.card-icon-purple { background: linear-gradient(135deg, rgba(168,85,247,0.3) 0%, rgba(147,51,234,0.2) 100%); color: #c084fc; }
+.card-icon-urgent { background: linear-gradient(135deg, rgba(239,68,68,0.3) 0%, rgba(220,38,38,0.2) 100%); color: #fca5a5; }
+.card-icon-dossier { background: linear-gradient(135deg, rgba(34,197,94,0.3) 0%, rgba(22,163,74,0.2) 100%); color: #4ade80; }
+
+.card-title { font-size: 17px; font-weight: 800; color: #f8fafc; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.badge { padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 700; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); }
+.badge-blue { background: rgba(59,130,246,0.2); color: #93c5fd; border-color: rgba(59,130,246,0.3); }
+.badge-green { background: rgba(34,197,94,0.2); color: #86efac; border-color: rgba(34,197,94,0.3); }
+.badge-orange { background: rgba(245,158,11,0.2); color: #fde047; border-color: rgba(245,158,11,0.3); }
+.badge-purple { background: rgba(168,85,247,0.2); color: #d8b4fe; border-color: rgba(168,85,247,0.3); }
+.badge-red { background: rgba(239,68,68,0.2); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+
+.card-meta { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px; }
+.card-meta strong { color: #e2e8f0; font-weight: 600; }
+
+.card-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-top: 14px; border-top: 1px solid rgba(148,163,184,0.1); margin-bottom: 16px; }
+.card-stat { display: flex; flex-direction: column; gap: 3px; }
+.card-stat-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.card-stat-value { font-size: 14px; font-weight: 800; color: #f1f5f9; }
+.card-stat-value.paid { color: #4ade80; }
+.card-stat-value.pending { color: #fbbf24; }
+.card-stat-value.urgent { color: #fca5a5; }
+
+.card-actions { display: flex; gap: 10px; }
+.btn { flex: 1; border: none; border-radius: 12px; padding: 12px 16px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; letter-spacing: 0.3px; }
+.btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #fff; box-shadow: 0 4px 16px rgba(59,130,246,0.4); }
+.btn-secondary { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+.btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #fff; box-shadow: 0 4px 16px rgba(34,197,94,0.4); }
+.btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; box-shadow: 0 4px 16px rgba(245,158,11,0.4); }
+.btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.4); }
+.btn-ghost { background: transparent; color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+.btn:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.btn:active { transform: translateY(0); filter: brightness(0.9); }
+
+/* DOSSIERS CARD */
+.dossiers-card { 
+  background: linear-gradient(145deg, rgba(21,128,61,0.25) 0%, rgba(22,101,52,0.15) 100%);
+  border-color: rgba(34,197,94,0.2);
+  border-radius: 20px; 
+  overflow: hidden; 
+}
+.dossiers-card::after { display: none; }
+
+.dossiers-header { padding: 20px; border-bottom: 1px solid rgba(148,163,184,0.1); display: flex; justify-content: space-between; align-items: center; }
+.dossiers-title { font-size: 16px; font-weight: 700; color: #f8fafc; }
+.dossiers-count { font-size: 13px; color: #4ade80; font-weight: 600; }
+
+.dossier-row { padding: 14px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(148,163,184,0.08); transition: background 0.2s; cursor: pointer; }
+.dossier-row:last-child { border-bottom: none; }
+.dossier-row:hover { background: rgba(255,255,255,0.02); }
+.dossier-row:active { background: rgba(255,255,255,0.05); }
+.dossier-row-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.05); }
+.dossier-row-icon.fiche { background: linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(37,99,235,0.1) 100%); color: #60a5fa; }
+.dossier-row-icon.employeur { background: linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(217,119,6,0.1) 100%); color: #fbbf24; }
+.dossier-row-icon.contrat { background: linear-gradient(135deg, rgba(34,197,94,0.2) 0%, rgba(22,163,74,0.1) 100%); color: #4ade80; }
+.dossier-row-info { flex: 1; min-width: 0; }
+.dossier-row-label { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+.dossier-row-count { font-size: 12px; color: #64748b; }
+.dossier-row-chevron { color: #475569; font-size: 18px; }
+
+/* EMPTY STATE */
+.empty-state { align-items: center; padding: 48px 20px; text-align: center; }
+.empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+.empty-title { font-size: 17px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; }
+.empty-text { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+/* MODAL */
+.modal-overlay { flex: 1; background: rgba(2,6,23,0.7); backdrop-filter: blur(8px); justify-content: center; align-items: center; }
+.dossier-popup { width: 85%; maxWidth: 320; background: linear-gradient(145deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.98) 100%); border: 1px solid rgba(148,163,184,0.15); border-radius: 24px; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+.dossier-popup-title { font-size: 18px; font-weight: 800; color: #f1f5f9; text-align: center; margin-bottom: 20px; }
+.dossier-popup-item { flex-direction: row; align-items: center; padding: 16px; }
+.popup-icon-wrap { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-right: 14px; font-size: 22px; }
+.popup-item-text { flex: 1; }
+.popup-item-label { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+.popup-item-count { font-size: 12px; color: #64748b; margin-top: 2px; }
+.popup-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(148,163,184,0.15), transparent); margin: 4px 0; }
+
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 84px; background: linear-gradient(180deg, transparent 0%, rgba(15,23,42,0.98) 30%, rgba(15,23,42,1) 100%); backdrop-filter: blur(20px); display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(148,163,184,0.08); z-index: 10; padding-top: 8px; }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #64748b; font-size: 10px; font-weight: 600; cursor: pointer; padding: 8px; transition: all 0.2s; }
+.nav-item.active { color: #60a5fa; }
+.nav-item.active .nav-icon { color: #60a5fa; filter: drop-shadow(0 0 8px rgba(96,165,250,0.5)); }
+.nav-icon { font-size: 24px; transition: all 0.2s; }
+</style>
+</head>
+<body>
+<div class="phone">
+<div class="status-bar"><span>9:41</span><span>●●●●</span></div>
+<div class="header">
+<div class="header-top">
+<div class="brand"><div class="brand-logo">CR</div><div class="brand-text">ChrisRoi Agence</div></div>
+<div class="header-actions"><button class="icon-btn">🔔<span class="badge">3</span></button><button class="icon-btn">👤</button></div>
+</div>
+<div class="greeting">Bonjour,</div><div class="user-name">ChrisRoi Admin</div><div class="date-pill">📅 Mardi 17 Juin 2026</div>
+</div>
+<div class="content">
+
+<!-- ACTIONS PRINCIPALES -->
+<div class="section">
+<div class="section-header"><h2 class="section-title">⚡ Actions principales</h2></div>
+<div class="card-stack">
+
+<!-- 1. INSCRIRE -->
+<div class="card card-primary">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon card-icon-primary">👤</div>
+<div class="card-title">Inscrire</div>
+</div>
+<span class="badge badge-blue">Fiche d'inscription</span>
+</div>
+<div class="card-meta">Créer une nouvelle fiche candidat</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Fiches ce mois</div><div class="card-stat-value">12</div></div>
+<div class="card-stat"><div class="card-stat-label">Sans contrat</div><div class="card-stat-value pending">3</div></div>
+</div>
+<button class="btn btn-primary">Ouvrir formulaire</button>
+</div>
+</div>
+
+<!-- 2. CRÉER UN CONTRAT -->
+<div class="card card-success">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon card-icon-success">📄</div>
+<div class="card-title">Créer un contrat</div>
+</div>
+<span class="badge badge-green">Placement</span>
+</div>
+<div class="card-meta">Générer un contrat de placement</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Contrats actifs</div><div class="card-stat-value">8</div></div>
+<div class="card-stat"><div class="card-stat-label">À renouveler</div><div class="card-stat-value pending">2</div></div>
+</div>
+<button class="btn btn-primary">Nouveau contrat</button>
+</div>
+</div>
+
+<!-- 3. SCANNER -->
+<div class="card card-warning">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon card-icon-warning">📸</div>
+<div class="card-title">Scanner</div>
+</div>
+<span class="badge badge-orange">OCR / Photo</span>
+</div>
+<div class="card-meta">Numériser pièce d'identité, CV, etc.</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Scans semaine</div><div class="card-stat-value">7</div></div>
+<div class="card-stat"><div class="card-stat-label">En attente</div><div class="card-stat-value pending">2</div></div>
+</div>
+<button class="btn btn-warning">Ouvrir caméra</button>
+</div>
+</div>
+
+<!-- 4. NOUVEL EMPLOYEUR -->
+<div class="card card-info">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon card-icon-info">🏢</div>
+<div class="card-title">Nouvel employeur</div>
+</div>
+<span class="badge badge-blue">Entreprise cliente</span>
+</div>
+<div class="card-meta">Ajouter une entreprise qui recrute</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Employeurs actifs</div><div class="card-stat-value">15</div></div>
+<div class="card-stat"><div class="card-stat-label">Nouveaux ce mois</div><div class="card-stat-value">3</div></div>
+</div>
+<button class="btn btn-primary">Ajouter</button>
+</div>
+</div>
+
+<!-- 5. SUIVI COMMISSIONS -->
+<div class="card card-purple">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon card-icon-purple">💰</div>
+<div class="card-title">Suivi commissions</div>
+</div>
+<span class="badge badge-purple">À percevoir</span>
+</div>
+<div class="card-meta">3 commissions en attente · 150 000 FCFA</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Total perçu</div><div class="card-stat-value paid">450 000 FCFA</div></div>
+<div class="card-stat"><div class="card-stat-label">En attente</div><div class="card-stat-value pending">150 000 FCFA</div></div>
+</div>
+<button class="btn btn-success">Voir détail</button>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- DOSSIERS -->
+<div class="section">
+<div class="section-header"><h2 class="section-title">📁 Dossiers</h2><a href="#" class="section-link">Voir tout (12)</a></div>
+<div class="card-stack">
+<div class="card card-dossier dossiers-card">
+<div class="dossiers-header">
+<div class="dossiers-title">Dossiers</div>
+<div class="dossiers-count">12 dossiers actifs</div>
+</div>
+<div class="dossier-row"><div class="dossier-row-icon fiche">📄</div><div class="dossier-row-info"><div class="dossier-row-label">Fiches</div><div class="dossier-row-count">5 fiches · 3 sans contrat</div></div><span class="dossier-row-chevron">›</span></div>
+<div class="dossier-row"><div class="dossier-row-icon employeur">🏢</div><div class="dossier-row-info"><div class="dossier-row-label">Employeurs</div><div class="dossier-row-count">4 entreprises actives</div></div><span class="dossier-row-chevron">›</span></div>
+<div class="dossier-row"><div class="dossier-row-icon contrat">📋</div><div class="dossier-row-info"><div class="dossier-row-label">Contrats</div><div class="dossier-row-count">8 contrats · 2 à renouveler</div></div><span class="dossier-row-chevron">›</span></div>
+</div>
+</div>
+</div>
+
+<!-- URGENCES -->
+<div class="section">
+<div class="section-header"><h2 class="section-title">⚠️ Urgences du jour</h2><a href="#" class="section-link">Voir tout</a></div>
+<div class="card-stack">
+<div class="card card-urgent">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon card-icon-urgent">⏰</div>
+<div class="card-title">Marie Diallo · Fin dans 2j</div>
+</div>
+<span class="badge badge-red">URGENT</span>
+</div>
+<div class="card-meta"><strong>Gouvernante</strong> · <strong>Fatou Koné</strong> · 150 000 FCFA</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Commission agence</div><div class="card-stat-value">50 000 FCFA</div></div>
+<div class="card-stat"><div class="card-stat-label">Échéance</div><div class="card-stat-value urgent">Dans 2 jours</div></div>
+</div>
+<button class="btn btn-danger">Proposer prolongation</button>
+</div>
+</div>
+<div class="card card-warning">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon card-icon-warning">💰</div>
+<div class="card-title">Paul Traoré · Commission à percevoir</div>
+</div>
+<span class="badge badge-orange">À FAIRE</span>
+</div>
+<div class="card-meta">50 000 FCFA · <strong>Entreprise ABC</strong></div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Contrat</div><div class="card-stat-value">CHR-2026-0042</div></div>
+<div class="card-stat"><div class="card-stat-label">Statut</div><div class="card-stat-value pending">En attente</div></div>
+</div>
+<button class="btn btn-success">Percevoir</button>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="bottom-nav">
+<div class="nav-item active"><div class="nav-icon">🏠</div><div>Aujourd'hui</div></div>
+<div class="nav-item"><div class="nav-icon">📁</div><div>Dossiers</div></div>
+<div class="nav-item"><div class="nav-icon">📊</div><div>Stats</div></div>
+</div>
+</div>
+</body>
+</html>

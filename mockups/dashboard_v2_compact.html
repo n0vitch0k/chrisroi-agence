@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>Dashboard V2 — ChrisRoi Agence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #f5ebe0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #fdf8f3;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(61,53,48,0.25);
+    position: relative;
+  }
+  .scroll { height: 100%; overflow-y: auto; }
+  .scroll::-webkit-scrollbar { width: 0; }
+
+  /* ── Header sobre ── */
+  .header {
+    background: #fffaf5;
+    padding: 50px 24px 20px;
+    border-bottom: 1px solid #f5ebe0;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #c45a2a, #a3481f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+  }
+  .brand-name { font-size: 17px; font-weight: 700; color: #3d3530; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: #fdf8f3;
+    border: 1px solid #eedec9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .icon-btn svg { width: 20px; height: 20px; stroke: #3d3530; fill: none; stroke-width: 2; }
+  .badge-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #b85454;
+  }
+  .greeting { font-size: 13px; color: #b8a99e; }
+  .user-name { font-size: 22px; font-weight: 800; color: #3d3530; margin-top: 2px; letter-spacing: -0.3px; }
+
+  /* ── Stat cards horizontales ── */
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+  }
+  .stats-row::-webkit-scrollbar { height: 0; }
+  .stat-card {
+    min-width: 130px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid #eedec9;
+    box-shadow: 0 2px 8px rgba(61,53,48,0.04);
+  }
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  .stat-icon svg { width: 18px; height: 18px; stroke-width: 2; }
+  .stat-value { font-size: 20px; font-weight: 800; color: #3d3530; }
+  .stat-label { font-size: 11px; color: #b8a99e; margin-top: 2px; font-weight: 500; }
+  .stat-card.highlight { background: linear-gradient(135deg, #c45a2a, #a3481f); border: none; }
+  .stat-card.highlight .stat-value { color: #fff; }
+  .stat-card.highlight .stat-label { color: rgba(255,255,255,0.75); }
+  .stat-card.highlight .stat-icon { background: rgba(255,255,255,0.2); }
+  .stat-card.highlight svg { stroke: #fff !important; }
+
+  /* ── Content ── */
+  .content { padding: 4px 20px 40px; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a7d72;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 18px 0 10px;
+    padding-left: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .section-title .link { color: #c45a2a; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+
+  /* ── Large action buttons ── */
+  .action-large {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 10px;
+    border: 1px solid #eedec9;
+    box-shadow: 0 2px 8px rgba(61,53,48,0.04);
+    cursor: pointer;
+  }
+  .action-large:active { transform: scale(0.98); }
+  .action-large-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .action-large-icon svg { width: 22px; height: 22px; stroke-width: 2; }
+  .action-large-info { flex: 1; }
+  .action-large-title { font-size: 15px; font-weight: 700; color: #3d3530; }
+  .action-large-sub { font-size: 12px; color: #b8a99e; margin-top: 1px; }
+  .action-large-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: #fdebd8;
+    color: #c45a2a;
+  }
+  .action-large-chevron { color: #b8a99e; }
+
+  /* ── Dossier compact ── */
+  .dossier-compact {
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px;
+    border: 1px solid #eedec9;
+    box-shadow: 0 2px 8px rgba(61,53,48,0.04);
+  }
+  .dossier-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .dossier-stat {
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: 12px;
+  }
+  .dossier-stat-value { font-size: 22px; font-weight: 800; }
+  .dossier-stat-label { font-size: 10px; color: #b8a99e; margin-top: 2px; font-weight: 600; text-transform: uppercase; }
+  .dossier-btns { display: flex; gap: 8px; }
+  .dossier-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* ── Urgence compacte ── */
+  .urgent-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 8px;
+    border: 1px solid #eedec9;
+    box-shadow: 0 2px 8px rgba(61,53,48,0.04);
+  }
+  .urgent-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .urgent-info { flex: 1; min-width: 0; }
+  .urgent-name { font-size: 14px; font-weight: 700; color: #3d3530; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .urgent-meta { font-size: 12px; color: #b8a99e; margin-top: 1px; }
+  .urgent-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: #fdeaea;
+    color: #b85454;
+    white-space: nowrap;
+  }
+
+  /* ── Label ── */
+  .label {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8a7d72;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+<div class="scroll">
+  <div class="label">Variante 2 — Compact & Data</div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-logo">CR</div>
+        <div class="brand-name">ChrisRoi Agence</div>
+      </div>
+      <div class="header-actions">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="badge-dot"></div>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="greeting">Bonjour,</div>
+    <div class="user-name">Williams BROU</div>
+  </div>
+
+  <!-- Stats horizontales -->
+  <div class="stats-row">
+    <div class="stat-card highlight">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" stroke="#fff" fill="none"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div class="stat-value">125 000 F</div>
+      <div class="stat-label">En attente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#e8f0dc;">
+        <svg viewBox="0 0 24 24" stroke="#5a7c3a" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <div class="stat-value">47</div>
+      <div class="stat-label">Dossiers</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#d8ecec;">
+        <svg viewBox="0 0 24 24" stroke="#2a7a7a" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="stat-value">10</div>
+      <div class="stat-label">Contrats</div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Actions -->
+    <div class="section-title">Actions</div>
+    <div class="action-large">
+      <div class="action-large-icon" style="background:#fdebd8;">
+        <svg viewBox="0 0 24 24" stroke="#c45a2a" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="action-large-info">
+        <div class="action-large-title">Inscrire un candidat</div>
+        <div class="action-large-sub">Créer une fiche d'inscription</div>
+      </div>
+      <div class="action-large-badge">Nouveau</div>
+      <span class="action-large-chevron">›</span>
+    </div>
+    <div class="action-large">
+      <div class="action-large-icon" style="background:#e8f0dc;">
+        <svg viewBox="0 0 24 24" stroke="#5a7c3a" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="action-large-info">
+        <div class="action-large-title">Créer un contrat</div>
+        <div class="action-large-sub">Placer un candidat</div>
+      </div>
+      <span class="action-large-chevron">›</span>
+    </div>
+    <div class="action-large">
+      <div class="action-large-icon" style="background:#faf3d1;">
+        <svg viewBox="0 0 24 24" stroke="#b8860b" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </div>
+      <div class="action-large-info">
+        <div class="action-large-title">Scanner un document</div>
+        <div class="action-large-sub">OCR avec Gemini AI</div>
+      </div>
+      <span class="action-large-chevron">›</span>
+    </div>
+
+    <!-- Dossiers -->
+    <div class="section-title">
+      Dossiers
+      <span class="link">Voir tout ›</span>
+    </div>
+    <div class="dossier-compact">
+      <div class="dossier-stats">
+        <div class="dossier-stat" style="background:#fdebd8;">
+          <div class="dossier-stat-value" style="color:#c45a2a;">25</div>
+          <div class="dossier-stat-label">Fiches</div>
+        </div>
+        <div class="dossier-stat" style="background:#faf3d1;">
+          <div class="dossier-stat-value" style="color:#b8860b;">12</div>
+          <div class="dossier-stat-label">Employeurs</div>
+        </div>
+        <div class="dossier-stat" style="background:#e8f0dc;">
+          <div class="dossier-stat-value" style="color:#5a7c3a;">10</div>
+          <div class="dossier-stat-label">Contrats</div>
+        </div>
+      </div>
+      <div class="dossier-btns">
+        <div class="dossier-btn" style="background:#c45a2a;">Fiches</div>
+        <div class="dossier-btn" style="background:#b8860b;">Employeurs</div>
+        <div class="dossier-btn" style="background:#5a7c3a;">Contrats</div>
+      </div>
+    </div>
+
+    <!-- Urgences -->
+    <div class="section-title">
+      Urgences
+      <span class="link">Tout voir ›</span>
+    </div>
+    <div class="urgent-item">
+      <div class="urgent-avatar" style="background:#b85454;">F</div>
+      <div class="urgent-info">
+        <div class="urgent-name">Fatou K. · Fin dans 3j</div>
+        <div class="urgent-meta">Maison Diallo · 45 000 FCFA</div>
+      </div>
+      <div class="urgent-badge">URGENT</div>
+    </div>
+    <div class="urgent-item">
+      <div class="urgent-avatar" style="background:#b8860b;">I</div>
+      <div class="urgent-info">
+        <div class="urgent-name">Ibrahima C. · Commission due</div>
+        <div class="urgent-meta">30 000 FCFA · Restaurant Le Palace</div>
+      </div>
+      <div class="urgent-badge" style="background:#faf3d1;color:#b8860b;">À FAIRE</div>
+    </div>
+    <div class="urgent-item">
+      <div class="urgent-avatar" style="background:#5a7c3a;">A</div>
+      <div class="urgent-info">
+        <div class="urgent-name">Aïssatou D. · Nouveau contrat</div>
+        <div class="urgent-meta">Demain · 50 000 FCFA</div>
+      </div>
+      <div class="urgent-badge" style="background:#e8f0dc;color:#5a7c3a;">NOUVEAU</div>
+    </div>
+
+  </div>
+</div>
+</div>
+</body>
+</html>

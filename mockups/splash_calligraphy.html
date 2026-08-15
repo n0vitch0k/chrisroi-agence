@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChrisRoi Agence — Calligraphic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:wght@300;400&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: #0a0807;
+  font-family: system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.bg {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 55%, rgba(196,90,42,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, #110d0b 0%, #0a0706 100%);
+  z-index: 0;
+}
+
+/* ─── Phone ─── */
+.phone {
+  width: 340px;
+  height: 680px;
+  border-radius: 48px;
+  background: linear-gradient(145deg, #1a1410 0%, #0d0908 100%);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.04),
+    0 50px 100px -30px rgba(0,0,0,0.7),
+    0 0 140px -50px rgba(212,168,83,0.08);
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+.phone::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 110px; height: 26px;
+  background: #0a0706;
+  border-radius: 0 0 16px 16px;
+  z-index: 10;
+}
+
+.screen {
+  position: absolute;
+  inset: 4px;
+  border-radius: 44px;
+  overflow: hidden;
+}
+
+/* ─── Splash ─── */
+.splash {
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 60%, rgba(212,168,83,0.03) 0%, transparent 50%),
+    linear-gradient(170deg, #14100e 0%, #0d0a09 50%, #110d0b 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+}
+
+/* ─── Big C background ─── */
+.bg-c {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: bgCIn 3s 0.3s ease-out forwards;
+}
+@keyframes bgCIn { to { opacity: 0.06; } }
+.bg-c svg { width: 200px; height: 200px; }
+.bg-c .draw {
+  fill: none;
+  stroke: #d4a853;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 800;
+  stroke-dashoffset: 800;
+  animation: drawC 2.5s 0.5s ease-out forwards;
+}
+@keyframes drawC { to { stroke-dashoffset: 0; } }
+
+/* ─── Main calligraphy (HTML text) ─── */
+.draw-wrap {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  margin-top: -20px;
+}
+
+.chrisroi {
+  font-family: 'Great Vibes', cursive;
+  font-size: 52px;
+  line-height: 1;
+  background: linear-gradient(135deg, #f5e6c8 0%, #d4a853 50%, #b8860b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+.chrisroi span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(6px);
+  filter: blur(3px);
+}
+
+.chrisroi .l1 { animation: revealLet 0.6s 1.5s ease-out forwards; }
+.chrisroi .l2 { animation: revealLet 0.6s 1.75s ease-out forwards; }
+.chrisroi .l3 { animation: revealLet 0.6s 2.0s ease-out forwards; }
+.chrisroi .l4 { animation: revealLet 0.6s 2.25s ease-out forwards; }
+.chrisroi .l5 { animation: revealLet 0.6s 2.5s ease-out forwards; }
+.chrisroi .l6 { animation: revealLet 0.6s 2.75s ease-out forwards; }
+.chrisroi .l7 { animation: revealLet 0.6s 3.0s ease-out forwards; }
+.chrisroi .l8 { animation: revealLet 0.6s 3.25s ease-out forwards; }
+
+@keyframes revealLet {
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* ─── Agence subtitle ─── */
+.agence-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: #d4a853;
+  opacity: 0;
+  margin-top: 4px;
+  animation: fadeAgence 1.5s 4s ease-out forwards;
+}
+@keyframes fadeAgence { to { opacity: 0.5; } }
+
+/* ─── Pulse glow ─── */
+.draw-wrap {
+  animation: pulseGlow 3s 5s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 12px rgba(212,168,83,0.25)); }
+}
+
+/* ─── Flourish ─── */
+.flourish {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d4a853, transparent);
+  margin-top: 16px;
+  opacity: 0;
+  animation: flourishIn 1s 4.2s ease-out forwards;
+}
+@keyframes flourishIn { to { opacity: 0.5; width: 80px; } }
+
+/* ─── Replay ─── */
+.replay {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(212,168,83,0.2);
+  background: rgba(212,168,83,0.05);
+  color: #d4a853;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  animation: fadeReplay 1s 5.5s ease-out forwards;
+  z-index: 10;
+}
+@keyframes fadeReplay { to { opacity: 1; } }
+.replay:hover {
+  background: rgba(212,168,83,0.1);
+  border-color: rgba(212,168,83,0.3);
+}
+
+/* ─── Labels ─── */
+.top-label {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #d4a853;
+  opacity: 0.5;
+  z-index: 10;
+}
+
+.controls {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+.ctrl-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: #8a7d72;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover { color: #e8e0d8; }
+.ctrl-btn.active {
+  background: rgba(212,168,83,0.12);
+  border-color: rgba(212,168,83,0.25);
+  color: #d4a853;
+}
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="top-label">Calligraphic Draw — Premium</div>
+
+<div class="phone">
+  <div class="screen">
+    <div class="splash" id="splash">
+
+      <!-- Big C watermark -->
+      <div class="bg-c">
+        <svg viewBox="0 0 200 200">
+          <path class="draw" d="M 145 50 C 115 18, 65 15, 48 52 C 28 95, 42 155, 85 175 C 118 190, 150 182, 165 155"/>
+        </svg>
+      </div>
+
+      <!-- Calligraphy text - HTML for perfect kerning -->
+      <div class="draw-wrap">
+        <div class="chrisroi">
+          <span class="l1">C</span><span class="l2">h</span><span class="l3">r</span><span class="l4">i</span><span class="l5">s</span><span class="l6">R</span><span class="l7">o</span><span class="l8">i</span>
+        </div>
+        <div class="agence-sub">AGENCE</div>
+        <div class="flourish"></div>
+      </div>
+
+      <button class="replay" onclick="replay()">Replay</button>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn active">Calligraphique</button>
+  <button class="ctrl-btn">Bold Doré</button>
+  <button class="ctrl-btn">Minimal</button>
+</div>
+
+<script>
+function replay() {
+  const el = document.getElementById('splash');
+  const animated = el.querySelectorAll('.chrisroi span, .agence-sub, .draw, .flourish, .bg-c, .replay, .draw-wrap');
+  animated.forEach(e => {
+    e.style.animation = 'none';
+    e.offsetHeight;
+    e.style.animation = '';
+  });
+}
+
+setInterval(replay, 10000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChrisRoi Agence — Dashboard V1 Material (Full Scroll)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+.phone { width: 390px; min-height: 844px; background: #f5f7fb; border-radius: 42px; box-shadow: 0 30px 80px rgba(0,0,0,0.3); overflow: hidden; position: relative; border: 12px solid #1a1a2e; display: flex; flex-direction: column; }
+.status-bar { height: 44px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 13px; font-weight: 600; color: #212121; flex-shrink: 0; }
+.header { background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: #fff; padding: 20px 24px 24px; border-radius: 0 0 30px 30px; flex-shrink: 0; }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+.brand-text { font-size: 18px; font-weight: 700; }
+.header-actions { display: flex; gap: 12px; }
+.icon-btn { width: 40px; height: 40px; border-radius: 14px; background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+.badge { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; border-radius: 50%; background: #ff6b6b; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.greeting { font-size: 14px; opacity: 0.85; margin-bottom: 4px; }
+.user-name { font-size: 24px; font-weight: 800; }
+.date-pill { display: inline-block; margin-top: 16px; padding: 8px 14px; background: rgba(255,255,255,0.15); border-radius: 20px; font-size: 13px; font-weight: 500; }
+
+/* CONTENT - SCROLLABLE FULL HEIGHT */
+.content { flex: 1; overflow-y: auto; padding: 20px 20px 100px; min-height: 0; }
+
+.section { margin-bottom: 24px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px; }
+.section-title { font-size: 18px; font-weight: 800; color: #212121; display: flex; align-items: center; gap: 8px; }
+.section-link { font-size: 13px; color: #1E88E5; font-weight: 600; text-decoration: none; }
+
+/* CARD STACK - VERTICAL SCROLL */
+.card-stack { display: flex; flex-direction: column; gap: 14px; }
+
+.card { background: #fff; border-radius: 18px; box-shadow: 0 2px 16px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03); overflow: hidden; transition: all 0.2s ease; }
+.card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.card:active { transform: translateY(0) scale(0.995); }
+
+.card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+.card.primary::before { background: linear-gradient(180deg, #1E88E5 0%, #42A5F5 100%); }
+.card.success::before { background: linear-gradient(180deg, #43A047 0%, #66BB6A 100%); }
+.card.warning::before { background: linear-gradient(180deg, #FF9800 0%, #FFB74D 100%); }
+.card.info::before { background: linear-gradient(180deg, #2196F3 0%, #64B5F6 100%); }
+.card.purple::before { background: linear-gradient(180deg, #7B1FA2 0%, #BA68C8 100%); }
+.card.urgent::before { background: linear-gradient(180deg, #F44336 0%, #EF5350 100%); }
+
+.card-content { padding: 18px 20px; position: relative; z-index: 1; }
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.card-main { display: flex; align-items: center; gap: 12px; }
+
+.card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.card-icon.primary { background: #e3f2fd; color: #1E88E5; }
+.card-icon.success { background: #e8f5e9; color: #43A047; }
+.card-icon.warning { background: #fff3e0; color: #FF9800; }
+.card-icon.info { background: #e3f2fd; color: #1E88E5; }
+.card-icon.purple { background: #f3e5f5; color: #7B1FA2; }
+.card-icon.urgent { background: #ffebee; color: #F44336; }
+
+.card-title { font-size: 16px; font-weight: 700; color: #212121; line-height: 1.3; }
+.card-badge { padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.badge-blue { background: #e3f2fd; color: #1976d2; }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+.badge-orange { background: #fff3e0; color: #f57c00; }
+.badge-purple { background: #f3e5f5; color: #7b1fa2; }
+.badge-red { background: #ffebee; color: #d32f2f; }
+
+.card-meta { font-size: 12px; color: #757575; line-height: 1.5; margin-bottom: 14px; }
+.card-meta strong { color: #424242; font-weight: 600; }
+
+.card-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-top: 12px; border-top: 1px solid #f0f0f0; margin-bottom: 14px; }
+.card-stat { display: flex; flex-direction: column; gap: 2px; }
+.card-stat-label { font-size: 10px; color: #9e9e9e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.card-stat-value { font-size: 13px; font-weight: 700; color: #212121; }
+.card-stat-value.paid { color: #2e7d32; }
+.card-stat-value.pending { color: #f57c00; }
+.card-stat-value.urgent { color: #d32f2f; }
+
+.card-actions { display: flex; gap: 8px; }
+.btn { flex: 1; border: none; border-radius: 10px; padding: 10px 14px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.primary { background: #1E88E5; color: #fff; }
+.btn.secondary { background: #f5f5f5; color: #424242; }
+.btn.success { background: #43A047; color: #fff; }
+.btn.warning { background: #FF9800; color: #fff; }
+.btn.danger { background: #F44336; color: #fff; }
+.btn.ghost { background: transparent; color: #1E88E5; border: 1px solid #1E88E5; }
+.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); filter: brightness(0.95); }
+
+/* DOSSIERS CARD */
+.dossiers-card { background: #fff; border-radius: 18px; box-shadow: 0 2px 16px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03); overflow: hidden; }
+.dossiers-card::before { background: linear-gradient(180deg, #43A047 0%, #66BB6A 100%); }
+.dossiers-header { padding: 18px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.dossiers-title { font-size: 16px; font-weight: 700; color: #212121; }
+.dossiers-count { font-size: 13px; color: #43A047; font-weight: 600; }
+
+.dossier-row { padding: 14px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #f0f0f0; transition: background 0.1s; cursor: pointer; }
+.dossier-row:last-child { border-bottom: none; }
+.dossier-row:hover { background: #fafafa; }
+.dossier-row:active { background: #f0f0f0; }
+.dossier-row-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.dossier-row-icon.fiche { background: #e3f2fd; color: #1E88E5; }
+.dossier-row-icon.employeur { background: #fff3e0; color: #FF9800; }
+.dossier-row-icon.contrat { background: #e8f5e9; color: #43A047; }
+.dossier-row-info { flex: 1; min-width: 0; }
+.dossier-row-label { font-size: 15px; font-weight: 600; color: #212121; }
+.dossier-row-count { font-size: 12px; color: #757575; }
+.dossier-row-chevron { color: #c7c7cc; font-size: 18px; }
+
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 78px; background: #fff; display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 28px 28px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.08); z-index: 10; }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #9e9e9e; font-size: 11px; font-weight: 600; cursor: pointer; }
+.nav-item.active { color: #1E88E5; }
+.nav-icon { font-size: 22px; }
+</style>
+</head>
+<body>
+<div class="phone">
+<div class="status-bar"><span>9:41</span><span>●●●●</span></div>
+<div class="header">
+<div class="header-top">
+<div class="brand"><div class="brand-logo">CR</div><div class="brand-text">ChrisRoi Agence</div></div>
+<div class="header-actions"><button class="icon-btn">🔔<span class="badge">3</span></button><button class="icon-btn">👤</button></div>
+</div>
+<div class="greeting">Bonjour,</div><div class="user-name">ChrisRoi Admin</div><div class="date-pill">📅 Mardi 17 Juin 2026</div>
+</div>
+<div class="content">
+
+<!-- SECTION: ACTIONS PRINCIPALES -->
+<div class="section">
+<div class="section-header"><h2 class="section-title">⚡ Actions principales</h2></div>
+<div class="card-stack">
+
+<!-- 1. INSCRIRE -->
+<div class="card primary">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon primary">👤</div>
+<div class="card-title">Inscrire</div>
+</div>
+<span class="card-badge badge-blue">Fiche d'inscription</span>
+</div>
+<div class="card-meta">Créer une nouvelle fiche candidat</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Fiches ce mois</div><div class="card-stat-value">12</div></div>
+<div class="card-stat"><div class="card-stat-label">En attente contrat</div><div class="card-stat-value pending">3</div></div>
+</div>
+<div class="card-actions">
+<button class="btn primary">Ouvrir formulaire</button>
+<button class="btn secondary">Voir liste</button>
+</div>
+</div>
+</div>
+
+<!-- 2. CRÉER UN CONTRAT -->
+<div class="card success">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon success">📄</div>
+<div class="card-title">Créer un contrat</div>
+</div>
+<span class="card-badge badge-green">Placement</span>
+</div>
+<div class="card-meta">Générer un contrat de placement</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Contrats actifs</div><div class="card-stat-value">8</div></div>
+<div class="card-stat"><div class="card-stat-label">À renouveler</div><div class="card-stat-value pending">2</div></div>
+</div>
+<div class="card-actions">
+<button class="btn primary">Nouveau contrat</button>
+<button class="btn secondary">Modèles</button>
+</div>
+</div>
+</div>
+
+<!-- 3. SCANNER -->
+<div class="card warning">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon warning">📸</div>
+<div class="card-title">Scanner</div>
+</div>
+<span class="card-badge badge-orange">OCR / Photo</span>
+</div>
+<div class="card-meta">Numériser pièce d'identité, CV, etc.</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Scans cette semaine</div><div class="card-stat-value">7</div></div>
+<div class="card-stat"><div class="card-stat-label">En attente</div><div class="card-stat-value pending">2</div></div>
+</div>
+<div class="card-actions">
+<button class="btn warning">Ouvrir caméra</button>
+<button class="btn ghost">Galerie</button>
+</div>
+</div>
+</div>
+
+<!-- 4. NOUVEL EMPLOYEUR -->
+<div class="card info">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon info">🏢</div>
+<div class="card-title">Nouvel employeur</div>
+</div>
+<span class="card-badge badge-blue">Entreprise cliente</span>
+</div>
+<div class="card-meta">Ajouter une entreprise qui recrute</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Employeurs actifs</div><div class="card-stat-value">15</div></div>
+<div class="card-stat"><div class="card-stat-label">Nouveaux ce mois</div><div class="card-stat-value">3</div></div>
+</div>
+<div class="card-actions">
+<button class="btn primary">Ajouter</button>
+<button class="btn secondary">Liste</button>
+</div>
+</div>
+</div>
+
+<!-- 5. SUIVI COMMISSIONS -->
+<div class="card purple">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon purple">💰</div>
+<div class="card-title">Suivi commissions</div>
+</div>
+<span class="card-badge badge-purple">À percevoir</span>
+</div>
+<div class="card-meta">3 commissions en attente · 150 000 FCFA</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Total perçu</div><div class="card-stat-value paid">450 000 FCFA</div></div>
+<div class="card-stat"><div class="card-stat-label">En attente</div><div class="card-stat-value pending">150 000 FCFA</div></div>
+</div>
+<div class="card-actions">
+<button class="btn success">Voir détail</button>
+<button class="btn ghost">Historique</button>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- SECTION: DOSSIERS -->
+<div class="section">
+<div class="section-header"><h2 class="section-title">📁 Dossiers</h2><a href="#" class="section-link">Voir tout (12)</a></div>
+<div class="card-stack">
+<div class="card dossier" style="padding:0;">
+<div class="dossiers-card">
+<div class="dossiers-header"><span class="dossiers-title">Dossiers</span><span class="dossiers-count">12 dossiers actifs</span></div>
+<div class="dossier-row"><div class="dossier-row-icon fiche">📄</div><div class="dossier-row-info"><div class="dossier-row-label">Fiches</div><div class="dossier-row-count">5 fiches · 3 sans contrat</div></div><span class="dossier-row-chevron">›</span></div>
+<div class="dossier-row"><div class="dossier-row-icon employeur">🏢</div><div class="dossier-row-info"><div class="dossier-row-label">Employeurs</div><div class="dossier-row-count">4 entreprises actives</div></div><span class="dossier-row-chevron">›</span></div>
+<div class="dossier-row"><div class="dossier-row-icon contrat">📋</div><div class="dossier-row-info"><div class="dossier-row-label">Contrats</div><div class="dossier-row-count">8 contrats · 2 à renouveler</div></div><span class="dossier-row-chevron">›</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SECTION: URGENCES -->
+<div class="section">
+<div class="section-header"><h2 class="section-title">⚠️ Urgences du jour</h2><a href="#" class="section-link">Voir tout</a></div>
+<div class="card-stack">
+<div class="card urgent">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon urgent">⏰</div>
+<div class="card-title">2 contrats finissent dans ≤ 3 jours</div>
+</div>
+<span class="card-badge badge-red">URGENT</span>
+</div>
+<div class="card-meta"><strong>Marie Diallo</strong> (Gouvernante) · <strong>Fatou Koné</strong> · 150 000 FCFA</div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Commission agence</div><div class="card-stat-value">50 000 FCFA</div></div>
+<div class="card-stat"><div class="card-stat-label">Échéance</div><div class="card-stat-value urgent">Dans 2 jours</div></div>
+</div>
+<div class="card-actions">
+<button class="btn danger">Proposer prolongation</button>
+<button class="btn secondary">Voir dossier</button>
+</div>
+</div>
+</div>
+<div class="card warning">
+<div class="card-content">
+<div class="card-header">
+<div class="card-main">
+<div class="card-icon warning">💰</div>
+<div class="card-title">1 commission à percevoir</div>
+</div>
+<span class="card-badge badge-orange">À FAIRE</span>
+</div>
+<div class="card-meta">50 000 FCFA · Contrat <strong>CHR-2026-0042</strong> · <strong>Entreprise ABC</strong></div>
+<div class="card-stats">
+<div class="card-stat"><div class="card-stat-label">Employé</div><div class="card-stat-value">Paul Traoré</div></div>
+<div class="card-stat"><div class="card-stat-label">Statut</div><div class="card-stat-value pending">En attente</div></div>
+</div>
+<div class="card-actions">
+<button class="btn success">Percevoir</button>
+<button class="btn ghost">Détails</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="bottom-nav">
+<div class="nav-item active"><div class="nav-icon">🏠</div><div>Aujourd'hui</div></div>
+<div class="nav-item"><div class="nav-icon">📁</div><div>Dossiers</div></div>
+<div class="nav-item"><div class="nav-icon">📊</div><div>Stats</div></div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,118 @@
+# ChrisRoi Agence - Application Mobile
+
+Application de gestion complète pour l'agence de placement de personnel ChrisRoi.
+
+## Fonctionnalités
+
+### Gestion des Employés
+- Inscription via formulaire numérique
+- Photo d'identité
+- Informations personnelles (nom, prénom, date/lieu de naissance, etc.)
+- Parents et personnes à contacter en cas d'urgence
+- Expériences professionnelles
+- Catégories d'emploi: Serveuse, Chauffeur, Femme de ménage, Cuisinier, Vigil, Nounou
+
+### Gestion des Employeurs
+- Enregistrement des entreprises
+- Demandes de recrutement
+- Suivi des besoins en personnel
+
+### Gestion des Contrats
+- Création de contrats CDD/CDI
+- Calcul automatique de la commission (1/3 du premier salaire)
+- Suivi des statuts (en cours, terminé, annulé)
+- Alertes de fin de contrat
+- Impression des contrats
+
+### Alertes & Notifications
+- Fin de contrat proche (7 jours avant)
+- Commissions à percevoir
+- Nouvelles demandes de recrutement
+
+### Tableau de Bord
+- Statistiques en temps réel
+- Vue d'ensemble des employés, employeurs et contrats
+- Alertes actives
+
+## Installation
+
+1. Installer les dépendances:
+```bash
+npm install
+```
+
+2. Lancer l'application localement:
+```bash
+npx expo start
+```
+
+3. Scanner le QR code avec l'application Expo Go
+
+## Build (Génération de l'application)
+
+L'application utilise **EAS Build**. Assurez-vous d'être connecté à votre compte Expo (`npx eas login`).
+
+### Android (APK pour test)
+```bash
+npx eas build -p android --profile preview
+```
+
+### Android (AAB pour Play Store)
+```bash
+npx eas build -p android --profile production
+```
+
+### iOS
+```bash
+npx eas build -p ios
+```
+
+## Identifiants par défaut
+
+- Email: admin@chrisroi.com
+- Mot de passe: chrisroi2024
+
+## Structure du projet
+
+```
+chrisroi-agence/
+├── App.tsx                 # Point d'entrée
+├── src/
+│   ├── database/           # Base de données SQLite
+│   │   ├── schema.ts       # Schéma des tables
+│   │   └── service.ts      # Services CRUD
+│   ├── screens/            # Écrans
+│   │   ├── LoginScreen.tsx
+│   │   ├── DashboardScreen.tsx
+│   │   ├── EmployesScreen.tsx
+│   │   ├── EmployeFormScreen.tsx
+│   │   ├── EmployeDetailScreen.tsx
+│   │   ├── EmployeursScreen.tsx
+│   │   ├── EmployeurFormScreen.tsx
+│   │   ├── EmployeurDetailScreen.tsx
+│   │   ├── ContratsScreen.tsx
+│   │   ├── ContratFormScreen.tsx
+│   │   ├── ContratDetailScreen.tsx
+│   │   ├── AlertesScreen.tsx
+│   │   └── SettingsScreen.tsx
+│   ├── types/              # Types TypeScript
+│   └── utils/              # Utilitaires
+├── assets/                 # Images et ressources
+├── eas.json                # Configuration du build
+└── package.json
+```
+
+## Technologies
+
+- React Native avec Expo (SDK 52)
+- TypeScript
+- SQLite (expo-sqlite)
+- React Navigation
+- React Native Paper (UI)
+- expo-print (impression)
+
+## Licence
+
+Propriétaire - ChrisRoi Agence
+npx eas-cli@latest init --id be00e727-aaea-4a45-b61f-cb9a5dbc0b11
+npx eas-cli@latest build --platform all --auto-submit

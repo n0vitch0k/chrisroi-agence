@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossiers — Variante Annuaire</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #fdf8f3;
+  color: #3d3530;
+  line-height: 1.5;
+}
+
+/* ─── Warm Earth ─── */
+:root {
+  --bg: #fdf8f3;
+  --surface: #ffffff;
+  --primary: #c45a2a;
+  --primary-dim: #fdebd8;
+  --success: #5a7c3a;
+  --success-dim: #e8f0dc;
+  --warning: #b8860b;
+  --info: #2a7a7a;
+  --rose: #b85454;
+  --text: #3d3530;
+  --text-muted: #8a7d72;
+  --text-dim: #b8a99e;
+  --border: #eedec9;
+  --border-soft: #f5ebe0;
+}
+
+/* ─── Top bar ─── */
+.topbar {
+  background: #fffaf5;
+  border-bottom: 1px solid var(--border);
+  padding: 52px 20px 16px;
+}
+.topbar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.topbar-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--text);
+}
+.topbar-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-dim);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.search-row {
+  display: flex;
+  gap: 10px;
+}
+.search-row input {
+  flex: 1;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+}
+.search-row input:focus { border-color: var(--primary); }
+.search-row input::placeholder { color: var(--text-dim); }
+.filter-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.15s;
+}
+.filter-toggle:hover { border-color: var(--primary); background: var(--primary-dim); }
+.filter-toggle.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+/* ─── Filter panel ─── */
+.filter-panel {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.filter-panel.open {
+  max-height: 300px;
+}
+.filter-panel-inner {
+  padding: 14px 0;
+}
+.filter-group {
+  margin-bottom: 14px;
+}
+.filter-group:last-child { margin-bottom: 0; }
+.filter-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.filter-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.chip:hover:not(.active) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ─── Quick stats ─── */
+.quick-stats {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  overflow-x: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+.stat-pill {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+  border: 1px solid transparent;
+}
+.stat-pill:hover { border-color: var(--border); }
+.stat-pill .stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ─── List ─── */
+.list {
+  padding: 8px 0 100px;
+}
+
+/* Row item — dense annuaire */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid var(--border-soft);
+}
+.row:last-child { border-bottom: none; }
+.row:hover { background: var(--primary-dim); }
+
+.row-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #3d3530;
+}
+.row-info { flex: 1; min-width: 0; }
+.row-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.row-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.row-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.row-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+.row-action:hover { background: var(--border-soft); }
+
+/* ─── FAB ─── */
+.fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(196,90,42,0.35);
+  transition: all 0.2s;
+}
+.fab:hover { transform: scale(1.05); box-shadow: 0 8px 28px rgba(196,90,42,0.45); }
+
+/* ─── Responsive ─── */
+@media (min-width: 480px) {
+  body { max-width: 480px; margin: 0 auto; }
+}
+
+/* ─── Empty state ─── */
+.empty-state {
+  text-align: center;
+  padding: 80px 40px;
+}
+.empty-state .ico { font-size: 64px; opacity: 0.3; margin-bottom: 16px; }
+.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-top">
+    <div class="topbar-title">Dossiers</div>
+    <div class="topbar-count">24</div>
+  </div>
+  <div class="search-row">
+    <input type="text" placeholder="Rechercher..." id="searchInput" oninput="filterRows()">
+    <button class="filter-toggle" id="filterToggle" onclick="toggleFilters()">▤</button>
+  </div>
+</div>
+
+<!-- Filter Panel (collapsible) -->
+<div class="filter-panel" id="filterPanel">
+  <div class="filter-panel-inner">
+    <div class="filter-group">
+      <div class="filter-group-label">Catégorie</div>
+      <div class="filter-chips">
+        <span class="chip active" onclick="toggleChip(this)">Toutes</span>
+        <span class="chip" onclick="toggleChip(this)">Maçonnerie</span>
+        <span class="chip" onclick="toggleChip(this)">Menuiserie</span>
+        <span class="chip" onclick="toggleChip(this)">Entretien</span>
+        <span class="chip" onclick="toggleChip(this)">Chauffage</span>
+        <span class="chip" onclick="toggleChip(this)">Manœuvre</span>
+        <span class="chip" onclick="toggleChip(this)">Restauration</span>
+      </div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-group-label">Situation</div>
+      <div class="filter-chips">
+        <span class="chip active" onclick="toggleChip(this)">Toutes</span>
+        <span class="chip" onclick="toggleChip(this)">Célibataire</span>
+        <span class="chip" onclick="toggleChip(this)">Marié(e)</span>
+        <span class="chip" onclick="toggleChip(this)">Divorcé(e)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Status Pills -->
+<div class="quick-stats">
+  <div class="stat-pill" style="background: var(--success-dim); color: var(--success);" onclick="filterByStatus('all')">
+    <span class="stat-dot" style="background: var(--success);"></span>Tous <strong>24</strong>
+  </div>
+  <div class="stat-pill" style="background: var(--success-dim); color: var(--success);" onclick="filterByStatus('disponible')">
+    <span class="stat-dot" style="background: var(--success);"></span>Dispo <strong>12</strong>
+  </div>
+  <div class="stat-pill" style="background: #d8ecec; color: var(--info);" onclick="filterByStatus('en_poste')">
+    <span class="stat-dot" style="background: var(--info);"></span>Poste <strong>6</strong>
+  </div>
+  <div class="stat-pill" style="background: var(--warning); color: #fff;" onclick="filterByStatus('en_attente')">
+    <span class="stat-dot" style="background: #fff;"></span>Attente <strong>4</strong>
+  </div>
+  <div class="stat-pill" style="background: var(--rose); color: #fff;" onclick="filterByStatus('indisponible')">
+    <span class="stat-dot" style="background: #fff;"></span>Indispo <strong>2</strong>
+  </div>
+</div>
+
+<!-- List -->
+<div class="list" id="list">
+
+  <div class="row" data-status="disponible" onclick="alert('Détail Kouamé Guy')">
+    <div class="row-avatar" style="background: linear-gradient(135deg, #fdebd8, #f5d5b8);">KG</div>
+    <div class="row-info">
+      <div class="row-name">Kouamé Guy</div>
+      <div class="row-detail">
+        <span>🏗️ Maçonnerie</span>
+        <span>•</span>
+        <span style="color: var(--success); font-weight: 600;">✅ Disponible</span>
+      </div>
+    </div>
+    <button class="row-action" onclick="event.stopPropagation();alert('Placer')">📋</button>
+  </div>
+
+  <div class="row" data-status="en_poste" onclick="alert('Détail Aké Denise')">
+    <div class="row-avatar" style="background: linear-gradient(135deg, #d8ecec, #b8dcdc);">AD</div>
+    <div class="row-info">
+      <div class="row-name">Aké Denise</div>
+      <div class="row-detail">
+        <span>🧹 Entretien</span>
+        <span>•</span>
+        <span style="color: var(--info); font-weight: 600;">💼 En poste</span>
+      </div>
+    </div>
+    <button class="row-action" onclick="event.stopPropagation();alert('Fiche')">📄</button>
+  </div>
+
+  <div class="row" data-status="disponible" onclick="alert('Détail Bamba Tiecoura')">
+    <div class="row-avatar" style="background: linear-gradient(135deg, #e8f0dc, #c8e0bc);">BT</div>
+    <div class="row-info">
+      <div class="row-name">Bamba Tiecoura</div>
+      <div class="row-detail">
+        <span>🔧 Chauffage</span>
+        <span>•</span>
+        <span style="color: var(--success); font-weight: 600;">✅ Disponible</span>
+      </div>
+    </div>
+    <button class="row-action" onclick="event.stopPropagation();alert('Placer')">📋</button>
+  </div>
+
+  <div class="row" data-status="en_attente" onclick="alert('Détail Diallo Kadiatou')">
+    <div class="row-avatar" style="background: linear-gradient(135deg, #faf3d1, #f0e4b0);">DK</div>
+    <div class="row-info">
+      <div class="row-name">Diallo Kadiatou</div>
+      <div class="row-detail">
+        <span>👷 Manœuvre</span>
+        <span>•</span>
+        <span style="color: #b8860b; font-weight: 600;">⏳ En attente</span>
+      </div>
+    </div>
+    <button class="row-action" onclick="event.stopPropagation();alert('Fiche')">📄</button>
+  </div>
+
+  <div class="row" data-status="disponible" onclick="alert('Détail N\'Guessan Kouadio')">
+    <div class="row-avatar" style="background: linear-gradient(135deg, #f0e6f0, #e0d0e0);">NK</div>
+    <div class="row-info">
+      <div class="row-name">N'Guessan Kouadio</div>
+      <div class="row-detail">
+        <span>🪚 Menuiserie</span>
+        <span>•</span>
+        <span style="color: var(--success); font-weight: 600;">✅ Disponible</span>
+      </div>
+    </div>
+    <button class="row-action" onclick="event.stopPropagation();alert('Placer')">📋</button>
+  </div>
+
+  <div class="row" data-status="indisponible" onclick="alert('Détail Soro Fatoumata')">
+    <div class="row-avatar" style="background: linear-gradient(135deg, #fdeaea, #f0d4d4);">SF</div>
+    <div class="row-info">
+      <div class="row-name">Soro Fatoumata</div>
+      <div class="row-detail">
+        <span>🧑‍🍳 Restauration</span>
+        <span>•</span>
+        <span style="color: var(--rose); font-weight: 600;">❌ Indisponible</span>
+      </div>
+    </div>
+    <button class="row-action" onclick="event.stopPropagation();alert('Fiche')">📄</button>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="alert('Nouveau candidat')">+</button>
+
+<script>
+function toggleFilters() {
+  const panel = document.getElementById('filterPanel');
+  const toggle = document.getElementById('filterToggle');
+  panel.classList.toggle('open');
+  toggle.classList.toggle('active');
+}
+function toggleChip(el) {
+  el.classList.toggle('active');
+}
+function filterByStatus(status) {
+  document.querySelectorAll('.row').forEach(row => {
+    if (status === 'all' || row.dataset.status === status) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  const count = document.querySelectorAll('.row:not([style*="display: none"])').length;
+  document.querySelector('.topbar-count').textContent = count;
+}
+function filterRows() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.row').forEach(row => {
+    const name = row.querySelector('.row-name').textContent.toLowerCase();
+    const detail = row.querySelector('.row-detail').textContent.toLowerCase();
+    row.style.display = (name.includes(q) || detail.includes(q)) ? '' : 'none';
+  });
+  const count = document.querySelectorAll('.row:not([style*="display: none"])').length;
+  document.querySelector('.topbar-count').textContent = count;
+}
+</script>
+
+</body>
+</html>

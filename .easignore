@@ -1,0 +1,35 @@
+# Dossier Android regénéré par EAS
+android/
+
+# Fichiers et dossiers à exclure du build
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store
+*.pem
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cache/
+
+# Archives et très gros fichiers
+cmdline-tools.zip
+
+# Scripts d'admin one-shot (inutiles pour le build)
+check_*.js
+fix_*.js
+create_*.js
+set_*.js
+setup_*.js
+index.js

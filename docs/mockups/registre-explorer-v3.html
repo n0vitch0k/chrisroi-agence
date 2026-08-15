@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registre — Explorateur v3</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F1F3F5;
+      max-width: 400px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #fff;
+      padding: 14px 16px;
+      border-bottom: 1px solid #E2E5E9;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .search {
+      display: flex;
+      gap: 8px;
+    }
+    .search input {
+      flex: 1;
+      padding: 10px 12px 10px 34px;
+      border: 1.5px solid #E2E5E9;
+      border-radius: 10px;
+      font-size: 13px;
+      background: #F1F3F5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239CA3AF' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 11px center;
+      outline: none;
+    }
+    .search input:focus { border-color: #1A56DB; background-color: #fff; }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      padding: 10px 16px;
+      font-size: 12px;
+      color: #9CA3AF;
+    }
+    .breadcrumb .link { color: #1A56DB; cursor: pointer; }
+    .breadcrumb .current { color: #1A1D21; font-weight: 600; }
+
+    /* ── Vue dossiers (racine) ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .grid {
+      padding: 8px 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .folder {
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px 8px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1.5px solid transparent;
+    }
+    .folder:hover {
+      border-color: #1A56DB;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    .folder-icon {
+      width: 52px;
+      height: 46px;
+      margin: 0 auto 10px;
+      position: relative;
+    }
+    .folder-tab {
+      position: absolute;
+      top: 0; left: 0;
+      width: 20px; height: 8px;
+      border-radius: 3px 3px 0 0;
+    }
+    .folder-body {
+      position: absolute;
+      top: 6px; left: 0; right: 0; bottom: 0;
+      border-radius: 3px 5px 5px 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .folder-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1A1D21;
+      margin-bottom: 2px;
+    }
+    .folder-count {
+      font-size: 11px;
+      color: #9CA3AF;
+    }
+
+    .fc-green .folder-tab { background: #6EE7B7; }
+    .fc-green .folder-body { background: #059669; }
+    .fc-blue .folder-tab { background: #93C5FD; }
+    .fc-blue .folder-body { background: #1A56DB; }
+    .fc-amber .folder-tab { background: #FCD34D; }
+    .fc-amber .folder-body { background: #D97706; }
+
+    /* ── Sous-dossiers (vue interne) ── */
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      margin: 10px 16px;
+      border: 1.5px solid #E2E5E9;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #5E6268;
+      background: #fff;
+      cursor: pointer;
+    }
+    .back:hover { border-color: #1A56DB; color: #1A56DB; }
+
+    .sub-grid {
+      padding: 4px 16px 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .sub-folder {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1.5px solid transparent;
+    }
+    .sub-folder:hover {
+      border-color: #1A56DB;
+      transform: translateY(-1px);
+    }
+
+    .sub-icon {
+      width: 36px; height: 32px;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .sub-tab {
+      position: absolute;
+      top: 0; left: 0;
+      width: 14px; height: 6px;
+      border-radius: 2px 2px 0 0;
+    }
+    .sub-body {
+      position: absolute;
+      top: 5px; left: 0; right: 0; bottom: 0;
+      border-radius: 2px 4px 4px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .sub-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1A1D21;
+    }
+    .sub-count {
+      font-size: 11px;
+      color: #9CA3AF;
+      margin-top: 1px;
+    }
+
+    /* Colors for sub-folders */
+    .s-green .sub-tab { background: #6EE7B7; }
+    .s-green .sub-body { background: #059669; }
+    .s-blue .sub-tab { background: #93C5FD; }
+    .s-blue .sub-body { background: #1A56DB; }
+    .s-amber .sub-tab { background: #FCD34D; }
+    .s-amber .sub-body { background: #D97706; }
+    .s-red .sub-tab { background: #FCA5A5; }
+    .s-red .sub-body { background: #DC2626; }
+    .s-purple .sub-tab { background: #C4B5FD; }
+    .s-purple .sub-body { background: #7C3AED; }
+    .s-cyan .sub-tab { background: #67E8F9; }
+    .s-cyan .sub-body { background: #0284C7; }
+  </style>
+</head>
+<body>
+
+  <!-- ══ RACINE : 3 dossiers ══ -->
+  <div class="view active" id="root">
+    <div class="header">
+      <div class="title">📁 Registre</div>
+      <div class="search">
+        <input type="text" placeholder="Rechercher..." />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="folder fc-green" onclick="show('fiches')">
+        <div class="folder-icon">
+          <div class="folder-tab"></div>
+          <div class="folder-body">📋</div>
+        </div>
+        <div class="folder-name">Fiches</div>
+        <div class="folder-count">47 fiches</div>
+      </div>
+
+      <div class="folder fc-blue" onclick="show('contrats')">
+        <div class="folder-icon">
+          <div class="folder-tab"></div>
+          <div class="folder-body">📝</div>
+        </div>
+        <div class="folder-name">Contrats</div>
+        <div class="folder-count">23 contrats</div>
+      </div>
+
+      <div class="folder fc-amber" onclick="show('employeurs')">
+        <div class="folder-icon">
+          <div class="folder-tab"></div>
+          <div class="folder-body">🏢</div>
+        </div>
+        <div class="folder-name">Employeurs</div>
+        <div class="folder-count">31 employeurs</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ FICHES : sous-dossiers ══ -->
+  <div class="view" id="fiches">
+    <div class="header">
+      <div class="title">📋 Fiches d'inscription</div>
+      <div class="search">
+        <input type="text" placeholder="Nom, catégorie..." />
+      </div>
+    </div>
+    <div class="breadcrumb">
+      <span class="link" onclick="show('root')">Registre</span>
+      <span> / </span>
+      <span class="current">Fiches</span>
+    </div>
+
+    <div class="sub-grid">
+      <div class="sub-folder s-green">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">👤</div>
+        </div>
+        <div class="sub-name">En attente</div>
+        <div class="sub-count">8 candidats</div>
+      </div>
+      <div class="sub-folder s-blue">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">👤</div>
+        </div>
+        <div class="sub-name">Disponibles</div>
+        <div class="sub-count">24 candidats</div>
+      </div>
+      <div class="sub-folder s-cyan">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">👤</div>
+        </div>
+        <div class="sub-name">En poste</div>
+        <div class="sub-count">15 candidats</div>
+      </div>
+      <div class="sub-folder s-purple">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">📩</div>
+        </div>
+        <div class="sub-name">Demandes</div>
+        <div class="sub-count">12 demandes</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ CONTRATS : sous-dossiers ══ -->
+  <div class="view" id="contrats">
+    <div class="header">
+      <div class="title">📝 Contrats</div>
+      <div class="search">
+        <input type="text" placeholder="N° dossier, employé..." />
+      </div>
+    </div>
+    <div class="breadcrumb">
+      <span class="link" onclick="show('root')">Registre</span>
+      <span> / </span>
+      <span class="current">Contrats</span>
+    </div>
+
+    <div class="sub-grid">
+      <div class="sub-folder s-blue">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">📝</div>
+        </div>
+        <div class="sub-name">Actifs</div>
+        <div class="sub-count">18 contrats</div>
+      </div>
+      <div class="sub-folder s-red">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">📝</div>
+        </div>
+        <div class="sub-name">Terminés</div>
+        <div class="sub-count">5 contrats</div>
+      </div>
+      <div class="sub-folder s-green">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">🏠</div>
+        </div>
+        <div class="sub-name">Hébergés</div>
+        <div class="sub-count">12 contrats</div>
+      </div>
+      <div class="sub-folder s-amber">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">🚶</div>
+        </div>
+        <div class="sub-name">Non hébergés</div>
+        <div class="sub-count">11 contrats</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ EMPLOYEURS : sous-dossiers ══ -->
+  <div class="view" id="employeurs">
+    <div class="header">
+      <div class="title">🏢 Employeurs</div>
+      <div class="search">
+        <input type="text" placeholder="Nom, adresse..." />
+      </div>
+    </div>
+    <div class="breadcrumb">
+      <span class="link" onclick="show('root')">Registre</span>
+      <span> / </span>
+      <span class="current">Employeurs</span>
+    </div>
+
+    <div class="sub-grid">
+      <div class="sub-folder s-amber">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">👤</div>
+        </div>
+        <div class="sub-name">Particuliers</div>
+        <div class="sub-count">18 employeurs</div>
+      </div>
+      <div class="sub-folder s-blue">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">🏢</div>
+        </div>
+        <div class="sub-name">Entreprises</div>
+        <div class="sub-count">9 employeurs</div>
+      </div>
+      <div class="sub-folder s-red">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">🏪</div>
+        </div>
+        <div class="sub-name">Commerces</div>
+        <div class="sub-count">4 employeurs</div>
+      </div>
+      <div class="sub-folder s-purple">
+        <div class="sub-icon">
+          <div class="sub-tab"></div>
+          <div class="sub-body">📩</div>
+        </div>
+        <div class="sub-name">Avec demandes</div>
+        <div class="sub-count">8 demandes</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function show(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+  </script>
+</body>
+</html>

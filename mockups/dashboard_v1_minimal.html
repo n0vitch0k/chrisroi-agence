@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>Dashboard V1 — ChrisRoi Agence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #f5ebe0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #fdf8f3;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(61,53,48,0.25);
+    position: relative;
+  }
+  .scroll { height: 100%; overflow-y: auto; }
+  .scroll::-webkit-scrollbar { width: 0; }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #c45a2a 0%, #a3481f 100%);
+    padding: 50px 24px 24px;
+    border-radius: 0 0 30px 30px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 150px;
+    height: 150px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    left: -30px;
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .brand-name { font-size: 19px; font-weight: 700; color: #fff; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .icon-btn svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2; }
+  .badge-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #b85454;
+    border: 2px solid #c45a2a;
+  }
+  .greeting { font-size: 14px; color: rgba(255,255,255,0.75); font-style: italic; }
+  .user-name { font-size: 24px; font-weight: 700; color: #fff; margin-top: 2px; letter-spacing: -0.3px; }
+
+  /* ── Content ── */
+  .content { padding: 20px; padding-bottom: 40px; }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a7d72;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 20px 0 12px;
+    padding-left: 4px;
+  }
+  .section-title:first-child { margin-top: 4px; }
+
+  /* ── Quick Actions Grid ── */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .quick-action {
+    background: #fff;
+    border-radius: 20px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border: 1px solid #eedec9;
+    box-shadow: 0 2px 10px rgba(61,53,48,0.04);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .quick-action:active { transform: scale(0.97); }
+  .quick-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .quick-icon svg { width: 22px; height: 22px; stroke-width: 2; }
+  .quick-title { font-size: 14px; font-weight: 700; color: #3d3530; }
+  .quick-sub { font-size: 11px; color: #b8a99e; margin-top: 2px; }
+  .quick-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+
+  /* ── Dossiers Card ── */
+  .dossier-card {
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid #eedec9;
+    box-shadow: 0 2px 10px rgba(61,53,48,0.04);
+    overflow: hidden;
+  }
+  .dossier-head {
+    display: flex;
+    align-items: center;
+    padding: 18px;
+    border-bottom: 1px solid #f5ebe0;
+  }
+  .dossier-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #e8f0dc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 14px;
+  }
+  .dossier-icon svg { width: 22px; height: 22px; stroke: #5a7c3a; fill: none; stroke-width: 2; }
+  .dossier-name { font-size: 17px; font-weight: 800; color: #3d3530; }
+  .dossier-sub { font-size: 12px; color: #5a7c3a; font-weight: 600; }
+  .dossier-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    cursor: pointer;
+  }
+  .dossier-row + .dossier-row { border-top: 1px solid #f5ebe0; }
+  .dossier-row-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+  }
+  .dossier-row-icon svg { width: 18px; height: 18px; stroke-width: 2; }
+  .dossier-row-info { flex: 1; }
+  .dossier-row-label { font-size: 15px; font-weight: 600; color: #3d3530; }
+  .dossier-row-count { font-size: 12px; color: #b8a99e; }
+  .chevron-right { color: #b8a99e; }
+
+  /* ── Urgence Card ── */
+  .urgent-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 18px;
+    border: 1px solid #eedec9;
+    box-shadow: 0 2px 10px rgba(61,53,48,0.04);
+    margin-top: 10px;
+  }
+  .urgent-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .urgent-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #3d3530;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .urgent-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background: #fdeaea;
+    color: #b85454;
+  }
+  .urgent-meta { font-size: 13px; color: #8a7d72; margin-bottom: 14px; }
+  .urgent-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .urgent-stat { flex: 1; }
+  .urgent-stat-label { font-size: 10px; color: #b8a99e; text-transform: uppercase; font-weight: 600; letter-spacing: 0.4px; }
+  .urgent-stat-value { font-size: 15px; font-weight: 800; color: #3d3530; margin-top: 2px; }
+  .urgent-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #b85454;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* ── Label ── */
+  .label {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8a7d72;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+<div class="scroll">
+  <div class="label">Variante 1 — Minimaliste</div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-logo">CR</div>
+        <div class="brand-name">ChrisRoi Agence</div>
+      </div>
+      <div class="header-actions">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="badge-dot"></div>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="greeting">Bonjour,</div>
+    <div class="user-name">Williams BROU</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Quick Actions -->
+    <div class="section-title">Actions rapides</div>
+    <div class="quick-grid">
+      <div class="quick-action">
+        <div class="quick-icon" style="background:#fdebd8;">
+          <svg viewBox="0 0 24 24" stroke="#c45a2a" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="quick-title">Inscrire</div>
+        <div class="quick-sub">Nouvelle fiche</div>
+        <div class="quick-badge" style="background:#fdebd8;color:#c45a2a;">5 fiches</div>
+      </div>
+      <div class="quick-action">
+        <div class="quick-icon" style="background:#e8f0dc;">
+          <svg viewBox="0 0 24 24" stroke="#5a7c3a" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="quick-title">Contrat</div>
+        <div class="quick-sub">Placement</div>
+        <div class="quick-badge" style="background:#e8f0dc;color:#5a7c3a;">3 actifs</div>
+      </div>
+      <div class="quick-action">
+        <div class="quick-icon" style="background:#faf3d1;">
+          <svg viewBox="0 0 24 24" stroke="#b8860b" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="quick-title">Scanner</div>
+        <div class="quick-sub">OCR / Photo</div>
+      </div>
+      <div class="quick-action">
+        <div class="quick-icon" style="background:#d8ecec;">
+          <svg viewBox="0 0 24 24" stroke="#2a7a7a" fill="none"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        </div>
+        <div class="quick-title">Employeur</div>
+        <div class="quick-sub">Entreprise</div>
+        <div class="quick-badge" style="background:#d8ecec;color:#2a7a7a;">8 inscrits</div>
+      </div>
+    </div>
+
+    <!-- Dossiers -->
+    <div class="section-title">Dossiers</div>
+    <div class="dossier-card">
+      <div class="dossier-head">
+        <div class="dossier-icon">
+          <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div>
+          <div class="dossier-name">Tous les dossiers</div>
+          <div class="dossier-sub">47 dossiers actifs</div>
+        </div>
+      </div>
+      <div class="dossier-row">
+        <div class="dossier-row-icon" style="background:#fdebd8;">
+          <svg viewBox="0 0 24 24" stroke="#c45a2a" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="dossier-row-info">
+          <div class="dossier-row-label">Fiches candidats</div>
+          <div class="dossier-row-count">25 fiches</div>
+        </div>
+        <span class="chevron-right">›</span>
+      </div>
+      <div class="dossier-row">
+        <div class="dossier-row-icon" style="background:#faf3d1;">
+          <svg viewBox="0 0 24 24" stroke="#b8860b" fill="none"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        </div>
+        <div class="dossier-row-info">
+          <div class="dossier-row-label">Employeurs</div>
+          <div class="dossier-row-count">12 entreprises</div>
+        </div>
+        <span class="chevron-right">›</span>
+      </div>
+      <div class="dossier-row">
+        <div class="dossier-row-icon" style="background:#e8f0dc;">
+          <svg viewBox="0 0 24 24" stroke="#5a7c3a" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="dossier-row-info">
+          <div class="dossier-row-label">Contrats</div>
+          <div class="dossier-row-count">10 contrats</div>
+        </div>
+        <span class="chevron-right">›</span>
+      </div>
+    </div>
+
+    <!-- Urgences -->
+    <div class="section-title">Urgences du jour</div>
+    <div class="urgent-card">
+      <div class="urgent-head">
+        <div class="urgent-title">⏰ Fatou K. · Fin dans 3j</div>
+        <div class="urgent-badge">URGENT</div>
+      </div>
+      <div class="urgent-meta">Maison Diallo · 45 000 FCFA</div>
+      <div class="urgent-stats">
+        <div class="urgent-stat">
+          <div class="urgent-stat-label">Commission</div>
+          <div class="urgent-stat-value">15 000 F</div>
+        </div>
+        <div class="urgent-stat">
+          <div class="urgent-stat-label">Type</div>
+          <div class="urgent-stat-value">Hébergé</div>
+        </div>
+      </div>
+      <div class="urgent-btn">📋 Proposer prolongation</div>
+    </div>
+
+    <div class="urgent-card" style="margin-top:10px;">
+      <div class="urgent-head">
+        <div class="urgent-title">💰 Ibrahima C. · Commission due</div>
+        <div class="urgent-badge" style="background:#faf3d1;color:#b8860b;">À FAIRE</div>
+      </div>
+      <div class="urgent-meta">30 000 FCFA · Restaurant Le Palace</div>
+      <div class="urgent-stats">
+        <div class="urgent-stat">
+          <div class="urgent-stat-label">Contrat</div>
+          <div class="urgent-stat-value">CST-2026</div>
+        </div>
+        <div class="urgent-stat">
+          <div class="urgent-stat-label">Échéance</div>
+          <div class="urgent-stat-value" style="color:#b8860b;">Demain</div>
+        </div>
+      </div>
+      <div class="urgent-btn" style="background:#5a7c3a;">✓ Marquer perçu</div>
+    </div>
+
+  </div>
+</div>
+</div>
+</body>
+</html>

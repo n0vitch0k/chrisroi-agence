@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChrisRoi Agence — Dossiers (Recherche Globale)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px; }
+        .phone { width: 390px; min-height: 844px; background: #f5f7fb; border-radius: 42px; box-shadow: 0 30px 80px rgba(0,0,0,0.3); overflow: hidden; position: relative; border: 12px solid #1a1a2e; }
+        .status-bar { height: 44px; background: #ffffff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 13px; font-weight: 600; color: #212121; }
+        .header { background: white; padding: 20px 24px 16px; border-bottom: 1px solid #e0e0e0; }
+        .header h1 { font-size: 24px; font-weight: 800; color: #212121; margin-bottom: 16px; }
+        .search-box { position: relative; margin-bottom: 14px; }
+        .search-box input { width: 100%; height: 48px; border: none; border-radius: 16px; background: #f5f5f5; padding: 0 16px 0 44px; font-size: 14px; outline: none; }
+        .search-box span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; }
+        .filter-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+        .filter-chip { flex-shrink: 0; border: none; border-radius: 20px; padding: 9px 14px; background: #f0f0f0; color: #616161; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .filter-chip.active { background: #1E88E5; color: white; }
+        .content { padding: 16px 20px 90px; }
+        .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .section-title h2 { font-size: 18px; font-weight: 800; color: #212121; }
+        .section-title span { font-size: 13px; color: #1E88E5; font-weight: 600; }
+        .item-card { background: white; border-radius: 22px; padding: 16px; margin-bottom: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.05); }
+        .item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .item-avatar { width: 44px; height: 44px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex-shrink: 0; }
+        .avatar-blue { background: #e3f2fd; color: #1E88E5; } .avatar-green { background: #e8f5e9; color: #43A047; } .avatar-orange { background: #fff3e0; color: #FF9800; } .avatar-purple { background: #f3e5f5; color: #7C3AED; }
+        .item-info { flex: 1; margin-left: 12px; }
+        .item-name { font-size: 15px; font-weight: 800; color: #212121; margin-bottom: 4px; }
+        .item-meta { font-size: 13px; color: #757575; line-height: 1.4; }
+        .item-type { padding: 6px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+        .type-employe { background: #e3f2fd; color: #1E88E5; } .type-employeur { background: #f3e5f5; color: #7C3AED; } .type-contrat { background: #e8f5e9; color: #43A047; }
+        .item-details { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+        .detail-pill { background: #f5f5f5; border-radius: 10px; padding: 6px 10px; font-size: 12px; color: #616161; font-weight: 500; }
+        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 78px; background: white; display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 28px 28px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.08); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #9e9e9e; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .nav-item.active { color: #1E88E5; } .nav-icon { font-size: 22px; }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>●●●●</span></div>
+        <div class="header">
+            <h1>📁 Dossiers</h1>
+            <div class="search-box"><span>🔍</span><input type="text" placeholder="Rechercher : nom, téléphone, contrat..." value="Marie" /></div>
+            <div class="filter-row"><button class="filter-chip active">Tout</button><button class="filter-chip">Employés</button><button class="filter-chip">Employeurs</button><button class="filter-chip">Contrats</button><button class="filter-chip">Disponible</button><button class="filter-chip">Urgent</button></div>
+        </div>
+        <div class="content">
+            <div class="section-title"><h2>🔍 Résultats (3)</h2><span>Trier</span></div>
+            <div class="item-card"><div class="item-top"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar avatar-blue">MD</div><div class="item-info"><div class="item-name">Marie Diallo</div><div class="item-meta">Gouvernante · Disponible</div></div></div><div class="item-type type-employe">Employé</div></div><div class="item-details"><div class="detail-pill">📞 07 08 09 10</div><div class="detail-pill">📍 Abidjan</div><div class="detail-pill">⭐ 4.8</div></div></div>
+            <div class="item-card"><div class="item-top"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar avatar-purple">FK</div><div class="item-info"><div class="item-name">Mme Fatou Koné</div><div class="item-meta">Particulier · 2 contrats actifs</div></div></div><div class="item-type type-employeur">Employeur</div></div><div class="item-details"><div class="detail-pill">📞 05 06 07 08</div><div class="detail-pill">📍 Cocody</div><div class="detail-pill">💰 2 commissions</div></div></div>
+            <div class="item-card"><div class="item-top"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar avatar-orange">C42</div><div class="item-info"><div class="item-name">Contrat CHR-2026-0042</div><div class="item-meta">Marie Diallo · Mme Koné</div></div></div><div class="item-type type-contrat">Contrat</div></div><div class="item-details"><div class="detail-pill">📅 Fin dans 2j</div><div class="detail-pill">💰 50 000 FCFA</div><div class="detail-pill">⚠️ Urgent</div></div></div>
+            <div class="section-title"><h2>📊 Filtres rapides</h2></div>
+            <div class="item-card"><div class="item-top"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar avatar-green">✓</div><div class="item-info"><div class="item-name">Employés disponibles</div><div class="item-meta">8 profils prêts à être affectés</div></div></div><div class="item-type type-employe">Voir</div></div></div>
+            <div class="item-card"><div class="item-top"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar avatar-orange">!</div><div class="item-info"><div class="item-name">Contrats à risque</div><div class="item-meta">3 contrats finissent cette semaine</div></div></div><div class="item-type type-contrat">Voir</div></div></div>
+        </div>
+        <div class="bottom-nav"><div class="nav-item"><div class="nav-icon">🏠</div><div>Aujourd'hui</div></div><div class="nav-item active"><div class="nav-icon">📁</div><div>Dossiers</div></div><div class="nav-item"><div class="nav-icon">📊</div><div>Stats</div></div></div>
+    </div>
+</body>
+</html>

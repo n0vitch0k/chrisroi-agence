@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; background: #111; overflow: auto; }
+  .container { display: flex; flex-direction: column; gap: 20px; padding: 20px; }
+  h2 { color: #fff; font-family: sans-serif; margin: 0; }
+  .image-box { background: #222; padding: 10px; border-radius: 8px; }
+  img { max-width: 100%; height: auto; cursor: zoom-in; }
+  img.zoomed { max-width: none; cursor: zoom-out; }
+  .controls { display: flex; gap: 10px; margin-bottom: 10px; }
+  button { padding: 8px 16px; border: none; border-radius: 4px; background: #4a9eff; color: #fff; cursor: pointer; font-size: 14px; }
+  .info { color: #aaa; font-size: 12px; font-family: monospace; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Contrat - Page 1</h2>
+  <div class="image-box">
+    <img id="img1" src="IMG_20260604_163052_913.jpg" alt="Page 1">
+    <div class="info">Cliquez pour zoomer/dézoomer</div>
+  </div>
+
+  <h2>Contrat - Page 2</h2>
+  <div class="image-box">
+    <img id="img2" src="IMG_20260604_163113_144.jpg" alt="Page 2">
+  </div>
+
+  <h2>Vue zoomée (document crop)</h2>
+  <div class="image-box">
+    <img id="img3" src="doc1_region.png" alt="Doc Region 1">
+  </div>
+  <div class="image-box">
+    <img id="img4" src="doc2_region.png" alt="Doc Region 2">
+  </div>
+</div>
+<script>
+  document.querySelectorAll('img').forEach(img => {
+    img.addEventListener('click', () => {
+      img.classList.toggle('zoomed');
+    });
+  });
+</script>
+</body>
+</html>
