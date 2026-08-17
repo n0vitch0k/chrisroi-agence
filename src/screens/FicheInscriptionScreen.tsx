@@ -26,6 +26,9 @@ import A4Document from '../components/A4Document';
 import { createEmploye, getEmployeById, updateEmploye, uploadScan, getScan, uploadEmployePhoto, getEmployePhotoUrl, isLocalPhotoUri, getDocumentsByEmploye, uploadDocument, deleteDocument, getDocumentTypeLabel, getDocumentTypeIcon, DOCUMENT_TYPES, getEntityHistory } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import * as Sharing from 'expo-sharing';
+import { printToFileAsync } from 'expo-print';
+import { buildFichePapierHtml, FichePapierData, fileUriToDataUri } from '../utils/fichePrint';
 import {
   CATEGORIES_EMPLOI,
   SITUATIONS_MATRIMONIALES,
@@ -52,11 +55,13 @@ interface FormData {
   prenom: string;
   date_naissance: string;
   lieu_naissance: string;
+  sexe: string;
   telephone: string;
   lieu_residence: string;
   nationalite: string;
   situation_matrimoniale: string;
   religion: string;
+  ethnie: string;
   niveau_etude: string;
   categorie_emploi: string;
   a_deja_travaille: boolean;
@@ -64,6 +69,8 @@ interface FormData {
   stages_effectues: string;
   formations: string;
   motivation: string;
+  allergie_sante: string;
+  intervention_chirurgicale: string;
   photo_uri: string;
 }
 
@@ -169,11 +176,13 @@ export default function FicheInscriptionScreen() {
     prenom: '',
     date_naissance: '',
     lieu_naissance: '',
+    sexe: 'feminin',
     telephone: '',
     lieu_residence: '',
     nationalite: '',
     situation_matrimoniale: 'celibataire',
     religion: '',
+    ethnie: '',
     niveau_etude: '',
     categorie_emploi: 'serveuse',
     a_deja_travaille: false,
@@ -181,6 +190,8 @@ export default function FicheInscriptionScreen() {
     stages_effectues: '',
     formations: '',
     motivation: '',
+    allergie_sante: '',
+    intervention_chirurgicale: '',
     photo_uri: '',
   });
 
@@ -208,11 +219,13 @@ export default function FicheInscriptionScreen() {
         prenom: employe.prenom || '',
         date_naissance: employe.date_naissance || '',
         lieu_naissance: employe.lieu_naissance || '',
+        sexe: employe.sexe || 'feminin',
         telephone: employe.telephone || '',
         lieu_residence: employe.lieu_residence || '',
         nationalite: employe.nationalite || '',
         situation_matrimoniale: employe.situation_matrimoniale || 'celibataire',
         religion: employe.religion || '',
+        ethnie: employe.ethnie || '',
         niveau_etude: employe.niveau_etude || '',
         categorie_emploi: employe.categorie_emploi || 'serveuse',
         a_deja_travaille: !!employe.a_deja_travaille,
@@ -220,6 +233,8 @@ export default function FicheInscriptionScreen() {
         stages_effectues: employe.stages_effectues || '',
         formations: employe.formations || '',
         motivation: employe.motivation || '',
+        allergie_sante: employe.allergie_sante || '',
+        intervention_chirurgicale: employe.intervention_chirurgicale || '',
         photo_uri: employe.photo_uri || '',
       });
       // Photo d'identité : URL serveur (file field `photo`) prioritaire
@@ -452,6 +467,69 @@ export default function FicheInscriptionScreen() {
     );
   };
 
+  // ── Génération de la fiche PAPIER (version stricte) en PDF ──
+  // Flux validé : l'utilisateur génère la fiche papier (uniquement les champs
+  // de la feuille physique) → aperçu → confirme « tout est en ordre » → partage.
+  const handleDownloadFichePapier = async () => {
+    try {
+      // Photo : on l'embarque en data-URI base64 pour qu'elle s'imprime TOUJOURS
+      // dans le PDF (expo-print n'embarque pas fiablement les images distantes).
+      const photoSource = photoUrl || (formData.photo_uri && isLocalPhotoUri(formData.photo_uri) ? formData.photo_uri : null);
+      const photoDataUri = photoSource ? await fileUriToDataUri(photoSource) : null;
+
+      const data: FichePapierData = {
+        date: new Date().toISOString().slice(0, 10),
+        nom: formData.nom,
+        prenom: formData.prenom,
+        date_naissance: formData.date_naissance,
+        lieu_naissance: formData.lieu_naissance,
+        telephone: formData.telephone,
+        lieu_residence: formData.lieu_residence,
+        nationalite: formData.nationalite,
+        sexe: formData.sexe,
+        situation_matrimoniale: formData.situation_matrimoniale,
+        religion: formData.religion,
+        ethnie: formData.ethnie,
+        categorie_emploi: formData.categorie_emploi,
+        niveau_etude: formData.niveau_etude,
+        deja_travaille: formData.a_deja_travaille,
+        experience_details: formData.experience_details,
+        allergie_sante: formData.allergie_sante,
+        intervention_chirurgicale: formData.intervention_chirurgicale,
+        photo: photoSource,
+        photoDataUri,
+        urgence: personnesUrgence.slice(0, 2).map((p) => ({
+          nom: p.nom,
+          prenom: p.prenom,
+          telephone: p.telephone,
+          lieu: undefined,
+        })),
+      };
+
+      const html = buildFichePapierHtml(data);
+      const { uri } = await printToFileAsync({ html, base64: false });
+
+      if (Platform.OS === 'web') {
+        // Sur web, printToFileAsync ouvre déjà l'aperçu navigateur.
+        return;
+      }
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: "Fiche d'inscription (papier)",
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('PDF généré', `Fiche enregistrée :\n${uri}`);
+      }
+    } catch (error) {
+      console.error('Erreur génération fiche papier:', error);
+      Alert.alert('Erreur', "Impossible de générer la fiche d'inscription.");
+    }
+  };
+
   // Charger le scan existant au montage (mode édition)
   useEffect(() => {
     if (employeId) {
@@ -648,6 +726,21 @@ export default function FicheInscriptionScreen() {
         <FormField label="Nationalité" value={formData.nationalite} onChangeText={(t) => updateForm('nationalite', t)} placeholder="Nationalité" />
         <FormField label="Résidence" value={formData.lieu_residence} onChangeText={(t) => updateForm('lieu_residence', t)} placeholder="Quartier, ville" />
         <FormField label="Religion" value={formData.religion} onChangeText={(t) => updateForm('religion', t)} placeholder="(optionnel)" />
+        <FormField label="Ethnie" value={formData.ethnie} onChangeText={(t) => updateForm('ethnie', t)} placeholder="(optionnel)" />
+        {/* Sexe */}
+        <Text style={digitalStyles.fieldLabel}>Sexe</Text>
+        <View style={digitalStyles.chipRow}>
+          {[{ value: 'masculin', label: 'Masculin' }, { value: 'feminin', label: 'Féminin' }].map((s) => (
+            <TouchableOpacity
+              key={s.value}
+              onPress={() => updateForm('sexe', s.value)}
+              style={[digitalStyles.chip, formData.sexe === s.value && digitalStyles.chipActive]}
+              activeOpacity={0.7}
+            >
+              <Text style={[digitalStyles.chipText, formData.sexe === s.value && digitalStyles.chipTextActive]}>{s.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </SectionCard>
 
       {/* ── Situation matrimoniale ── */}
@@ -737,6 +830,26 @@ export default function FicheInscriptionScreen() {
             <FormField label="Formations" value={formData.formations} onChangeText={(t) => updateForm('formations', t)} multiline numberOfLines={2} placeholder="Formations" />
           </View>
         </View>
+      </SectionCard>
+
+      {/* ── Santé ── */}
+      <SectionCard title="🩺 Santé (pour la fiche papier)">
+        <FormField
+          label="Allergie ou problèmes de santé"
+          value={formData.allergie_sante}
+          onChangeText={(t) => updateForm('allergie_sante', t)}
+          multiline
+          numberOfLines={2}
+          placeholder="Précisez ou laissez vide si aucun"
+        />
+        <FormField
+          label="Intervention(s) chirurgicale(s) déjà subie(s)"
+          value={formData.intervention_chirurgicale}
+          onChangeText={(t) => updateForm('intervention_chirurgicale', t)}
+          multiline
+          numberOfLines={2}
+          placeholder="Précisez ou laissez vide si aucune"
+        />
       </SectionCard>
 
       {/* ── Emploi recherché ── */}
@@ -1352,6 +1465,13 @@ export default function FicheInscriptionScreen() {
             <Icon name="file-document-outline" size={16} color="#1E88E5" />
             <Text style={docStyles.linkedActionText}>Voir les contrats</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[docStyles.linkedActionBtn, docStyles.linkedActionBtnPrimary]}
+            onPress={handleDownloadFichePapier}
+          >
+            <Icon name="download" size={16} color="#1b2a4a" />
+            <Text style={[docStyles.linkedActionText, docStyles.linkedActionTextPrimary]}>Télécharger la fiche (papier)</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -1917,6 +2037,11 @@ const docStyles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   linkedActionText: { fontSize: 12, fontWeight: '600', color: '#1E88E5' },
+  linkedActionBtnPrimary: {
+    backgroundColor: '#EEF1F7',
+    borderColor: '#1b2a4a',
+  },
+  linkedActionTextPrimary: { color: '#1b2a4a' },
 
   // ── Modale choix source photo ──
   modalBackdrop: {
