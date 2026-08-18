@@ -266,7 +266,7 @@ export default function GlobalSearchScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnSecondary]}
-                onPress={() => navigation.navigate('EmployesStack' as any, { screen: 'FicheInscription', params: { id: item.id?.replace('employe-', '') } })}
+                onPress={() => navigation.navigate('FicheInscriptionModal' as any, { id: item.id?.replace('employe-', '') })}
                 activeOpacity={0.8}
               >
                 <Text style={styles.actionBtnIcon}>📄</Text>
@@ -447,7 +447,7 @@ export default function GlobalSearchScreen() {
       {/* ─── FAB ── */}
       <TouchableOpacity
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
-        onPress={() => navigation.navigate('EmployesStack' as any, { screen: 'FicheInscription' })}
+        onPress={() => navigation.navigate('FicheInscriptionModal' as any)}
         activeOpacity={0.85}
       >
         <Text style={styles.fabText}>+</Text>

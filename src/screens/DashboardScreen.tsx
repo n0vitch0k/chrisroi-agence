@@ -248,7 +248,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
             badgeText={registreCounts.fiches > 0 ? `${registreCounts.fiches} fiches` : undefined}
             badgeBg="#fdebd8"
             badgeColor="#c45a2a"
-            onPress={() => navigateTab('EmployesStack', { screen: 'FicheInscription' })}
+            onPress={() => navigateRoot('FicheInscriptionModal')}
           />
           <QuickAction
             icon="📄"

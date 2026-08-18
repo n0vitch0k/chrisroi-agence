@@ -292,7 +292,7 @@ export default function EmployeDetailScreen() {
           </Chip>
         </View>
         <View style={styles.actionsRow}>
-          <SafeButton mode="contained" onPress={() => navigation.navigate('FicheInscription', { id: employeId })}
+          <SafeButton mode="contained" onPress={() => rootNavigation?.navigate('FicheInscriptionModal', { id: employeId })}
             style={styles.editBtn}>
             Modifier
           </SafeButton>
