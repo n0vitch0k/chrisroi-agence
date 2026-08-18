@@ -6,13 +6,10 @@
 // numérique enrichi — celles-ci restent dans l'app, mais n'apparaissent pas
 // sur la feuille physique.
 //
-// Design (validé via mockups/fiche-inscription-final.html) :
-//  - fiche REMPLIE, SANS pointillés (valeurs en texte plein).
-//  - bandeaux BLEU NUIT (#0c1f3f), layout 2 colonnes, photo à droite.
-//  - cases matrimoniale en "pill", celle sélectionnée surlignée.
-//  - clauses CHRISROI : tiers (1/3) sur 1er salaire + frais de dossier 5000 FCFA.
-//  - multi-page : chaque section a `break-inside: avoid` → une fiche longue
-//    passe proprement sur plusieurs pages sans couper une section.
+// Design : fidèle à la maquette d'origine Qwen (mockups/Qwen_html_20260818_tljt4cd1p.html),
+// prévue pour tenir SUR UNE PAGE A4. Layout 2 colonnes, photo à droite, bandeaux
+// bleu nuit, cases matrimoniale en "pill". Clauses = NOS clauses CHRISROI
+// (validées) : tiers (1/3) sur 1er salaire + frais de dossier 5000 FCFA.
 //
 // Cross-platform : imprimable via expo-print (printToFileAsync → PDF natif)
 // ou via window.print() sur le web, exactement comme contratPrint.ts.
@@ -142,39 +139,39 @@ export function buildFichePapierHtml(data: FichePapierData): string {
 <meta charset="utf-8">
 <title>Fiche d'inscription — CHRISROI AGENCE</title>
 <style>
-  @page { size: A4; margin: 12mm; }
+  @page { size: A4; margin: 10mm; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #fff; color: #10151c; font-family: Arial, Helvetica, sans-serif; line-height: 1.35; }
-  .sheet { width: 100%; background: #fff; }
-  .header { background: #0c1f3f; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 22px; break-inside: avoid; }
-  .header h1 { margin: 0; font-size: 24px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.04em; }
-  .header p { margin: 0; text-align: right; font-size: 13px; line-height: 1.4; opacity: 0.92; }
-  .layout { display: grid; grid-template-columns: 1fr 126px; gap: 18px; padding: 18px 22px; align-items: start; }
-  .photo-frame { margin: 0; border: 2px solid #0c1f3f; padding: 4px; background: #fff; width: 126px; }
-  .photo-frame img { display: block; width: 100%; height: 142px; object-fit: cover; background: #e8edf5; }
-  .section { padding: 0 22px 18px; break-inside: avoid; }
-  .section-title { margin: 0 0 10px; background: #0c1f3f; color: #fff; padding: 8px 10px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; break-after: avoid; }
-  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin: 0; }
-  .field { margin: 0; padding: 0; break-inside: avoid; }
-  .field dt { margin: 0; font-size: 11px; color: #5c6675; text-transform: uppercase; letter-spacing: 0.03em; }
-  .field dd { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: #10151c; min-height: 1.2em; }
+  body { margin: 0; background: #eef1f5; color: #10151c; font-family: Arial, Helvetica, sans-serif; line-height: 1.35; font-size: 13px; }
+  .sheet { width: 100%; background: #fff; border: 1px solid #cfd6e2; }
+  .header { background: #0c1f3f; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px; }
+  .header h1 { margin: 0; font-size: 22px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.04em; }
+  .header p { margin: 0; text-align: right; font-size: 12px; line-height: 1.4; opacity: 0.92; }
+  .layout { display: grid; grid-template-columns: 1fr 120px; gap: 14px; padding: 14px 18px; align-items: start; }
+  .photo-frame { margin: 0; border: 2px solid #0c1f3f; padding: 3px; background: #fff; width: 120px; }
+  .photo-frame img { display: block; width: 100%; height: 132px; object-fit: cover; background: #e8edf5; }
+  .section { padding: 0 18px 14px; }
+  .section-title { margin: 0 0 8px; background: #0c1f3f; color: #fff; padding: 6px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 0; }
+  .field { margin: 0; padding: 0; }
+  .field dt { margin: 0; font-size: 10px; color: #5c6675; text-transform: uppercase; letter-spacing: 0.03em; }
+  .field dd { margin: 3px 0 0; font-size: 14px; font-weight: 600; color: #10151c; min-height: 1.1em; }
   .field.full { grid-column: 1 / -1; }
-  .marital { display: flex; flex-wrap: wrap; gap: 8px; }
-  .option { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c8d0dc; border-radius: 4px; padding: 5px 8px; font-size: 13px; color: #5c6675; background: #fff; }
+  .marital { display: flex; flex-wrap: wrap; gap: 6px; }
+  .option { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c8d0dc; border-radius: 4px; padding: 4px 7px; font-size: 12px; color: #5c6675; background: #fff; }
   .option.selected { border-color: #0c1f3f; color: #0c1f3f; font-weight: 700; background: #edf3ff; }
   .option.selected::before { content: "\\2713"; }
   .contacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .contact-card { border: 1px solid #c8d0dc; border-radius: 6px; padding: 12px; break-inside: avoid; background: #fff; }
-  .contact-card h3 { margin: 0 0 10px; font-size: 14px; color: #0c1f3f; }
-  .clauses { display: grid; gap: 8px; }
-  .clause { margin: 0; border: 1px solid #c8d0dc; background: #f8fafc; padding: 10px 12px; font-size: 14px; line-height: 1.45; break-inside: avoid; }
+  .contact-card { border: 1px solid #c8d0dc; border-radius: 6px; padding: 10px; background: #fff; }
+  .contact-card h3 { margin: 0 0 8px; font-size: 13px; color: #0c1f3f; }
+  .clauses { display: grid; gap: 6px; }
+  .clause { margin: 0; border: 1px solid #c8d0dc; background: #f8fafc; padding: 8px 10px; font-size: 13px; line-height: 1.4; }
   .clause strong { color: #0c1f3f; }
-  .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .signature-box { border: 1px solid #98a2b3; border-radius: 6px; min-height: 110px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; break-inside: avoid; }
-  .signature-box p { margin: 0; font-size: 12px; color: #5c6675; text-transform: uppercase; letter-spacing: 0.03em; }
-  .signature-line { border-top: 1px solid #98a2b3; margin-top: 36px; padding-top: 6px; font-size: 12px; color: #5c6675; }
+  .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .signature-box { border: 1px solid #98a2b3; border-radius: 6px; min-height: 90px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; }
+  .signature-box p { margin: 0; font-size: 11px; color: #5c6675; text-transform: uppercase; letter-spacing: 0.03em; }
+  .signature-line { border-top: 1px solid #98a2b3; margin-top: 24px; padding-top: 5px; font-size: 11px; color: #5c6675; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-  @media print { body { background: #fff; } .sheet { width: 100%; margin: 0; } .no-print { display: none !important; } }
+  @media print { body { background: #fff; } .sheet { border: none; } .no-print { display: none !important; } }
   @media (max-width: 700px) { .layout, .fields, .contacts, .signature-grid { grid-template-columns: 1fr; } .photo-frame { justify-self: start; } .header { flex-direction: column; align-items: flex-start; } .header p { text-align: left; } }
 </style>
 </head>
