@@ -141,8 +141,14 @@ function resolveUrl(): string {
 
 export const getPocketBase = (): PocketBase => {
   const url = resolveUrl();
+  // Recréer le client si l'URL a changé depuis sa création
+  // (ex: hydratePocketBaseUrl résout l'IP APRÈS le 1er getPocketBase).
   if (!_pb) {
     logBackend('Connexion', `Initialisation PocketBase → ${url}`, 'info');
+    _pb = new PocketBase(url);
+    _pb.autoCancellation(false);
+  } else if ((_pb as unknown as Record<string, unknown>).baseUrl !== url) {
+    logBackend('Connexion', `URL changée → recréation PocketBase (${url})`, 'info');
     _pb = new PocketBase(url);
     _pb.autoCancellation(false);
   }

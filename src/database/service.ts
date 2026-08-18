@@ -1438,13 +1438,13 @@ export const uploadDocument = async (
   imageUri: string | File,
 ): Promise<string | null> => {
   const pb = getPb();
+  // ── DIAGNOSTIC TEMPORAIRE (à retirer après debug upload) ──
+  console.log('[UPLOAD-DIAG] authStore.isValid =', pb.authStore.isValid);
+  console.log('[UPLOAD-DIAG] baseUrl =', (pb as any).baseUrl);
+  console.log('[UPLOAD-DIAG] employeId =', employeId, '| type =', type);
   try {
     let imageField: any;
     if (typeof imageUri === 'string') {
-      // React Native — URI locale (expo-image-picker).
-      // IMPORTANT : on passe un OBJET au SDK (pas un FormData natif) — le SDK
-      // PocketBase JS convertit lui-même en multipart sur RN. Un FormData natif
-      // arrive vide côté serveur (400 image requis).
       const ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
       imageField = {
         uri: imageUri,
@@ -1452,17 +1452,18 @@ export const uploadDocument = async (
         name: `doc_${type}_${Date.now()}.${ext}`,
       };
     } else {
-      // Web — File object
       imageField = imageUri;
     }
+    console.log('[UPLOAD-DIAG] imageField =', JSON.stringify(imageField).slice(0, 120));
     const record = await pb.collection('documents').create({
       image: imageField,
       employe_id: employeId,
       type,
     });
+    console.log('[UPLOAD-DIAG] SUCCÈS record.id =', record.id);
     return record.id;
   } catch (e: any) {
-    console.error('uploadDocument error:', e?.status, e?.message, e?.data);
+    console.error('[UPLOAD-DIAG] ÉCHEC status=', e?.status, '| msg=', e?.message, '| data=', JSON.stringify(e?.data));
     return null;
   }
 };
