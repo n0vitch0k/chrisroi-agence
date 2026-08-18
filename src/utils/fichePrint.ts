@@ -1,17 +1,21 @@
 // Générateur HTML/PDF de la FICHE D'INSCRIPTION — VERSION PAPIER STRICTE.
 //
 // Important : cette version ne reprend QUE les champs de la fiche papier
-// (Employé + Personnes à contacter en cas d'urgence + pied de page).
+// (Employé + Personnes à contacter en cas d'urgence + clauses + signatures).
 // Elle ne contient pas les sections "Parents" / "Expériences" du formulaire
 // numérique enrichi — celles-ci restent dans l'app, mais n'apparaissent pas
 // sur la feuille physique.
 //
+// Design (validé via mockups/fiche-inscription-final.html) :
+//  - fiche REMPLIE, SANS pointillés (valeurs en texte plein).
+//  - bandeaux BLEU NUIT (#0c1f3f), layout 2 colonnes, photo à droite.
+//  - cases matrimoniale en "pill", celle sélectionnée surlignée.
+//  - clauses CHRISROI : tiers (1/3) sur 1er salaire + frais de dossier 5000 FCFA.
+//  - multi-page : chaque section a `break-inside: avoid` → une fiche longue
+//    passe proprement sur plusieurs pages sans couper une section.
+//
 // Cross-platform : imprimable via expo-print (printToFileAsync → PDF natif)
 // ou via window.print() sur le web, exactement comme contratPrint.ts.
-//
-// Design : fidèle à la maquette validée (mockups/fiche-inscription-preview.html) :
-// bandeaux BLEU NUIT (#1b2a4a), champs pointillés, cases matrimoniale,
-// clauses salariales + signatures.
 
 import { Platform } from 'react-native';
 
@@ -43,12 +47,6 @@ export interface FichePapierData {
   // Bloc URGENCE (2 contacts max)
   urgence?: Array<{ nom?: string; prenom?: string; telephone?: string; lieu?: string }>;
 }
-
-const SITUATIONS: Record<string, string> = {
-  celibataire: 'Célibataire',
-  marie: 'Marié(e)',
-  concubinage: 'Concubinage',
-};
 
 const escapeHtml = (s: any): string => {
   if (s === null || s === undefined) return '';
@@ -98,7 +96,6 @@ export const fileUriToDataUri = async (uri: string): Promise<string | null> => {
     // URL distante sur natif : fetch puis convertir en base64
     const res = await fetch(uri);
     const blob = await res.blob();
-    // Pas de FileReader natif : on lit via expo-file-system depuis un fichier temporaire
     const b64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
@@ -116,32 +113,28 @@ export const fileUriToDataUri = async (uri: string): Promise<string | null> => {
 export function buildFichePapierHtml(data: FichePapierData): string {
   const d = data || {};
   const sit = d.situation_matrimoniale || '';
-  const check = (v: string) =>
-    sit === v
-      ? '<span class="box checked">✓</span>'
-      : '<span class="box"></span>';
+  const opt = (v: string, label: string) =>
+    `<span class="option${sit === v ? ' selected' : ''}">${escapeHtml(label)}${
+      sit === v ? '<span class="sr-only">(sélectionné)</span>' : ''
+    }</span>`;
 
-  const dateStr = d.date
-    ? escapeHtml(d.date)
-    : new Date().toISOString().slice(0, 10);
+  const dateStr = d.date ? escapeHtml(d.date) : new Date().toISOString().slice(0, 10);
 
   // 2 contacts d'urgence (papier : exactement 2)
   const u = d.urgence || [];
   const c1 = u[0] || {};
   const c2 = u[1] || {};
-  const urgCol = (c: any) => `
-    <div class="urgCol">
-      <div class="urgTitle">${escapeHtml(c.prenom || c.nom ? '' : '')}</div>
-      <div class="row"><span class="label">Nom et prénoms :</span><span class="val">${
-        [c.prenom, c.nom].filter(Boolean).join(' ') || ''
-      }</span><span class="dots"></span></div>
-      <div class="row"><span class="label">Contact :</span><span class="val">${
-        escapeHtml(c.telephone) || ''
-      }</span><span class="dots"></span></div>
-      <div class="row"><span class="label">Lieu d'habitation :</span><span class="val">${
-        escapeHtml(c.lieu) || ''
-      }</span><span class="dots"></span></div>
-    </div>`;
+  const contactCard = (title: string, c: any) => `
+    <article class="contact-card">
+      <h3>${escapeHtml(title)}</h3>
+      <dl class="fields" style="grid-template-columns: 1fr;">
+        <div class="field"><dt>Nom et prénoms</dt><dd>${escapeHtml([c.prenom, c.nom].filter(Boolean).join(' '))}</dd></div>
+        <div class="field"><dt>Contact</dt><dd>${escapeHtml(c.telephone)}</dd></div>
+        <div class="field"><dt>Lieu d'habitation</dt><dd>${escapeHtml(c.lieu)}</dd></div>
+      </dl>
+    </article>`;
+
+  const photo = photoHtml(d.photo, d.photoDataUri);
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -149,150 +142,104 @@ export function buildFichePapierHtml(data: FichePapierData): string {
 <meta charset="utf-8">
 <title>Fiche d'inscription — CHRISROI AGENCE</title>
 <style>
-  @page { size: A4; margin: 12mm 14mm 12mm 14mm; }
+  @page { size: A4; margin: 12mm; }
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0;
-    font-family: "Times New Roman", Georgia, serif;
-    color: #111;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .page { width: 100%; }
-
-  /* En-tête */
-  .top {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 4mm;
-  }
-  .titleBox {
-    border: 1.5px solid #000; padding: 6px 26px; text-align: center; margin: 0 auto;
-  }
-  .titleBox h1 {
-    margin: 0; font-size: 22px; letter-spacing: 2px; font-weight: 700;
-  }
-  .photoBox {
-    width: 46mm; height: 54mm; border: 1.5px solid #000;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden; background: #fafafa; flex: 0 0 auto;
-  }
-
-  /* Bandeau section (BLEU NUIT) */
-  .sectionBar {
-    background: #1b2a4a; color: #fff; text-align: center; font-weight: 700;
-    letter-spacing: 1.5px; padding: 2mm 8px; margin: 4mm 0 3mm; font-size: 15px;
-  }
-
-  /* Lignes de champ */
-  .row { display: flex; align-items: baseline; gap: 3mm; margin: 2.5mm 0; }
-  .label { white-space: nowrap; font-size: 13.5px; }
-  .dots {
-    flex: 1; border-bottom: 1px dotted #000; height: 16px; min-width: 40px;
-  }
-  .val { font-size: 13.5px; min-width: 60px; }
-
-  /* cases à cocher */
-  .checks { display: flex; gap: 6mm; margin: 2mm 0 3mm 4mm; font-size: 13px; }
-  .check { display: flex; align-items: center; gap: 6px; }
-  .box {
-    width: 13px; height: 13px; border: 1.3px solid #000;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 11px; line-height: 1;
-  }
-  .box.checked { background: #1b2a4a; color: #fff; border-color: #1b2a4a; }
-
-  /* deux colonnes urgence */
-  .urgGrid { display: flex; gap: 4mm; }
-  .urgCol { flex: 1; }
-  .urgTitle { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-
-  /* Pied */
-  .clause { margin-top: 4mm; font-size: 13px; display: flex; align-items: baseline; gap: 3mm; }
-  .signs { display: flex; justify-content: space-between; margin-top: 7mm; }
-  .sign { text-align: center; width: 40%; }
-  .sign .line { border-top: 1px solid #000; margin-top: 34px; padding-top: 4px; font-size: 12.5px; font-weight: 600; }
-  .small { font-size: 11px; color: #555; }
-
-  @media print { body { font-size: 12px; } }
+  body { margin: 0; background: #fff; color: #10151c; font-family: Arial, Helvetica, sans-serif; line-height: 1.35; }
+  .sheet { width: 100%; background: #fff; }
+  .header { background: #0c1f3f; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 22px; break-inside: avoid; }
+  .header h1 { margin: 0; font-size: 24px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.04em; }
+  .header p { margin: 0; text-align: right; font-size: 13px; line-height: 1.4; opacity: 0.92; }
+  .layout { display: grid; grid-template-columns: 1fr 126px; gap: 18px; padding: 18px 22px; align-items: start; }
+  .photo-frame { margin: 0; border: 2px solid #0c1f3f; padding: 4px; background: #fff; width: 126px; }
+  .photo-frame img { display: block; width: 100%; height: 142px; object-fit: cover; background: #e8edf5; }
+  .section { padding: 0 22px 18px; break-inside: avoid; }
+  .section-title { margin: 0 0 10px; background: #0c1f3f; color: #fff; padding: 8px 10px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; break-after: avoid; }
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin: 0; }
+  .field { margin: 0; padding: 0; break-inside: avoid; }
+  .field dt { margin: 0; font-size: 11px; color: #5c6675; text-transform: uppercase; letter-spacing: 0.03em; }
+  .field dd { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: #10151c; min-height: 1.2em; }
+  .field.full { grid-column: 1 / -1; }
+  .marital { display: flex; flex-wrap: wrap; gap: 8px; }
+  .option { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c8d0dc; border-radius: 4px; padding: 5px 8px; font-size: 13px; color: #5c6675; background: #fff; }
+  .option.selected { border-color: #0c1f3f; color: #0c1f3f; font-weight: 700; background: #edf3ff; }
+  .option.selected::before { content: "\\2713"; }
+  .contacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .contact-card { border: 1px solid #c8d0dc; border-radius: 6px; padding: 12px; break-inside: avoid; background: #fff; }
+  .contact-card h3 { margin: 0 0 10px; font-size: 14px; color: #0c1f3f; }
+  .clauses { display: grid; gap: 8px; }
+  .clause { margin: 0; border: 1px solid #c8d0dc; background: #f8fafc; padding: 10px 12px; font-size: 14px; line-height: 1.45; break-inside: avoid; }
+  .clause strong { color: #0c1f3f; }
+  .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .signature-box { border: 1px solid #98a2b3; border-radius: 6px; min-height: 110px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; break-inside: avoid; }
+  .signature-box p { margin: 0; font-size: 12px; color: #5c6675; text-transform: uppercase; letter-spacing: 0.03em; }
+  .signature-line { border-top: 1px solid #98a2b3; margin-top: 36px; padding-top: 6px; font-size: 12px; color: #5c6675; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  @media print { body { background: #fff; } .sheet { width: 100%; margin: 0; } .no-print { display: none !important; } }
+  @media (max-width: 700px) { .layout, .fields, .contacts, .signature-grid { grid-template-columns: 1fr; } .photo-frame { justify-self: start; } .header { flex-direction: column; align-items: flex-start; } .header p { text-align: left; } }
 </style>
 </head>
 <body>
-  <div class="page">
+  <main class="sheet" aria-label="Fiche d'inscription CHRISROI AGENCE">
+    <header class="header">
+      <h1>Fiche d'inscription</h1>
+      <p>CHRISROI AGENCE<br>Agence de placement</p>
+    </header>
 
-    <!-- EN-TÊTE -->
-    <div class="top">
-      <div style="width:46mm"></div>
-      <div class="titleBox"><h1>FICHE D'INSCRIPTION</h1></div>
-      <div class="photoBox">${photoHtml(d.photo, d.photoDataUri)}</div>
-    </div>
+    <section class="layout" aria-labelledby="employe-title">
+      <div>
+        <h2 id="employe-title" class="section-title">Employé(e)</h2>
+        <dl class="fields">
+          <div class="field"><dt>Date</dt><dd>${dateStr}</dd></div>
+          <div class="field"><dt>Nom et prénoms</dt><dd>${escapeHtml([d.nom, d.prenom].filter(Boolean).join(' '))}</dd></div>
+          <div class="field"><dt>Date et lieu de naissance</dt><dd>${escapeHtml([d.date_naissance, d.lieu_naissance].filter(Boolean).join(' à '))}</dd></div>
+          <div class="field"><dt>Numéro de téléphone</dt><dd>${escapeHtml(d.telephone)}</dd></div>
+          <div class="field"><dt>Lieu d'habitation</dt><dd>${escapeHtml(d.lieu_residence)}</dd></div>
+          <div class="field"><dt>Nationalité</dt><dd>${escapeHtml(d.nationalite)}</dd></div>
+          <div class="field"><dt>Sexe</dt><dd>${escapeHtml(d.sexe)}</dd></div>
+          <div class="field full">
+            <dt>Situation matrimoniale</dt>
+            <dd><div class="marital" role="group" aria-label="Situation matrimoniale">
+              ${opt('marie', 'Marié(e)')}
+              ${opt('concubinage', 'Concubinage')}
+              ${opt('celibataire', 'Célibataire')}
+            </div></dd>
+          </div>
+          <div class="field"><dt>Religion</dt><dd>${escapeHtml(d.religion)}</dd></div>
+          <div class="field"><dt>Ethnie</dt><dd>${escapeHtml(d.ethnie)}</dd></div>
+          <div class="field"><dt>Emploi recherché</dt><dd>${escapeHtml(d.categorie_emploi)}</dd></div>
+          <div class="field"><dt>Niveau d'études</dt><dd>${escapeHtml(d.niveau_etude)}</dd></div>
+          <div class="field full"><dt>Avez-vous déjà travaillé ? Si oui, précisez</dt><dd>${d.deja_travaille ? 'Oui — ' + escapeHtml(d.experience_details) : 'Non'}</dd></div>
+          <div class="field full"><dt>Avez-vous des allergies ou des problèmes de santé ? Si oui, précisez</dt><dd>${escapeHtml(d.allergie_sante)}</dd></div>
+          <div class="field full"><dt>Avez-vous déjà subi une ou plusieurs interventions chirurgicales ? Si oui, précisez</dt><dd>${escapeHtml(d.intervention_chirurgicale)}</dd></div>
+        </dl>
+      </div>
+      <figure class="photo-frame">${photo}</figure>
+    </section>
 
-    <!-- SECTION EMPLOYE -->
-    <div class="sectionBar">EMPLOYE</div>
+    <section class="section" aria-labelledby="urgences-title">
+      <h2 id="urgences-title" class="section-title">Personnes à contacter en cas d'urgence</h2>
+      <div class="contacts">
+        ${contactCard('Contact 1', c1)}
+        ${contactCard('Contact 2', c2)}
+      </div>
+    </section>
 
-    <div class="row"><span class="label">Date :</span><span class="val">${dateStr}</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Nom et Prénoms :</span><span class="val">${
-      [d.nom, d.prenom].filter(Boolean).join(' ')
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Date et lieu de naissance :</span><span class="val">${
-      [d.date_naissance, d.lieu_naissance].filter(Boolean).join(' à ')
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Numéro de téléphone :</span><span class="val">${
-      escapeHtml(d.telephone)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Lieu d'habitation :</span><span class="val">${
-      escapeHtml(d.lieu_residence)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Nationalité :</span><span class="val">${
-      escapeHtml(d.nationalite)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Sexe :</span><span class="val">${
-      escapeHtml(d.sexe)
-    }</span><span class="dots"></span></div>
+    <section class="section" aria-labelledby="clauses-title">
+      <h2 id="clauses-title" class="section-title">Clauses</h2>
+      <div class="clauses">
+        <p class="clause">Le tiers (<strong>1/3</strong>) sur le premier salaire est prélevé par l'agence au titre de ses frais de placement.</p>
+        <p class="clause">Frais de dossier : <strong>5000 FCFA</strong> — valable pour un (1) mois et non remboursable.</p>
+      </div>
+    </section>
 
-    <div class="row"><span class="label">Situation matrimoniale :</span><span class="dots"></span></div>
-    <div class="checks">
-      <span class="check">${check('marie')} Marié(e)</span>
-      <span class="check">${check('concubinage')} Concubinage</span>
-      <span class="check">${check('celibataire')} Célibataire</span>
-    </div>
-
-    <div class="row"><span class="label">Religion :</span><span class="val">${
-      escapeHtml(d.religion)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Ethnie :</span><span class="val">${
-      escapeHtml(d.ethnie)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Emploi recherché :</span><span class="val">${
-      escapeHtml(d.categorie_emploi)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Niveau d'étude :</span><span class="val">${
-      escapeHtml(d.niveau_etude)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Avez-vous déjà travaillé ? Si oui précisez :</span><span class="val">${
-      d.deja_travaille ? 'Oui — ' + escapeHtml(d.experience_details) : 'Non'
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Avez-vous une allergie ou des problèmes de santé ? Si oui précisez :</span><span class="val">${
-      escapeHtml(d.allergie_sante)
-    }</span><span class="dots"></span></div>
-    <div class="row"><span class="label">Avez-vous déjà subi une/des intervention(s) chirurgicale(s) si oui précisez :</span><span class="val">${
-      escapeHtml(d.intervention_chirurgicale)
-    }</span><span class="dots"></span></div>
-
-    <!-- SECTION URGENCE -->
-    <div class="sectionBar">PERSONNES A CONTACTER EN CAS D'URGENCE</div>
-    <div class="urgGrid">
-      ${urgCol(c1)}
-      ${urgCol(c2)}
-    </div>
-
-    <!-- PIED -->
-    <div class="clause"><span>Le tiers (1/3) sur le premier salaire :</span><span class="dots"></span></div>
-    <div class="clause"><span>Frais de dossier :</span><span class="dots"></span><span class="small">valable pour un(1) mois et non remboursable.</span></div>
-
-    <div class="signs">
-      <div class="sign"><div class="line">EMPLOYE</div></div>
-      <div class="sign"><div class="line">CHRISROI AGENCE</div></div>
-    </div>
-  </div>
+    <section class="section" aria-labelledby="signatures-title">
+      <h2 id="signatures-title" class="section-title">Signatures</h2>
+      <div class="signature-grid">
+        <div class="signature-box"><p>Employé(e)</p><div class="signature-line">Signature</div></div>
+        <div class="signature-box"><p>CHRISROI AGENCE</p><div class="signature-line">Signature et cachet</div></div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>`;
 }

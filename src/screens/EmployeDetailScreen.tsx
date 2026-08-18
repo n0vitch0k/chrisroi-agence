@@ -32,6 +32,9 @@ import {
   getEntityHistory,
 } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
+import * as Sharing from 'expo-sharing';
+import { printToFileAsync } from 'expo-print';
+import { buildFichePapierHtml, FichePapierData, fileUriToDataUri } from '../utils/fichePrint';
 import SafeButton from '../components/SafeButton';
 import {
   formatDate,
@@ -122,6 +125,74 @@ export default function EmployeDetailScreen() {
       setHistory(hist || []);
     } catch (error) {
       console.error('Error loading employe:', error);
+    }
+  };
+
+  // ── Génération + partage de la FICHE PAPIER (depuis l'écran Détail) ──
+  const [generatingFiche, setGeneratingFiche] = useState(false);
+  const handleDownloadFiche = async () => {
+    if (!employe) return;
+    setGeneratingFiche(true);
+    try {
+      // Photo : on l'embarque en data-URI base64 pour qu'elle s'imprime TOUJOURS
+      const photoUrl = getEmployePhotoUrl(employeId, employe.photo);
+      const photoDataUri = photoUrl ? await fileUriToDataUri(photoUrl) : null;
+
+      const urgence = (employe.personnes_urgence || [])
+        .slice(0, 2)
+        .map((p: any) => ({
+          nom: p.nom,
+          prenom: p.prenom,
+          telephone: p.telephone,
+          lieu: p.lieu_residence || p.lieu,
+        }));
+
+      const data: FichePapierData = {
+        date: employe.date_inscription
+          ? (employe.date_inscription as string).slice(0, 10)
+          : new Date().toISOString().slice(0, 10),
+        nom: employe.nom,
+        prenom: employe.prenom,
+        date_naissance: employe.date_naissance,
+        lieu_naissance: employe.lieu_naissance,
+        telephone: employe.telephone,
+        lieu_residence: employe.lieu_residence,
+        nationalite: employe.nationalite,
+        sexe: employe.sexe,
+        situation_matrimoniale: employe.situation_matrimoniale,
+        religion: employe.religion,
+        ethnie: employe.ethnie,
+        categorie_emploi: employe.categorie_emploi,
+        niveau_etude: employe.niveau_etude,
+        deja_travaille: employe.a_deja_travaille,
+        experience_details: employe.experience_details,
+        allergie_sante: employe.allergie_sante,
+        intervention_chirurgicale: employe.intervention_chirurgicale,
+        photo: photoUrl,
+        photoDataUri,
+        urgence,
+      };
+
+      const html = buildFichePapierHtml(data);
+      const { uri } = await printToFileAsync({ html, base64: false });
+
+      if (Platform.OS === 'web') return; // sur web, aperçu navigateur
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: "Fiche d'inscription (papier)",
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('PDF généré', `Fiche enregistrée :\n${uri}`);
+      }
+    } catch (error) {
+      console.error('Erreur génération fiche papier:', error);
+      Alert.alert('Erreur', "Impossible de générer la fiche d'inscription.");
+    } finally {
+      setGeneratingFiche(false);
     }
   };
 
@@ -224,6 +295,10 @@ export default function EmployeDetailScreen() {
           <SafeButton mode="contained" onPress={() => navigation.navigate('FicheInscription', { id: employeId })}
             style={styles.editBtn}>
             Modifier
+          </SafeButton>
+          <SafeButton mode="outlined" onPress={handleDownloadFiche} loading={generatingFiche}
+            style={styles.editBtn}>
+            Fiche papier
           </SafeButton>
           <Menu
             visible={menuVisible}
