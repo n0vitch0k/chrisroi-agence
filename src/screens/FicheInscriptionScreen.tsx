@@ -158,6 +158,15 @@ export default function FicheInscriptionScreen() {
 
   const [loading, setLoading] = useState(false);
 
+  // ── Verrouillage après inscription ───────────────────────
+  // En mode CRÉATION (depuis le Dashboard), après un premier « Inscrire »
+  // réussi, le formulaire passe en lecture-seule : plus aucun champ n'est
+  // éditable et le bouton « Inscrire » est désactivé. Pour ré-éditer, il faut
+  // repasser par « Modifier » sur l'écran Détail (qui remet isEditing=true,
+  // donc le verrou ne s'active pas).
+  // En mode ÉDITION (ouvert via Modifier), le verrou ne s'active jamais.
+  const [locked, setLocked] = useState(false);
+
   // ── Validation date naissance ────────────────────────────
   const [dateError, setDateError] = useState<string | undefined>(undefined);
 
@@ -315,9 +324,31 @@ export default function FicheInscriptionScreen() {
       }
 
       Alert.alert('Succès', isEditing ? 'Employé modifié' : 'Employé inscrit');
-      // En CRÉATION (depuis le Dashboard) : on revient au Dashboard après
-      // inscription. En ÉDITION (ouvert via Modifier) : on reste sur la page.
-      if (!isEditing) navigation.goBack();
+
+      // ── Upload des documents/scans mis en attente en mode CRÉATION ──
+      // En création, l'employé vient d'être créé (id connu) : on upload tout
+      // ce qui a été ajouté AVANT la sauvegarde (documents + scan).
+      if (!isEditing) {
+        try {
+          for (const pd of pendingDocuments) {
+            await uploadDocument(id, pd.type, pd.uri);
+          }
+          if (pendingScanUri) {
+            await uploadScan('fiche_inscription', id, pendingScanUri);
+          }
+          // Recharger docs + scan pour affichage
+          const docs = await getDocumentsByEmploye(id);
+          setDocuments(docs || []);
+          const updatedScan = await getScan('fiche_inscription', id);
+          setScanData(updatedScan);
+        } catch (e) {
+          console.warn('Upload post-inscription échoué:', e);
+        }
+        // Verrouillage fort : le formulaire devient lecture-seule après inscription.
+        setLocked(true);
+        setPendingDocuments([]);
+        setPendingScanUri(null);
+      }
     } catch (error) {
       console.error('Error saving:', error);
       Alert.alert('Erreur', "Échec de l'enregistrement");
@@ -404,16 +435,17 @@ export default function FicheInscriptionScreen() {
       }
       const imageUri = result.assets[0].uri;
 
-      // Upload vers PocketBase
-      const docId = isEditing ? employeId : null;
-      if (!docId) {
-        Alert.alert('Info', 'Enregistrez d\'abord la fiche avant de scanner.');
+      // Mode CRÉATION : on stocke le scan en attente (upload après handleSave)
+      if (!employeId) {
+        setPendingScanUri(imageUri);
         setScanLoading(false);
+        Alert.alert('Scan en attente', "Le scan sera enregistré après l'inscription.");
         return;
       }
-      await uploadScan('fiche_inscription', docId, imageUri);
+      // Upload vers PocketBase
+      await uploadScan('fiche_inscription', employeId, imageUri);
       // Recharger le scan
-      const updated = await getScan('fiche_inscription', docId);
+      const updated = await getScan('fiche_inscription', employeId);
       setScanData(updated);
       Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
       setScanLoading(false);
@@ -426,15 +458,18 @@ export default function FicheInscriptionScreen() {
   const handleScanWeb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const docId = isEditing ? employeId : null;
-    if (!docId) {
-      Alert.alert('Info', 'Enregistrez d\'abord la fiche avant de scanner.');
+    // Mode CRÉATION : on stocke le scan en attente (upload après handleSave)
+    if (!employeId) {
+      const reader = new FileReader();
+      reader.onload = () => setPendingScanUri(reader.result as string);
+      reader.readAsDataURL(file);
+      Alert.alert('Scan en attente', "Le scan sera enregistré après l'inscription.");
       return;
     }
     try {
       setScanLoading(true);
-      await uploadScan('fiche_inscription', docId, file);
-      const updated = await getScan('fiche_inscription', docId);
+      await uploadScan('fiche_inscription', employeId, file);
+      const updated = await getScan('fiche_inscription', employeId);
       setScanData(updated);
       Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
     } catch (_) {
@@ -546,6 +581,10 @@ export default function FicheInscriptionScreen() {
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
   const [docsLoading, setDocsLoading] = useState(false);
+  // En mode CRÉATION, on ne peut pas uploader avant que l'employé existe.
+  // On garde les documents/scans en attente et on les upload après handleSave.
+  const [pendingDocuments, setPendingDocuments] = useState<{ type: string; uri: string }[]>([]);
+  const [pendingScanUri, setPendingScanUri] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
     if (!employeId) return;
@@ -575,11 +614,9 @@ export default function FicheInscriptionScreen() {
   }, [employeId, loadDocuments, loadHistory]);
 
   // Étape 1 : choix du type de document
+  // En CRÉATION (pas encore d'employeId), on autorise quand même : le document
+  // sera mis en attente et uploadé juste après l'inscription (handleSave).
   const openDocTypePicker = () => {
-    if (!employeId) {
-      Alert.alert('Info', "Enregistrez d'abord la fiche avant d'ajouter des documents.");
-      return;
-    }
     setShowDocTypePicker(true);
   };
 
@@ -592,7 +629,13 @@ export default function FicheInscriptionScreen() {
 
   // Upload final du document (RN : URI locale)
   const uploadPendingDocument = async (imageUri: string) => {
-    if (!employeId || !docTypePending) return;
+    if (!docTypePending) return;
+    // Mode CRÉATION : on stocke en attente (upload après handleSave)
+    if (!employeId) {
+      setPendingDocuments((prev) => [...prev, { type: docTypePending, uri: imageUri }]);
+      setDocTypePending(null);
+      return;
+    }
     setDocsLoading(true);
     try {
       await uploadDocument(employeId, docTypePending, imageUri);
@@ -609,7 +652,18 @@ export default function FicheInscriptionScreen() {
   // Sur web : fallback input type="file"
   const handleDocWeb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !employeId || !docTypePending) return;
+    if (!file || !docTypePending) return;
+    // Mode CRÉATION : stocker en attente (upload après handleSave)
+    if (!employeId) {
+      // convertir File en data URL pour le garder côté web
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPendingDocuments((prev) => [...prev, { type: docTypePending, uri: reader.result as string }]);
+      };
+      reader.readAsDataURL(file);
+      setDocTypePending(null);
+      return;
+    }
     setDocsLoading(true);
     try {
       await uploadDocument(employeId, docTypePending, file);
@@ -689,7 +743,11 @@ export default function FicheInscriptionScreen() {
   //  RENDU — Formulaire numérique (saisie)
   // ════════════════════════════════════════════════════════
   const renderDigitalForm = () => (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled"
+      // Verrouillage fort : après inscription, tout le formulaire devient
+      // non-interactif (champs, chips, photo, documents). Le bouton est géré séparément.
+      pointerEvents={locked ? 'none' : 'auto'}
+    >
       {/* ── Photo + Identité ── */}
       <SectionCard title="👤 Identité du candidat">
         <TouchableOpacity onPress={pickImage} style={digitalStyles.photoRow} activeOpacity={0.7}>
@@ -868,14 +926,16 @@ export default function FicheInscriptionScreen() {
       </SectionCard>
 
       {/* ── Documents associés ── */}
-      {isEditing && (
-        <SectionCard title="📎 Documents associés">
-          <View style={digitalStyles.docHeader}>
-            <TouchableOpacity style={digitalStyles.docAddBtn} onPress={openDocTypePicker} activeOpacity={0.7}>
-              <Icon name="plus" size={16} color={Colors.primary} />
-              <Text style={digitalStyles.docAddText}>Ajouter</Text>
-            </TouchableOpacity>
-          </View>
+      <SectionCard title="📎 Documents associés">
+        <View style={digitalStyles.docHeader}>
+          <TouchableOpacity style={digitalStyles.docAddBtn} onPress={openDocTypePicker} activeOpacity={0.7}>
+            <Icon name="plus" size={16} color={Colors.primary} />
+            <Text style={digitalStyles.docAddText}>Ajouter</Text>
+          </TouchableOpacity>
+          {!employeId && (
+            <Text style={digitalStyles.docEmpty}>Sera enregistré après l'inscription.</Text>
+          )}
+        </View>
           {documents.length === 0 ? (
             <Text style={digitalStyles.docEmpty}>{docsLoading ? 'Chargement…' : 'Aucun document.'}</Text>
           ) : (
@@ -892,7 +952,6 @@ export default function FicheInscriptionScreen() {
             </View>
           )}
         </SectionCard>
-      )}
 
       {/* ── Historique ── */}
       {history.length > 0 && (
@@ -910,8 +969,8 @@ export default function FicheInscriptionScreen() {
       )}
 
       {/* ── Bouton enregistrer ── */}
-      <SafeButton onPress={handleSave} loading={loading} style={digitalStyles.submitBtn}>
-        {isEditing ? 'Enregistrer les modifications' : 'Inscrire'}
+      <SafeButton onPress={handleSave} loading={loading} disabled={locked} style={digitalStyles.submitBtn}>
+        {locked ? 'Inscription enregistrée' : isEditing ? 'Enregistrer les modifications' : 'Inscrire'}
       </SafeButton>
     </ScrollView>
   );
@@ -1407,42 +1466,34 @@ export default function FicheInscriptionScreen() {
           <View style={docStyles.scanEmpty}>
             <Icon name="file-document-outline" size={48} color="#CCC" />
             <Text style={docStyles.scanEmptyText}>Aucun scan pour ce document</Text>
-            {isEditing ? (
+            {Platform.OS === 'web' ? (
               <>
-                {Platform.OS === 'web' ? (
-                  <>
-                    <TouchableOpacity
-                      style={docStyles.scanBtn}
-                      onPress={() => {
-                        const input = document.getElementById('scan-file-input');
-                        if (input) input.click();
-                      }}
-                    >
-                      <Icon name="camera-plus-outline" size={20} color="#FFF" />
-                      <Text style={docStyles.scanBtnText}>Scanner le document signé</Text>
-                    </TouchableOpacity>
-                    <input
-                      id="scan-file-input"
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={handleScanWeb}
-                    />
-                  </>
-                ) : (
-                  <TouchableOpacity
-                    style={docStyles.scanBtn}
-                    onPress={handleScanDocument}
-                  >
-                    <Icon name="camera-plus-outline" size={20} color="#FFF" />
-                    <Text style={docStyles.scanBtnText}>Scanner le document signé</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={docStyles.scanBtn}
+                  onPress={() => {
+                    const input = document.getElementById('scan-file-input');
+                    if (input) input.click();
+                  }}
+                >
+                  <Icon name="camera-plus-outline" size={20} color="#FFF" />
+                  <Text style={docStyles.scanBtnText}>Scanner le document signé</Text>
+                </TouchableOpacity>
+                <input
+                  id="scan-file-input"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleScanWeb}
+                />
               </>
             ) : (
-              <Text style={docStyles.scanEmptyHint}>
-                Enregistrez d'abord la fiche pour pouvoir scanner.
-              </Text>
+              <TouchableOpacity
+                style={docStyles.scanBtn}
+                onPress={handleScanDocument}
+              >
+                <Icon name="camera-plus-outline" size={20} color="#FFF" />
+                <Text style={docStyles.scanBtnText}>Scanner le document signé</Text>
+              </TouchableOpacity>
             )}
           </View>
         )}
