@@ -1327,7 +1327,6 @@ export const uploadScan = async (
   imageUri: string | File,
 ): Promise<string> => {
   const pb = getPb();
-  const pbUrl = getPocketBaseUrl();
 
   // Supprimer l'ancien scan s'il existe (on remplace)
   const existing = await getScan(documentType, documentId);
@@ -1335,26 +1334,24 @@ export const uploadScan = async (
     try { await pb.collection('scans').delete(existing.id); } catch {}
   }
 
-  const formData = new FormData();
-
-  // Platform-agnostic: sur react-native on utilise l'objet {uri, type, name},
-  // sur web on reçoit un File du input type="file"
+  let imageField: any;
   if (typeof imageUri === 'string') {
     // React Native — URI locale (ex: expo-image-picker)
-    formData.append('image', {
+    imageField = {
       uri: imageUri,
       type: 'image/jpeg',
       name: `scan_${documentType}_${documentId}.jpg`,
-    } as any);
+    };
   } else {
     // Web — File object
-    formData.append('image', imageUri);
+    imageField = imageUri;
   }
 
-  formData.append('document_type', documentType);
-  formData.append('document_id', documentId);
-
-  const record = await pb.collection('scans').create(formData);
+  const record = await pb.collection('scans').create({
+    image: imageField,
+    document_type: documentType,
+    document_id: documentId,
+  });
   return record.id;
 };
 
@@ -1442,25 +1439,30 @@ export const uploadDocument = async (
 ): Promise<string | null> => {
   const pb = getPb();
   try {
-    const formData = new FormData();
+    let imageField: any;
     if (typeof imageUri === 'string') {
-      // React Native — URI locale (expo-image-picker)
+      // React Native — URI locale (expo-image-picker).
+      // IMPORTANT : on passe un OBJET au SDK (pas un FormData natif) — le SDK
+      // PocketBase JS convertit lui-même en multipart sur RN. Un FormData natif
+      // arrive vide côté serveur (400 image requis).
       const ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
-      formData.append('image', {
+      imageField = {
         uri: imageUri,
         type: ext === 'png' ? 'image/png' : 'image/jpeg',
         name: `doc_${type}_${Date.now()}.${ext}`,
-      } as any);
+      };
     } else {
       // Web — File object
-      formData.append('image', imageUri);
+      imageField = imageUri;
     }
-    formData.append('employe_id', employeId);
-    formData.append('type', type);
-    const record = await pb.collection('documents').create(formData);
+    const record = await pb.collection('documents').create({
+      image: imageField,
+      employe_id: employeId,
+      type,
+    });
     return record.id;
-  } catch (e) {
-    console.error('uploadDocument error:', e);
+  } catch (e: any) {
+    console.error('uploadDocument error:', e?.status, e?.message, e?.data);
     return null;
   }
 };
@@ -1509,25 +1511,25 @@ export const uploadEmployeurDocument = async (
 ): Promise<string | null> => {
   const pb = getPb();
   try {
-    const formData = new FormData();
+    let imageField: any;
     if (typeof imageUri === 'string') {
-      // React Native — URI locale (expo-image-picker)
       const ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
-      formData.append('image', {
+      imageField = {
         uri: imageUri,
         type: ext === 'png' ? 'image/png' : 'image/jpeg',
         name: `doc_${type}_${Date.now()}.${ext}`,
-      } as any);
+      };
     } else {
-      // Web — File object
-      formData.append('image', imageUri);
+      imageField = imageUri;
     }
-    formData.append('employeur_id', employeurId);
-    formData.append('type', type);
-    const record = await pb.collection('documents').create(formData);
+    const record = await pb.collection('documents').create({
+      image: imageField,
+      employeur_id: employeurId,
+      type,
+    });
     return record.id;
-  } catch (e) {
-    console.error('uploadEmployeurDocument error:', e);
+  } catch (e: any) {
+    console.error('uploadEmployeurDocument error:', e?.status, e?.message, e?.data);
     return null;
   }
 };
@@ -1551,18 +1553,18 @@ export const uploadEmployePhoto = async (
   imageUri: string | File,
 ): Promise<string | null> => {
   const pb = getPb();
-  const formData = new FormData();
+  let photoField: any;
   if (typeof imageUri === 'string') {
-    formData.append('photo', {
+    photoField = {
       uri: imageUri,
       type: 'image/jpeg',
       name: `photo_${employeId}.jpg`,
-    } as any);
+    };
   } else {
-    formData.append('photo', imageUri);
+    photoField = imageUri;
   }
-  const record = await pb.collection('employes').update(employeId, formData as any);
-  return record.photo || null;
+  const record = await pb.collection('employes').update(employeId, { photo: photoField });
+  return (record as any).photo || null;
 };
 
 /** True si l'URI est une source locale (à uploader) et non une URL déjà sur le serveur. */
