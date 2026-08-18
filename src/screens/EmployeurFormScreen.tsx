@@ -444,7 +444,7 @@ export default function EmployeurFormScreen() {
                 setShowDocSourcePicker(false);
                 if (!(await requestLibraryPermission())) return;
                 try {
-                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
+                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85 });
                   if (!result.canceled && result.assets[0]) uploadPendingDocument(result.assets[0].uri);
                   else setDocTypePending(null);
                 } catch (e: any) {
@@ -462,7 +462,7 @@ export default function EmployeurFormScreen() {
                 const { status } = await ImagePicker.requestCameraPermissionsAsync();
                 if (status !== 'granted') { Alert.alert('Permission refusée', "Autorisez l'accès à l'appareil photo."); setDocTypePending(null); return; }
                 try {
-                  const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
+                  const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.85 });
                   if (!result.canceled && result.assets[0]) uploadPendingDocument(result.assets[0].uri);
                   else setDocTypePending(null);
                 } catch (e: any) {

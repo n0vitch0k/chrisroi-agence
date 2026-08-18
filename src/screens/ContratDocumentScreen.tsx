@@ -456,7 +456,7 @@ export default function ContratDocumentScreen() {
       setScanLoading(true);
       const ImagePicker = require('expo-image-picker').default;
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         quality: 0.85,
         allowsEditing: false,
       });

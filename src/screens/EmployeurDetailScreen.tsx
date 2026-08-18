@@ -355,7 +355,7 @@ export default function EmployeurDetailScreen() {
                   if (!(await requestLibraryPermission())) return;
                   try {
                     const result = await ImagePicker.launchImageLibraryAsync({
-                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                      mediaTypes: 'images',
                       quality: 0.85,
                     });
                     if (!result.canceled && result.assets[0]) {
@@ -384,7 +384,7 @@ export default function EmployeurDetailScreen() {
                   }
                   try {
                     const result = await ImagePicker.launchCameraAsync({
-                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                      mediaTypes: 'images',
                       quality: 0.85,
                     });
                     if (!result.canceled && result.assets[0]) {

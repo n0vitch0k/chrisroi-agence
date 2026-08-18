@@ -386,7 +386,7 @@ export default function FicheInscriptionScreen() {
     if (!(await requestLibraryPermission())) return;
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         quality: 1,
         exif: true,
       });
@@ -404,7 +404,7 @@ export default function FicheInscriptionScreen() {
     if (!(await requestCameraPermission())) return;
     try {
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         quality: 1,
         exif: true,
       });
@@ -425,7 +425,7 @@ export default function FicheInscriptionScreen() {
       setScanLoading(true);
       const ImagePicker = require('expo-image-picker').default;
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         quality: 0.85,
         allowsEditing: false,
       });
@@ -1640,7 +1640,7 @@ export default function FicheInscriptionScreen() {
                 if (!(await requestLibraryPermission())) return;
                 try {
                   const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                    mediaTypes: 'images',
                     quality: 0.85,
                   });
                   if (!result.canceled && result.assets[0]) {
@@ -1661,7 +1661,7 @@ export default function FicheInscriptionScreen() {
                 if (!(await requestCameraPermission())) return;
                 try {
                   const result = await ImagePicker.launchCameraAsync({
-                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                    mediaTypes: 'images',
                     quality: 0.85,
                   });
                   if (!result.canceled && result.assets[0]) {

@@ -196,7 +196,7 @@ function TabNavigator() {
             case 'EmployesStack': iconName = focused ? 'folder-search' : 'folder-search-outline'; break;
             case 'EmployeursStack': iconName = focused ? 'office-building' : 'office-building-outline'; break;
             case 'ContratsStack': iconName = focused ? 'file-document' : 'file-document-outline'; break;
-            case 'SuiviStack': iconName = focused ? 'cash-multiple' : 'cash-multiple-outline'; break;
+            case 'SuiviStack': iconName = focused ? 'cash-multiple' : 'cash'; break;
             default: iconName = 'circle';
           }
           return <Icon name={iconName} size={size} color={color} />;
