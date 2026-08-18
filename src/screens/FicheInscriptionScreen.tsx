@@ -158,14 +158,6 @@ export default function FicheInscriptionScreen() {
 
   const [loading, setLoading] = useState(false);
 
-  // ── Verrouillage fort après inscription ──────────────────
-  // En mode CRÉATION (depuis le Dashboard), après un premier « Inscrire »
-  // réussi, le formulaire passe en lecture-seule : plus aucun champ n'est
-  // éditable et le bouton « Inscrire » est désactivé. Pour ré-éditer, il faut
-  // repasser par « Modifier » sur l'écran Détail (qui remet isEditing=true).
-  // En mode ÉDITION (ouvert via Modifier), le verrou ne s'active jamais.
-  const [locked, setLocked] = useState(false);
-
   // ── Validation date naissance ────────────────────────────
   const [dateError, setDateError] = useState<string | undefined>(undefined);
 
@@ -323,10 +315,9 @@ export default function FicheInscriptionScreen() {
       }
 
       Alert.alert('Succès', isEditing ? 'Employé modifié' : 'Employé inscrit');
-      // NE PAS naviguer — on reste sur la page pour impression/scan
-      // Verrouillage fort : après une PREMIÈRE inscription (mode création),
-      // le formulaire devient lecture-seule. En édition, on ne verrouille pas.
-      if (!isEditing) setLocked(true);
+      // En CRÉATION (depuis le Dashboard) : on revient au Dashboard après
+      // inscription. En ÉDITION (ouvert via Modifier) : on reste sur la page.
+      if (!isEditing) navigation.goBack();
     } catch (error) {
       console.error('Error saving:', error);
       Alert.alert('Erreur', "Échec de l'enregistrement");
@@ -698,11 +689,7 @@ export default function FicheInscriptionScreen() {
   //  RENDU — Formulaire numérique (saisie)
   // ════════════════════════════════════════════════════════
   const renderDigitalForm = () => (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled"
-      // Verrouillage fort : après inscription, tout le formulaire devient
-      // non-interactif (champs, chips, photo). Le bouton est géré séparément.
-      pointerEvents={locked ? 'none' : 'auto'}
-    >
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
       {/* ── Photo + Identité ── */}
       <SectionCard title="👤 Identité du candidat">
         <TouchableOpacity onPress={pickImage} style={digitalStyles.photoRow} activeOpacity={0.7}>
@@ -923,8 +910,8 @@ export default function FicheInscriptionScreen() {
       )}
 
       {/* ── Bouton enregistrer ── */}
-      <SafeButton onPress={handleSave} loading={loading} disabled={locked} style={digitalStyles.submitBtn}>
-        {locked ? 'Inscription enregistrée' : isEditing ? 'Enregistrer les modifications' : 'Inscrire'}
+      <SafeButton onPress={handleSave} loading={loading} style={digitalStyles.submitBtn}>
+        {isEditing ? 'Enregistrer les modifications' : 'Inscrire'}
       </SafeButton>
     </ScrollView>
   );
