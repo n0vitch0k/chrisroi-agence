@@ -344,7 +344,7 @@ export default function EmployeDetailScreen() {
               </TouchableOpacity>
             }
           >
-            <Menu.Item onPress={() => { setMenuVisible(false); navigation.navigate('ContratsStack', { screen: 'ContratForm', params: { employe_id: employeId } }); }}
+            <Menu.Item onPress={() => { setMenuVisible(false); navigation.navigate('ContratsStack', { screen: 'ContratDocument', params: { employe_id: employeId } }); }}
               title="Créer un contrat" leadingIcon="file-plus-outline" />
             <Divider />
             <Menu.Item onPress={() => { setMenuVisible(false); handleDelete(); }}

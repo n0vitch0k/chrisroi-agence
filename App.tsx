@@ -36,7 +36,6 @@ import EmployeurFormScreen from './src/screens/EmployeurFormScreen';
 import EmployeurDetailScreen from './src/screens/EmployeurDetailScreen';
 import ContratsScreen from './src/screens/ContratsScreen';
 import ContratDocumentScreen from './src/screens/ContratDocumentScreen';
-import ContratFormScreen from './src/screens/ContratFormScreen';
 import ContratDetailScreen from './src/screens/ContratDetailScreen';
 import SuiviScreen from './src/screens/SuiviScreen';
 import AlertesScreen from './src/screens/AlertesScreen';
@@ -158,11 +157,6 @@ function ContratsStackScreen() {
         name="ContratDocument"
         component={ContratDocumentScreen}
         options={{ headerShown: false, presentation: 'modal' }}
-      />
-      <ContStack.Screen
-        name="ContratForm"
-        component={ContratFormScreen}
-        options={{ headerShown: false }}
       />
     </ContStack.Navigator>
   );

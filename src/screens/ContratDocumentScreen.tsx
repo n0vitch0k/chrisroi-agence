@@ -14,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import type { ContratFormNavigationProp } from '../types/navigation';
+import type { ContratDocumentNavigationProp } from '../types/navigation';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -199,7 +199,7 @@ const EMPTY_FORM = {
 };
 
 export default function ContratDocumentScreen() {
-  const navigation = useNavigation<ContratFormNavigationProp>();
+  const navigation = useNavigation<ContratDocumentNavigationProp>();
   const route = useRoute<any>();
   const contratId = route.params?.id;
   const preselectedEmployeId = route.params?.employe_id;

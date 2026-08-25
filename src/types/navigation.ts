@@ -64,7 +64,6 @@ export type EmployeursStackParamList = {
 // ─── Contrats ──────────────────────────────────────────────
 export type ContratsStackParamList = {
   ContratsList: undefined;
-  ContratForm: { id?: string; employe_id?: string } | undefined;
   ContratDetail: { id: string };
   ContratDocument: { id?: string; employe_id?: string } | undefined;
 };
@@ -107,11 +106,6 @@ export type ContratListNavProps = CompositeScreenProps<
 
 export type ContratDetailNavProps = CompositeScreenProps<
   NativeStackScreenProps<ContratsStackParamList, 'ContratDetail'>,
-  BottomTabScreenProps<TabParamList>
->;
-
-export type ContratFormNavProps = CompositeScreenProps<
-  NativeStackScreenProps<ContratsStackParamList, 'ContratForm'>,
   BottomTabScreenProps<TabParamList>
 >;
 
@@ -184,8 +178,10 @@ export type ContratDetailNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList>
 >;
 
-export type ContratFormNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<ContratsStackParamList, 'ContratForm'>,
+// Alias historique : ContratDocumentScreen utilisait le type de l'ancien ContratForm.
+// Renommé proprement — ContratDocumentScreen est le SEUL formulaire de contrat.
+export type ContratDocumentNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<ContratsStackParamList, 'ContratDocument'>,
   BottomTabNavigationProp<TabParamList>
 >;
 

@@ -259,7 +259,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
             badgeText={registreCounts.contrats > 0 ? `${registreCounts.contrats} actifs` : undefined}
             badgeBg="#e8f0dc"
             badgeColor="#5a7c3a"
-            onPress={() => navigateTab('ContratsStack', { screen: 'ContratForm' })}
+            onPress={() => navigateTab('ContratsStack', { screen: 'ContratDocument' })}
           />
           <QuickAction
             icon="📸"
