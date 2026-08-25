@@ -80,3 +80,9 @@ deployment/
 pocketbase/pocketbase.exe
 pocketbase/pocketbase
 *.exe
+
+# Parasites nettoyes 25/08
+eas_build*.txt
+WhatsApp Image*
+pocketbase/pb_data/storage/
+Cdev
