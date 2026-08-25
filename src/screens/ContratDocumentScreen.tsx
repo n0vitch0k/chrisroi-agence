@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,8 +16,16 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { ContratFormNavigationProp } from '../types/navigation';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import { printToFileAsync } from 'expo-print';
 import A4Document from '../components/A4Document';
 import AppHeader from '../components/AppHeader';
+import FormField from '../components/FormField';
+import SafeButton from '../components/SafeButton';
+import { buildContratHtml } from '../utils/contratPrint';
 import {
   createContrat,
   updateContrat,
@@ -29,200 +37,162 @@ import {
   uploadScan,
   getScan,
   getEmployePhotoUrl,
+  patchContratField,
+  getDocumentsByContrat,
+  uploadContratDocument,
+  deleteDocument,
+  getDocumentTypeLabel,
+  getDocumentTypeIcon,
+  DOCUMENT_TYPES,
 } from '../database/service';
-import { formatMoney } from '../utils/constants';
-import { Colors, Spacing, Radius, Typography } from '../theme';
+import { Colors, Spacing, Radius } from '../theme';
+import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
 
-// ═══════════════════════════════════════════════════════════
-//  TEXTE STATIQUE DU CONTRAT
-// ═══════════════════════════════════════════════════════════
+// ── Helpers ──────────────────────────────────────────────────
+function calcAge(dateNaissance?: string | null): number | null {
+  if (!dateNaissance) return null;
+  const d = new Date(String(dateNaissance));
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 ? age : null;
+}
 
-const RESPONSABILITES_EMPLOYE = [
-  "L'employé est tenu de respecter son employeur dans l'exercice de ses fonctions.",
-  "L'employé répondra de ses actes devant les autorités ou les juridictions compétentes pour les actes de vols, fraude, ou tout autres délits.",
-  'Le présent contrat est conclu pour une durée de ___________________________',
-  "Qui commence à courir à compter du ________20 \tsur une durée de",
-];
-
-const RESPONSABILITES_EMPLOYEUR = [
-  "L'employeur est tenu de connaître le domicile des parents de son employé(e) dès la signature du contrat d'embauche.",
-  "Toute tâche qui n'a pas été signalée à l'employé(e) à la signature du contrat entraîne l'annulation du contrat.",
-  "L'employeur est tenu d'assurer les premiers soins en cas de maladie de l'employé(e) et d'aviser le plus tôt possible les parents de ce dernier.",
-  "En cas de renvoi, l'employeur est tenu d'aviser CHRISROI AGENCE.",
-  "L'employé(e) doit être payé au plus grand tard le 5 du mois.",
-  "Les arriérés de salaires ne sont pas acceptés.",
-  "CHRISROI AGENCE condamne les actes de vol, bagarres, maltraitance, privation de nourriture, violence verbale, harcèlement sexuel, viol et autre désagrément au lieu de service.",
-  "En cas d'abandon de service ou défaillance de l'employé(e), CHRISROI AGENCE procèdera à un remplacement de personnel dans un délai d'une semaine maximum.",
-];
-
-const SITUATIONS = [
-  { key: 'marie', label: 'Marié(e)' },
-  { key: 'concubinage', label: 'Concubinage' },
-  { key: 'celibataire', label: 'Célibataire' },
-];
-
-// ═══════════════════════════════════════════════════════════
-//  COMPOSANTS RÉUTILISABLES
-// ═══════════════════════════════════════════════════════════
-
-function EditableField({
+// ── LockedField (C1) ───────────────────────────────────────
+function LockedField({
+  fieldKey,
+  label,
   value,
   onChangeText,
   placeholder,
-  fieldStyle,
   multiline,
-  editable = true,
+  numberOfLines,
+  keyboardType,
+  required,
+  unlocked,
+  onToggleLock,
+  onPatch,
+  isEditing,
 }: {
+  fieldKey: string;
+  label: string;
   value: string;
   onChangeText: (t: string) => void;
   placeholder?: string;
-  fieldStyle?: any;
   multiline?: boolean;
-  editable?: boolean;
+  numberOfLines?: number;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  required?: boolean;
+  unlocked: boolean;
+  onToggleLock: (key: string) => void;
+  onPatch: (key: string, value: any) => Promise<void>;
+  isEditing: boolean;
 }) {
+  const handleSavePatch = async () => {
+    try {
+      await onPatch(fieldKey, value);
+      Alert.alert('Modifié', `${label} enregistré.`);
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Enregistrement impossible.');
+      return;
+    }
+    onToggleLock(fieldKey);
+  };
   return (
-    <TextInput
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      placeholderTextColor="#CCC"
-      style={[styles.editableField, fieldStyle]}
-      multiline={multiline}
-      textAlignVertical={multiline ? 'top' : 'center'}
-      editable={editable}
-    />
-  );
-}
-
-function SignatureBox({
-  label,
-  name,
-  subtext,
-}: {
-  label: string;
-  name?: string;
-  subtext?: string;
-}) {
-  return (
-    <View style={styles.signatureBox}>
-      <Text style={styles.signatureLabel}>{label}</Text>
-      <View style={styles.signatureLine} />
-      {name ? (
-        <Text style={styles.signatureName}>{name}</Text>
-      ) : null}
-      {subtext ? (
-        <Text style={styles.signatureSub}>{subtext}</Text>
-      ) : null}
-    </View>
-  );
-}
-
-/** Checkbox toggle pour les choix mutuellement exclusifs (situation matrimoniale) */
-function CheckboxGroup({
-  options,
-  selected,
-  onSelect,
-}: {
-  options: { key: string; label: string }[];
-  selected: string;
-  onSelect: (key: string) => void;
-}) {
-  return (
-    <View style={styles.checkboxRow}>
-      {options.map((opt) => {
-        const isChecked = selected === opt.key;
-        return (
+    <View>
+      <View style={[digitalStyles.lockedRow, !unlocked && digitalStyles.lockedRowLocked]}>
+        <FormField
+          label={label}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          keyboardType={keyboardType}
+          required={required}
+          disabled={!unlocked}
+          style={{ flex: 1 }}
+        />
+        {isEditing && (
           <TouchableOpacity
-            key={opt.key}
-            onPress={() => onSelect(opt.key)}
-            style={styles.checkboxItem}
+            onPress={unlocked ? handleSavePatch : () => onToggleLock(fieldKey)}
+            style={digitalStyles.lockBtn}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <Text style={styles.checkboxBox}>{isChecked ? '■' : '□'}</Text>
-            <Text style={styles.checkboxLabel}>{opt.label}</Text>
+            <Icon name={unlocked ? 'check-circle' : 'lock'} size={20} color={unlocked ? Colors.success : Colors.textTertiary} />
           </TouchableOpacity>
-        );
-      })}
+        )}
+      </View>
     </View>
   );
 }
 
-/** Checkbox binaire Oui/Non */
-function BinaryCheck({
-  value,
-  onChange,
-  label,
+function LockToggle({
+  fieldKey,
+  unlocked,
+  onToggleLock,
+  onPatch,
+  isEditing,
+  currentValue,
 }: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  label?: string;
+  fieldKey: string;
+  unlocked: boolean;
+  onToggleLock: (key: string) => void;
+  onPatch: (key: string, value: any) => Promise<void>;
+  isEditing: boolean;
+  currentValue: any;
 }) {
+  const handleValidate = async () => {
+    try {
+      await onPatch(fieldKey, currentValue);
+      Alert.alert('Modifié', 'Champ enregistré.');
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Enregistrement impossible.');
+      return;
+    }
+    onToggleLock(fieldKey);
+  };
   return (
-    <View style={styles.binaryRow}>
-      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
-      <TouchableOpacity
-        onPress={() => onChange(true)}
-        style={styles.binaryOption}
-      >
-        <Text style={styles.checkboxBox}>{value ? '■' : '□'}</Text>
-        <Text style={styles.checkboxLabel}>Oui</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => onChange(false)}
-        style={styles.binaryOption}
-      >
-        <Text style={styles.checkboxBox}>{!value ? '■' : '□'}</Text>
-        <Text style={styles.checkboxLabel}>Non</Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      onPress={unlocked ? handleValidate : () => onToggleLock(fieldKey)}
+      style={digitalStyles.lockToggleRow}
+      activeOpacity={0.7}
+    >
+      <Icon name={unlocked ? 'check-circle' : 'lock'} size={14} color={unlocked ? Colors.success : Colors.textTertiary} />
+      <Text style={[digitalStyles.lockToggleText, unlocked && { color: Colors.success }]}>
+        {unlocked ? 'Valider' : 'Déverrouiller'}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  ÉCRAN PRINCIPAL
-// ═══════════════════════════════════════════════════════════
-
+// ── EMPTY_FORM prestation (snapshot) ────────────────────────
 const EMPTY_FORM = {
-  // Employé
   employe_id: '',
   employe_nom: '',
   employe_prenom: '',
   employe_photo_url: '',
-  date_naissance: '',
-  lieu_naissance: '',
-  lieu_habitation: '',
-  situation_matrimoniale: 'celibataire',
-  religion: '',
-  ethnie: '',
-  diplome: '',
-  date_embauche: '',
-  a_deja_travaille: false,
-  contact_ancien_patron: '',
-  // Parents
-  pere_nom: '',
-  mere_nom: '',
-  domicile_parents: '',
-  // Urgences
-  urgence1_nom: '',
-  urgence1_contact: '',
-  urgence2_nom: '',
-  urgence2_contact: '',
-  urgence3_nom: '',
-  urgence3_contact: '',
-  // Employeur
+  employe_age: '',
+  employe_sexe: 'Masculin',
+  employe_adresse_actuelle: '',
+  employe_piece_reference: '',
   employeur_id: '',
   employeur_nom: '',
-  employeur_domicile: '',
-  employeur_contact: '',
-  // Contrat
+  client_domicile: '',
+  client_piece_numero: '',
+  client_piece_date: '',
   numero_dossier: '',
-  date_contrat: '',
+  date_signature: '',
   poste: '',
-  salaire: '',
   commission_fixe: '15000',
   frais_transport: '5000',
+  retenue_salaire_montant: '',
+  salaire: '',
+  duree: '3 mois',
+  date_contrat: '',
   date_debut: '',
-  duree: '',
-  // Signatures
   signature_employe: '',
   signature_agence: '',
   signature_employeur: '',
@@ -233,8 +203,6 @@ export default function ContratDocumentScreen() {
   const route = useRoute<any>();
   const contratId = route.params?.id;
   const preselectedEmployeId = route.params?.employe_id;
-  const rootNavigation = navigation.getParent()?.getParent();
-  const tabNavigation = navigation.getParent();
 
   const [formData, setFormData] = useState<any>({ ...EMPTY_FORM });
   const [isEditing, setIsEditing] = useState(false);
@@ -245,348 +213,331 @@ export default function ContratDocumentScreen() {
   const [employeurs, setEmployeurs] = useState<any[]>([]);
   const [selectedEmploye, setSelectedEmploye] = useState<any>(null);
   const [selectedEmployeur, setSelectedEmployeur] = useState<any>(null);
-  const [commissionTiers, setCommissionTiers] = useState(0);
 
-  // ── Onglet Numérique / Scanné ──────────────────────────
   const [activeTab, setActiveTab] = useState<'numerique' | 'scanne'>('numerique');
   const [scanData, setScanData] = useState<any>(null);
   const [scanLoading, setScanLoading] = useState(false);
 
-  const updateForm = (key: string, value: any) =>
-    setFormData((prev: any) => ({ ...prev, [key]: value }));
+  // C1 verrouillage
+  const [unlockedFields, setUnlockedFields] = useState<Set<string>>(new Set());
+  const fieldUnlocked = (key: string) => !isEditing || unlockedFields.has(key);
+  const toggleFieldLock = (key: string) =>
+    setUnlockedFields((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  const patchField = async (key: string, value: any) => {
+    if (!contratId) return;
+    await patchContratField(contratId, key, value);
+  };
 
-  // Charger employés et employeurs au montage
+  // Annexes contrat
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [pendingDocuments, setPendingDocuments] = useState<{ type: string; uri: string; name?: string; mimeType?: string }[]>([]);
+  const DOC_DELETE_PIN = '0000';
+  const [pinVisible, setPinVisible] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [pinTargetDocId, setPinTargetDocId] = useState<string | null>(null);
+  const docViewer = useDocumentViewer();
+
+  const requestDeleteDocument = (docId: string) => {
+    setPinTargetDocId(docId);
+    setPinValue('');
+    setPinVisible(true);
+  };
+  const confirmDeleteDocument = async () => {
+    if (pinValue !== DOC_DELETE_PIN) {
+      Alert.alert('Code PIN incorrect', 'La suppression est annulée.');
+      setPinVisible(false);
+      setPinTargetDocId(null);
+      return;
+    }
+    const id = pinTargetDocId;
+    setPinVisible(false);
+    setPinTargetDocId(null);
+    if (id) await doRemoveDocument(id);
+  };
+  const doRemoveDocument = async (docId: string) => {
+    try {
+      await deleteDocument(docId);
+      setDocuments((prev) => prev.filter((d) => d.id !== docId));
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Suppression impossible.');
+    }
+  };
+  const openDocumentViewer = (doc: any) => {
+    const uri = doc?.imageUrl || doc?.uri;
+    if (!uri) return;
+    docViewer.open({ uri, label: getDocumentTypeLabel(doc.type), fileName: doc?.nomFichier || doc?.file || null, mimeType: doc?.mimeType || null });
+  };
+  const loadDocuments = useCallback(async () => {
+    if (!contratId) return;
+    try {
+      const docs = await getDocumentsByContrat(contratId);
+      setDocuments(docs || []);
+    } catch (e) { console.warn('loadDocuments contrat error', e); }
+  }, [contratId]);
+
+  useEffect(() => { if (contratId) loadDocuments(); }, [contratId, loadDocuments]);
+
+  const updateForm = (key: string, value: any) => setFormData((prev: any) => ({ ...prev, [key]: value }));
+
+  // Charger listes
   useEffect(() => {
     (async () => {
       try {
-        const [emps, empurs] = await Promise.all([
-          getAllEmployes(),
-          getAllEmployeurs(),
-        ]);
+        const [emps, empurs] = await Promise.all([getAllEmployes(), getAllEmployeurs()]);
         setEmployes(emps);
         setEmployeurs(empurs);
-      } catch (err) {
-        console.error('Erreur chargement listes:', err);
-      }
+      } catch (err) { console.error('Erreur chargement listes:', err); }
     })();
   }, []);
 
-  // Si contrat existant (édition), charger les données
+  // Edition : charger contrat
   useEffect(() => {
     if (!contratId) return;
     setIsEditing(true);
     (async () => {
       try {
         const contrat = await getContratById(contratId);
-        if (!contrat) {
-          Alert.alert('Erreur', 'Contrat introuvable');
-          navigation.goBack();
-          return;
-        }
-
-        // Charger l'employé complet (avec parents, urgences)
-        const employe = contrat.employe_id
-          ? await getEmployeById(
-              typeof contrat.employe_id === 'string'
-                ? contrat.employe_id
-                : contrat.employe_id.id
-            )
-          : null;
-
-        const employeur = contrat.employeur_id
-          ? await getEmployeurById(
-              typeof contrat.employeur_id === 'string'
-                ? contrat.employeur_id
-                : contrat.employeur_id.id
-            )
-          : null;
-
-        // Parents
-        const pere = employe?.parents?.find((p: any) => p.type === 'pere');
-        const mere = employe?.parents?.find((p: any) => p.type === 'mere');
-        const urgences = employe?.personnes_urgence || [];
-        const experience = employe?.experiences?.[0];
-
-        const salary = contrat.salaire || 0;
-        const tiers = Math.round(salary / 3);
-
+        if (!contrat) { Alert.alert('Erreur', 'Contrat introuvable'); navigation.goBack(); return; }
+        const employe = contrat.employe_id ? await getEmployeById(typeof contrat.employe_id === 'string' ? contrat.employe_id : contrat.employe_id.id) : null;
+        const employeur = contrat.employeur_id ? await getEmployeurById(typeof contrat.employeur_id === 'string' ? contrat.employeur_id : contrat.employeur_id.id) : null;
         setFormData({
           employe_id: employe?.id || contrat.employe_id || '',
           employe_nom: contrat.employe_nom || employe?.nom || '',
           employe_prenom: contrat.employe_prenom || employe?.prenom || '',
-          date_naissance: employe?.date_naissance || '',
-          lieu_naissance: employe?.lieu_naissance || '',
-          lieu_habitation: contrat.domicile_employe || employe?.lieu_residence || '',
-          situation_matrimoniale: employe?.situation_matrimoniale || 'celibataire',
-          religion: employe?.religion || '',
-          ethnie: employe?.ethnie || '',
-          diplome: employe?.niveau_etude || '',
-          date_embauche: contrat.date_debut || '',
-          a_deja_travaille: !!employe?.a_deja_travaille,
-          contact_ancien_patron: experience?.contact || '',
-          pere_nom: pere ? `${pere.prenom || ''} ${pere.nom || ''}`.trim() : '',
-          mere_nom: mere ? `${mere.prenom || ''} ${mere.nom || ''}`.trim() : '',
-          domicile_parents: pere?.domicile || '',
-          urgence1_nom: urgences[0] ? `${urgences[0].prenom || ''} ${urgences[0].nom || ''}`.trim() : '',
-          urgence1_contact: urgences[0]?.telephone || '',
-          urgence2_nom: urgences[1] ? `${urgences[1].prenom || ''} ${urgences[1].nom || ''}`.trim() : '',
-          urgence2_contact: urgences[1]?.telephone || '',
-          urgence3_nom: urgences[2] ? `${urgences[2].prenom || ''} ${urgences[2].nom || ''}`.trim() : '',
-          urgence3_contact: urgences[2]?.telephone || '',
+          employe_photo_url: employe ? getEmployePhotoUrl(employe.id, employe.photo) : '',
+          employe_age: contrat.employe_age ? String(contrat.employe_age) : (calcAge(employe?.date_naissance) ? String(calcAge(employe?.date_naissance)) : ''),
+          employe_sexe: contrat.employe_sexe || employe?.sexe || 'Masculin',
+          employe_adresse_actuelle: contrat.employe_adresse_actuelle || employe?.lieu_residence || '',
+          employe_piece_reference: contrat.employe_piece_reference || employe?.piece_reference || '',
           employeur_id: employeur?.id || contrat.employeur_id || '',
-          employeur_nom: contrat.nom_complet || employeur?.nom_complet || employeur?.raison_sociale || '',
-          employeur_domicile: contrat.employeur_adresse || employeur?.adresse || '',
-          employeur_contact: contrat.employeur_telephone || employeur?.telephone || '',
+          employeur_nom: contrat.client_nom_snapshot || employeur?.nom_complet || contrat.nom_complet || '',
+          client_domicile: contrat.client_domicile || employeur?.adresse || '',
+          client_piece_numero: contrat.client_piece_numero || employeur?.piece_numero || '',
+          client_piece_date: contrat.client_piece_date || employeur?.piece_date || '',
           numero_dossier: contrat.numero_dossier || '',
-          date_contrat: contrat.date_contrat || '',
+          date_signature: contrat.date_signature || contrat.date_contrat || '',
           poste: contrat.poste || '',
-          salaire: salary > 0 ? String(salary) : '',
           commission_fixe: String(contrat.commission_fixe ?? 15000),
           frais_transport: String(contrat.frais_transport ?? 5000),
+          retenue_salaire_montant: contrat.retenue_salaire_montant ? String(contrat.retenue_salaire_montant) : (contrat.salaire ? String(Math.round(Number(contrat.salaire)/3)) : ''),
+          salaire: contrat.salaire ? String(contrat.salaire) : '',
+          duree: contrat.duree || '3 mois',
+          date_contrat: contrat.date_contrat || '',
           date_debut: contrat.date_debut || '',
-          duree: contrat.duree || '',
           signature_employe: contrat.signature_employe || '',
           signature_agence: contrat.signature_agence || '',
           signature_employeur: contrat.signature_employeur || '',
         });
-
-        setCommissionTiers(tiers);
         setSelectedEmploye(employe);
         setSelectedEmployeur(employeur);
-      } catch (err) {
-        console.error('Erreur chargement contrat:', err);
-        Alert.alert('Erreur', 'Impossible de charger le contrat');
-      }
+      } catch (err) { console.error('Erreur chargement contrat:', err); Alert.alert('Erreur', 'Impossible de charger le contrat'); }
     })();
-  }, [contratId]);
+  }, [contratId, navigation]);
 
-  // Si preselectedEmployeId (depuis la fiche), charger l'employé
   useEffect(() => {
     if (!preselectedEmployeId || contratId) return;
     (async () => {
       try {
         const emp = await getEmployeById(preselectedEmployeId);
-        if (emp) {
-          setSelectedEmploye(emp);
-          fillEmployeData(emp);
-        }
-      } catch (err) {
-        console.error('Erreur chargement employé pré-sélectionné:', err);
-      }
+        if (emp) { setSelectedEmploye(emp); fillEmployeData(emp); }
+      } catch {}
     })();
-  }, [preselectedEmployeId]);
+  }, [preselectedEmployeId, contratId]);
 
-  // Remplir les champs employé depuis la fiche
   const fillEmployeData = (emp: any) => {
-    const pere = emp.parents?.find((p: any) => p.type === 'pere');
-    const mere = emp.parents?.find((p: any) => p.type === 'mere');
-    const urgences = emp.personnes_urgence || [];
-    const experience = emp.experiences?.[0];
-
+    const age = calcAge(emp.date_naissance);
     setFormData((prev: any) => ({
       ...prev,
       employe_id: emp.id,
       employe_nom: emp.nom || '',
       employe_prenom: emp.prenom || '',
       employe_photo_url: getEmployePhotoUrl(emp.id, emp.photo),
-      date_naissance: emp.date_naissance || '',
-      lieu_naissance: emp.lieu_naissance || '',
-      lieu_habitation: emp.lieu_residence || '',
-      situation_matrimoniale: emp.situation_matrimoniale || 'celibataire',
-      religion: emp.religion || '',
-      ethnie: emp.ethnie || '',
-      diplome: emp.niveau_etude || '',
-      a_deja_travaille: !!emp.a_deja_travaille,
-      contact_ancien_patron: experience?.contact || '',
-      pere_nom: pere ? `${pere.prenom || ''} ${pere.nom || ''}`.trim() : '',
-      mere_nom: mere ? `${mere.prenom || ''} ${mere.nom || ''}`.trim() : '',
-      domicile_parents: pere?.domicile || '',
-      urgence1_nom: urgences[0] ? `${urgences[0].prenom || ''} ${urgences[0].nom || ''}`.trim() : '',
-      urgence1_contact: urgences[0]?.telephone || '',
-      urgence2_nom: urgences[1] ? `${urgences[1].prenom || ''} ${urgences[1].nom || ''}`.trim() : '',
-      urgence2_contact: urgences[1]?.telephone || '',
-      urgence3_nom: urgences[2] ? `${urgences[2].prenom || ''} ${urgences[2].nom || ''}`.trim() : '',
-      urgence3_contact: urgences[2]?.telephone || '',
+      employe_age: age ? String(age) : prev.employe_age,
+      employe_sexe: emp.sexe || prev.employe_sexe,
+      employe_adresse_actuelle: emp.lieu_residence || prev.employe_adresse_actuelle,
+      employe_piece_reference: emp.piece_reference || prev.employe_piece_reference,
     }));
   };
 
-  // Calculer le tiers du salaire quand le salaire change
-  useEffect(() => {
-    const salary = parseFloat(formData.salaire) || 0;
-    setCommissionTiers(Math.round(salary / 3));
-  }, [formData.salaire]);
-
-  // ── Sauvegarde ───────────────────────────────────────
-  const handleSave = async () => {
-    if (!formData.employe_id || !formData.employeur_id) {
-      Alert.alert('Champs requis', 'Sélectionnez un employé et un employeur.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const contratData = {
-        ...formData,
-        salaire: parseFloat(formData.salaire) || 0,
-        commission_fixe: parseInt(formData.commission_fixe) || 15000,
-        frais_transport: parseInt(formData.frais_transport) || 5000,
-        commission_agence: commissionTiers,
-        domicile_employe: formData.lieu_habitation,
-        notes: '',
-      };
-
-      if (isEditing) {
-        await updateContrat(contratId, contratData);
-      } else {
-        await createContrat(contratData);
-      }
-      Alert.alert('Succès', isEditing ? 'Contrat modifié' : 'Contrat créé');
-      // NE PAS naviguer — on reste sur la page pour impression/scan
-    } catch (error) {
-      console.error('Error saving contrat:', error);
-      Alert.alert('Erreur', "Échec de l'enregistrement du contrat");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Scan du document signé ─────────────────────────────
-  const handleScanDocument = async () => {
-    try {
-      setScanLoading(true);
-      const ImagePicker = require('expo-image-picker').default;
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: 'images',
-        quality: 0.85,
-        allowsEditing: false,
-      });
-      if (result.canceled || !result.assets[0]) {
-        setScanLoading(false);
-        return;
-      }
-      const imageUri = result.assets[0].uri;
-
-      const docId = isEditing ? contratId : null;
-      if (!docId) {
-        Alert.alert('Info', 'Enregistrez d\'abord le contrat avant de scanner.');
-        setScanLoading(false);
-        return;
-      }
-      await uploadScan('contrat', docId, imageUri);
-      const updated = await getScan('contrat', docId);
-      setScanData(updated);
-      Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
-      setScanLoading(false);
-    } catch (_) {
-      setScanLoading(false);
-    }
-  };
-
-  // Sur web : fallback input type="file"
-  const handleScanWeb = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const docId = isEditing ? contratId : null;
-    if (!docId) {
-      Alert.alert('Info', 'Enregistrez d\'abord le contrat avant de scanner.');
-      return;
-    }
-    try {
-      setScanLoading(true);
-      await uploadScan('contrat', docId, file);
-      const updated = await getScan('contrat', docId);
-      setScanData(updated);
-      Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
-    } catch (_) {
-      Alert.alert('Erreur', 'Échec de l\'upload du scan');
-    } finally {
-      setScanLoading(false);
-    }
-  };
-
-  // Proposer le scan après impression
-  const handleAfterPrint = () => {
-    if (!isEditing) {
-      Alert.alert(
-        'Document imprimé',
-        'Enregistrez d\'abord le contrat pour pouvoir scanner le document signé.',
-      );
-      return;
-    }
-    Alert.alert(
-      'Scanner le document ?',
-      'Voulez-vous scanner le document signé maintenant ?',
-      [
-        {
-          text: 'Plus tard',
-          style: 'cancel',
-        },
-        {
-          text: 'Oui',
-          onPress: () => handleScanDocument(),
-        },
-      ],
-    );
-  };
-
-  // Charger le scan existant au montage (mode édition)
-  useEffect(() => {
-    if (contratId) {
-      getScan('contrat', contratId).then(setScanData).catch(() => {});
-    }
-  }, [contratId]);
-
-  // ── Sélecteur employé ───────────────────────────────
   const handleSelectEmploye = async (item: any) => {
-    // Toujours pré-remplir depuis le picker (garantit un remplissage visible
-    // même si le fetch réseau échoue).
     setSelectedEmploye(item);
-    setFormData((prev: any) => ({
-      ...prev,
-      employe_id: item.id,
-      employe_nom: item.nom || '',
-      employe_prenom: item.prenom || '',
-      employe_photo_url: getEmployePhotoUrl(item.id, item.photo),
-    }));
+    setFormData((prev: any) => ({ ...prev, employe_id: item.id, employe_nom: item.nom || '', employe_prenom: item.prenom || '', employe_photo_url: getEmployePhotoUrl(item.id, item.photo) }));
     try {
       const full = await getEmployeById(item.id);
-      if (full) {
-        setSelectedEmploye(full);
-        fillEmployeData(full);
-      }
-    } catch (err) {
-      console.warn('getEmployeById a échoué, utilisation des données du picker:', err);
-    }
+      if (full) { setSelectedEmploye(full); fillEmployeData(full); }
+    } catch (err) { console.warn('getEmployeById fail', err); }
   };
 
   const handleSelectEmployeur = async (item: any) => {
     setSelectedEmployeur(item);
-    setFormData((prev: any) => ({
-      ...prev,
-      employeur_id: item.id,
-      employeur_nom: item.nom_complet || item.raison_sociale || item.nom || '',
-      employeur_domicile: item.adresse || '',
-      employeur_contact: item.telephone || '',
-    }));
-    // Enrichir si le picker ne contenait pas l'adresse/téléphone complets
+    setFormData((prev: any) => ({ ...prev, employeur_id: item.id, employeur_nom: item.nom_complet || item.raison_sociale || item.nom || '', client_domicile: item.adresse || '', client_piece_numero: item.piece_numero || prev.client_piece_numero, client_piece_date: item.piece_date || prev.client_piece_date }));
     try {
       const full = await getEmployeurById(item.id);
       if (full) {
         setSelectedEmployeur(full);
-        setFormData((prev: any) => ({
-          ...prev,
-          employeur_domicile: full.adresse || prev.employeur_domicile,
-          employeur_contact: full.telephone || prev.employeur_contact,
-          employeur_nom:
-            full.nom_complet || full.raison_sociale || full.nom || prev.employeur_nom,
-        }));
+        setFormData((prev: any) => ({ ...prev, client_domicile: full.adresse || prev.client_domicile, client_piece_numero: (full as any).piece_numero || prev.client_piece_numero, client_piece_date: (full as any).piece_date || prev.client_piece_date, employeur_nom: full.nom_complet || full.raison_sociale || full.nom || prev.employeur_nom }));
       }
-    } catch {
-      /* garde les données du picker */
-    }
+    } catch {}
   };
 
-  // ── Pickers modaux ─────────────────────────────────
+  // Sauvegarde
+  const handleSave = async () => {
+    if (!formData.employe_id || !formData.employeur_id) { Alert.alert('Champs requis', 'Sélectionnez un employé et un client.'); return; }
+    if (!formData.poste.trim()) { Alert.alert('Champs requis', 'Le poste attribué est obligatoire.'); return; }
+    setLoading(true);
+    try {
+      const payload: any = {
+        employe_id: formData.employe_id,
+        employeur_id: formData.employeur_id,
+        poste: formData.poste,
+        date_signature: formData.date_signature || new Date().toISOString(),
+        date_contrat: formData.date_signature || formData.date_contrat || new Date().toISOString(),
+        date_debut: formData.date_signature || formData.date_debut || new Date().toISOString(),
+        duree: formData.duree || '3 mois',
+        commission_fixe: parseInt(formData.commission_fixe) || 15000,
+        frais_transport: parseInt(formData.frais_transport) || 5000,
+        retenue_salaire_montant: parseInt(formData.retenue_salaire_montant) || (formData.salaire ? Math.round(parseFloat(formData.salaire)/3) : 0),
+        salaire: parseFloat(formData.salaire) || 0,
+        client_domicile: formData.client_domicile,
+        client_piece_numero: formData.client_piece_numero,
+        client_piece_date: formData.client_piece_date,
+        employe_age: parseInt(formData.employe_age) || null,
+        employe_sexe: formData.employe_sexe,
+        employe_adresse_actuelle: formData.employe_adresse_actuelle,
+        employe_piece_reference: formData.employe_piece_reference,
+      };
+      let id = contratId;
+      if (isEditing && contratId) {
+        await updateContrat(contratId, payload);
+      } else {
+        id = await createContrat(payload);
+        setIsEditing(true);
+        // @ts-ignore navigation
+        navigation.setParams?.({ id });
+      }
+      // Upload pending annexes si création
+      if (pendingDocuments.length > 0 && id) {
+        let ok = 0, fail = 0;
+        for (const p of pendingDocuments) {
+          const rid = await uploadContratDocument(id, p.type, p.uri, p.name, p.mimeType);
+          if (rid) ok++; else fail++;
+        }
+        setPendingDocuments([]);
+        if (id) { const docs = await getDocumentsByContrat(id); setDocuments(docs || []); }
+        if (fail > 0) Alert.alert('Contrat créé', `${ok} annexe(s) ajoutée(s), ${fail} échec(s).`);
+        else if (ok > 0) Alert.alert('Succès', `Contrat créé avec ${ok} annexe(s).`);
+        else Alert.alert('Succès', 'Contrat créé');
+      } else {
+        Alert.alert('Succès', isEditing ? 'Contrat modifié' : 'Contrat créé');
+      }
+    } catch (e: any) { console.error('save contrat', e); Alert.alert('Erreur', e?.message || "Échec de l'enregistrement"); }
+    finally { setLoading(false); }
+  };
+
+  const handlePrint = async () => {
+    try {
+      const c: any = {
+        numero_dossier: formData.numero_dossier || `CHR-${new Date().getFullYear()}-XXXX`,
+        poste: formData.poste,
+        date_signature: formData.date_signature,
+        date_contrat: formData.date_signature || formData.date_contrat,
+        client_domicile: formData.client_domicile,
+        client_piece_numero: formData.client_piece_numero,
+        client_piece_date: formData.client_piece_date,
+        employe_age: formData.employe_age,
+        employe_sexe: formData.employe_sexe,
+        employe_adresse_actuelle: formData.employe_adresse_actuelle,
+        employe_piece_reference: formData.employe_piece_reference,
+        frais_transport: formData.frais_transport,
+        retenue_salaire_montant: formData.retenue_salaire_montant,
+        salaire: formData.salaire,
+      };
+      const html = buildContratHtml({ contrat: c, employe: selectedEmploye, employeur: selectedEmployeur });
+      if (Platform.OS === 'web') {
+        const w = window.open('', '_blank');
+        if (w) { w.document.write(html); w.document.close(); w.print(); }
+        return;
+      }
+      const { uri } = await printToFileAsync({ html, base64: false });
+      const can = await Sharing.isAvailableAsync();
+      if (can) await Sharing.shareAsync(uri, { dialogTitle: 'Contrat de prestation' });
+      else Alert.alert('PDF prêt', uri);
+    } catch (e: any) { Alert.alert('Erreur', e?.message || 'Impression impossible'); }
+  };
+
+  // Scan
+  const handleScanDocument = async () => {
+    try {
+      setScanLoading(true);
+      const camPerm = await ImagePicker.requestCameraPermissionsAsync();
+      if (camPerm.status !== 'granted') {
+        const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (libPerm.status !== 'granted') { Alert.alert('Permission refusée', "Autorisez l'appareil photo ou la galerie."); setScanLoading(false); return; }
+        const libRes = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsEditing: false });
+        if (libRes.canceled || !libRes.assets[0]) { setScanLoading(false); return; }
+        const docId = isEditing ? contratId : null;
+        if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); setScanLoading(false); return; }
+        await uploadScan('contrat', docId, libRes.assets[0].uri);
+        setScanData(await getScan('contrat', docId));
+        Alert.alert('Scan ajouté', 'Document scanné enregistré.');
+        setScanLoading(false); return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.85, allowsEditing: false });
+      if (result.canceled || !result.assets[0]) { setScanLoading(false); return; }
+      const docId = isEditing ? contratId : null;
+      if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); setScanLoading(false); return; }
+      await uploadScan('contrat', docId, result.assets[0].uri);
+      setScanData(await getScan('contrat', docId));
+      Alert.alert('Scan ajouté', 'Document scanné enregistré.');
+      setScanLoading(false);
+    } catch (e: any) { console.warn('[scan-contrat]', e?.message); Alert.alert('Scan', e?.message || 'Le scan a échoué.'); setScanLoading(false); }
+  };
+  const handleScanWeb = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return; (e.target as HTMLInputElement).value = '';
+    const docId = isEditing ? contratId : null;
+    if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); return; }
+    try { setScanLoading(true); await uploadScan('contrat', docId, file); setScanData(await getScan('contrat', docId)); Alert.alert('Scan ajouté', 'Document scanné enregistré.'); } catch (err: any) { Alert.alert('Erreur', err?.message || "Échec de l'upload"); } finally { setScanLoading(false); }
+  };
+  useEffect(() => { if (contratId) getScan('contrat', contratId).then(setScanData).catch(()=>{}); }, [contratId]);
+
+  const handleSelectPicker = (isEmploye: boolean, item: any, onDismiss: () => void) => {
+    if (isEmploye) handleSelectEmploye(item); else handleSelectEmployeur(item);
+    onDismiss();
+  };
+
+  // Annexes handlers
+  const handleAddAnnexe = async (type: string, uri: string, name?: string, mimeType?: string) => {
+    if (!isEditing || !contratId) {
+      setPendingDocuments((prev) => [...prev, { type, uri, name, mimeType }]);
+      return;
+    }
+    const id = await uploadContratDocument(contratId, type, uri, name, mimeType);
+    if (id) { const docs = await getDocumentsByContrat(contratId); setDocuments(docs || []); }
+    else Alert.alert('Erreur', "Échec de l'ajout d'annexe");
+  };
+  const handlePickAnnexe = async (type: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        input.onchange = async () => {
+          const f = input.files?.[0]; if (!f) return;
+          await handleAddAnnexe(type, f as any, f.name, f.type);
+        };
+        input.click(); return;
+      }
+      const res = await DocumentPicker.getDocumentAsync({ type: ['image/*','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'], copyToCacheDirectory: true });
+      if (res.canceled || !res.assets?.[0]) return;
+      const a = res.assets[0];
+      await handleAddAnnexe(type, a.uri, a.name, a.mimeType || undefined);
+    } catch (e: any) { Alert.alert('Erreur', e?.message || 'Sélection impossible'); }
+  };
+
   const renderPickerModal = (
     visible: boolean,
     onDismiss: () => void,
@@ -597,56 +548,26 @@ export default function ContratDocumentScreen() {
   ) => (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.modalOverlay}>
-        {/* Backdrop : frère du conteneur, ne capte PAS le tap sur les items */}
-        <TouchableWithoutFeedback onPress={onDismiss}>
-          <View style={StyleSheet.absoluteFill} />
-        </TouchableWithoutFeedback>
+        <TouchableWithoutFeedback onPress={onDismiss}><View style={StyleSheet.absoluteFill} /></TouchableWithoutFeedback>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {isEmploye ? 'Sélectionner un employé' : 'Sélectionner un employeur'}
-            </Text>
-            <TouchableOpacity onPress={onDismiss}>
-              <Icon name="close" size={22} color={Colors.textSecondary} />
-            </TouchableOpacity>
+            <Text style={styles.modalTitle}>{isEmploye ? 'Sélectionner un employé' : 'Sélectionner un client'}</Text>
+            <TouchableOpacity onPress={onDismiss}><Icon name="close" size={22} color={Colors.textSecondary} /></TouchableOpacity>
           </View>
           {items.length === 0 ? (
-            <View style={styles.modalEmpty}>
-              <Text style={styles.modalEmptyText}>
-                {isEmploye ? 'Aucun employé disponible' : 'Aucun employeur disponible'}
-              </Text>
-            </View>
+            <View style={styles.modalEmpty}><Text style={styles.modalEmptyText}>{isEmploye ? 'Aucun employé' : 'Aucun client'}</Text></View>
           ) : (
             <FlatList
               data={items}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => {
                 const isSelected = item.id === selectedId;
-                const label = isEmploye
-                  ? `${item.prenom || ''} ${item.nom || ''}`
-                  : item.nom_complet || item.raison_sociale || item.nom || '';
-                const subtitle = isEmploye
-                  ? item.categorie_emploi || ''
-                  : item.telephone || '';
+                const label = isEmploye ? `${item.prenom || ''} ${item.nom || ''}`.trim() : item.nom_complet || item.raison_sociale || item.nom || '';
+                const subtitle = isEmploye ? item.categorie_emploi || '' : item.telephone || '';
                 return (
-                  <TouchableOpacity
-                    style={[styles.pickerItem, isSelected && styles.pickerItemSelected]}
-                    onPress={() => {
-                      onSelect(item);
-                      onDismiss();
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.pickerItemText,
-                        isSelected && styles.pickerItemTextSelected,
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                    {subtitle ? (
-                      <Text style={styles.pickerItemSub}>{subtitle}</Text>
-                    ) : null}
+                  <TouchableOpacity style={[styles.pickerItem, isSelected && styles.pickerItemSelected]} onPress={() => { onSelect(item); onDismiss(); }}>
+                    <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>{label}</Text>
+                    {subtitle ? <Text style={styles.pickerItemSub}>{subtitle}</Text> : null}
                   </TouchableOpacity>
                 );
               }}
@@ -657,483 +578,44 @@ export default function ContratDocumentScreen() {
     </Modal>
   );
 
-  // ══════════════════════════════════════════════════════
-  //  RENDU DU DOCUMENT — PAGE 1 : EMPLOYÉ
-  // ══════════════════════════════════════════════════════
-  const renderPageHeader = (subtitle?: string) => (
-    <View style={styles.headerBlock}>
-      {/* ── En-tête agence ──────────────────────────── */}
-      <View style={styles.agencyHeader}>
-        <Image
-          source={require('../../assets/logo-agence.jpg')}
-          style={styles.agencyLogo}
-          resizeMode="contain"
-        />
-        <View style={styles.agencyInfo}>
-          <Text style={styles.agencyName}>CHRISROI AGENCE</Text>
-          <Text style={styles.agencySlogan}>
-            PLACEMENT DE PERSONNELS – SERVICE DE{' '}
-            <Text style={styles.agencySlogan}>NETTOYAGE – COURTAGE IMMOBILIER</Text>
-          </Text>
-          <Text style={styles.agencyPhone}>
-            Tel : +225 27 22 34 22 83 / +225 05 03 97 47 75
-          </Text>
-        </View>
-      </View>
-      <View style={styles.agencySeparator} />
-      {/* ── DATE / DOSSIER ──────────────────────────── */}
-      <View style={styles.headerRow}>
-        <View style={styles.headerField}>
-          <Text style={styles.headerLabel}>DATE :</Text>
-          <EditableField
-            value={formData.date_contrat}
-            onChangeText={(t) => updateForm('date_contrat', t)}
-            placeholder="__/__/____"
-            fieldStyle={styles.headerValue}
-          />
-        </View>
-        <View style={styles.headerField}>
-          <Text style={styles.headerLabel}>DOSSIER N° :</Text>
-          <Text style={styles.headerValue}>
-            {formData.numero_dossier || `CHR-${new Date().getFullYear()}-____`}
-          </Text>
-        </View>
-      </View>
-      {subtitle && <Text style={styles.pageSubtitle}>{subtitle}</Text>}
-    </View>
-  );
-
-  const renderPage1 = () => (
-    <View>
-      {renderPageHeader('EMPLOYE')}
-
-      {/* ── Identité ──────────────────────────── */}
-      <View style={styles.section}>
-        <View style={styles.identityRow}>
-          <View style={styles.identityFields}>
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Nom et prénoms :</Text>
-              <Text style={styles.fieldValue}>
-                {formData.employe_nom} {formData.employe_prenom}
-                {!formData.employe_nom && (
-                  <Text style={styles.placeholderInline}>___________________________</Text>
-                )}
-              </Text>
-            </View>
-          </View>
-
-          {/* Photo d'identité */}
-          <View style={styles.photoBoxContrat}>
-            {formData.employe_photo_url ? (
-              <Image
-                source={{ uri: formData.employe_photo_url }}
-                style={styles.photoImgContrat}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={styles.photoPlaceholderContrat}>PHOTO</Text>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Date et lieu de naissance :</Text>
-          <View style={styles.inlineFields}>
-            <EditableField
-              value={formData.date_naissance}
-              onChangeText={(t) => updateForm('date_naissance', t)}
-              placeholder="__/__/____"
-              fieldStyle={styles.inlineFieldSmall}
-            />
-            <Text style={styles.inlineSep}>à</Text>
-            <EditableField
-              value={formData.lieu_naissance}
-              onChangeText={(t) => updateForm('lieu_naissance', t)}
-              placeholder="Lieu"
-              fieldStyle={styles.inlineFieldMed}
-            />
-          </View>
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Lieu d'habitation :</Text>
-          <EditableField
-            value={formData.lieu_habitation}
-            onChangeText={(t) => updateForm('lieu_habitation', t)}
-            placeholder="______________________________"
-            fieldStyle={styles.inlineFieldLarge}
-          />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Situation matrimoniale :</Text>
-          <CheckboxGroup
-            options={SITUATIONS}
-            selected={formData.situation_matrimoniale}
-            onSelect={(k) => updateForm('situation_matrimoniale', k)}
-          />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Religion :</Text>
-          <EditableField
-            value={formData.religion}
-            onChangeText={(t) => updateForm('religion', t)}
-            placeholder="_______________"
-            fieldStyle={styles.inlineFieldMed}
-          />
-          <Text style={styles.fieldLabelInline}>Ethnie :</Text>
-          <EditableField
-            value={formData.ethnie}
-            onChangeText={(t) => updateForm('ethnie', t)}
-            placeholder="_______________"
-            fieldStyle={styles.inlineFieldMed}
-          />
-          <Text style={styles.fieldLabelInline}>Diplôme :</Text>
-          <EditableField
-            value={formData.diplome}
-            onChangeText={(t) => updateForm('diplome', t)}
-            placeholder="_______________"
-            fieldStyle={styles.inlineFieldMed}
-          />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Date d'embauche :</Text>
-          <EditableField
-            value={formData.date_embauche}
-            onChangeText={(t) => updateForm('date_embauche', t)}
-            placeholder="__/__/____"
-            fieldStyle={styles.inlineFieldSmall}
-          />
-        </View>
-
-        <Text style={styles.staticClause}>
-          Valable pour un (1) mois et non remboursable.
-        </Text>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>A déjà travaillé :</Text>
-          <BinaryCheck
-            value={formData.a_deja_travaille}
-            onChange={(v) => updateForm('a_deja_travaille', v)}
-          />
-        </View>
-
-        {formData.a_deja_travaille && (
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Si oui, contact ancien patron :</Text>
-            <EditableField
-              value={formData.contact_ancien_patron}
-              onChangeText={(t) => updateForm('contact_ancien_patron', t)}
-              placeholder="___________________________"
-              fieldStyle={styles.inlineFieldLarge}
-            />
-          </View>
-        )}
-      </View>
-
-      {/* ── Parents ──────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>PARENTS</Text>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Père :</Text>
-          <EditableField
-            value={formData.pere_nom}
-            onChangeText={(t) => updateForm('pere_nom', t)}
-            placeholder="______________________________"
-            fieldStyle={styles.inlineFieldLarge}
-          />
-          <Text style={styles.fieldLabelInline}>Mère :</Text>
-          <EditableField
-            value={formData.mere_nom}
-            onChangeText={(t) => updateForm('mere_nom', t)}
-            placeholder="______________________________"
-            fieldStyle={styles.inlineFieldLarge}
-          />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Domicile ou quartier du père :</Text>
-          <EditableField
-            value={formData.domicile_parents}
-            onChangeText={(t) => updateForm('domicile_parents', t)}
-            placeholder="________________________________"
-            fieldStyle={styles.inlineFieldLarge}
-          />
-        </View>
-      </View>
-
-      {/* ── Personnes à contacter en cas d'urgence ── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>PERSONNES À CONTACTER EN CAS D'URGENCE</Text>
-
-        {[1, 2, 3].map((i) => (
-          <View key={i} style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>{i}.</Text>
-            <EditableField
-              value={formData[`urgence${i}_nom`]}
-              onChangeText={(t) => updateForm(`urgence${i}_nom`, t)}
-              placeholder="Nom et prénoms"
-              fieldStyle={styles.inlineFieldMed}
-            />
-            <Text style={styles.fieldLabelInline}>Contact :</Text>
-            <EditableField
-              value={formData[`urgence${i}_contact`]}
-              onChangeText={(t) => updateForm(`urgence${i}_contact`, t)}
-              placeholder="Téléphone"
-              fieldStyle={styles.inlineFieldMed}
-            />
-          </View>
-        ))}
-      </View>
-
-      {/* ── Responsabilités employé ───────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>RESPONSABILITÉS</Text>
-        {RESPONSABILITES_EMPLOYE.map((clause, idx) => (
-          <Text key={idx} style={styles.clauseItem}>
-            {idx + 1}.  {clause}
-          </Text>
-        ))}
-      </View>
-
-      {/* ── Signatures page 1 ────────────────── */}
-      <View style={styles.sigBlock}>
-        <SignatureBox
-          label="EMPLOYE"
-          name={formData.signature_employe || undefined}
-          subtext={
-            formData.employe_nom
-              ? `${formData.employe_prenom} ${formData.employe_nom}`.trim()
-              : ''
-          }
-        />
-        <SignatureBox
-          label="CHRISROI AGENCE"
-          name={formData.signature_agence || undefined}
-          subtext="Agent ChrisRoi"
-        />
-        <SignatureBox
-          label="EMPLOYEUR"
-          name={formData.signature_employeur || undefined}
-          subtext={formData.employeur_nom}
-        />
-      </View>
-    </View>
-  );
-
-  // ══════════════════════════════════════════════════════
-  //  RENDU DU DOCUMENT — PAGE 2 : EMPLOYEUR
-  // ══════════════════════════════════════════════════════
-  const renderPage2 = () => (
-    <View>
-      {/* ── Séparateur de page visuel ─────────── */}
-      <View style={styles.pageBreak}>
-        <View style={styles.pageBreakLine} />
-        <Text style={styles.pageBreakText}>─ PAGE SUIVANTE ─</Text>
-        <View style={styles.pageBreakLine} />
-      </View>
-
-      {renderPageHeader('EMPLOYEUR')}
-
-      {/* ── Infos employeur ────────────────────── */}
-      <View style={styles.section}>
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Nom et Prénoms :</Text>
-          <Text style={styles.fieldValue}>
-            {formData.employeur_nom || (
-              <Text style={styles.placeholderInline}>___________________________</Text>
-            )}
-          </Text>
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Domicile et quartier :</Text>
-          <EditableField
-            value={formData.employeur_domicile}
-            onChangeText={(t) => updateForm('employeur_domicile', t)}
-            placeholder="______________________________"
-            fieldStyle={styles.inlineFieldLarge}
-          />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Contact :</Text>
-          <EditableField
-            value={formData.employeur_contact}
-            onChangeText={(t) => updateForm('employeur_contact', t)}
-            placeholder="__________________"
-            fieldStyle={styles.inlineFieldMed}
-          />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Emploi proposé :</Text>
-          <EditableField
-            value={formData.poste}
-            onChangeText={(t) => updateForm('poste', t)}
-            placeholder="______________________________"
-            fieldStyle={styles.inlineFieldLarge}
-          />
-          <Text style={styles.fieldLabelInline}>Salaire proposé :</Text>
-          <EditableField
-            value={formData.salaire}
-            onChangeText={(t) => updateForm('salaire', t)}
-            placeholder="______"
-            fieldStyle={styles.inlineFieldSmall}
-          />
-          <Text style={styles.fieldLabelInline}>F CFA</Text>
-        </View>
-      </View>
-
-      {/* ── Commission et frais ───────────────── */}
-      <View style={styles.section}>
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Commission :</Text>
-          <EditableField
-            value={formData.commission_fixe}
-            onChangeText={(t) => updateForm('commission_fixe', t)}
-            placeholder="15000"
-            fieldStyle={styles.inlineFieldSmall}
-          />
-          <Text style={styles.fieldLabelInline}>FCFA</Text>
-        </View>
-
-        <Text style={styles.staticClause}>
-          Commission : 15 000 FCFA - Valable pour un (1) mois et non remboursable. Transport pour le déplacement du personnel de l'agence (5000 FCFA)
-        </Text>
-
-        <View style={styles.fieldRow}>
-          <EditableField
-            value={formData.frais_transport}
-            onChangeText={(t) => updateForm('frais_transport', t)}
-            placeholder="5000"
-            fieldStyle={styles.inlineFieldSmall}
-          />
-          <Text style={styles.fieldLabelInline}>FCFA</Text>
-        </View>
-
-        <View style={styles.tiersBox}>
-          <Text style={styles.tiersLabel}>
-            Le tiers (1/3) du sur le premier salaire (montant prélever par l'employeur
-            sur le salaire de l'employé(e))
-          </Text>
-          <View style={styles.fieldRow}>
-            <Text style={styles.tiersValue}>
-              {commissionTiers > 0
-                ? `${formatMoney(commissionTiers)} FCFA`
-                : '__________________'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ── Responsabilités employeur ────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>RESPONSABILITÉS</Text>
-        {RESPONSABILITES_EMPLOYEUR.map((clause, idx) => (
-          <Text key={idx} style={styles.clauseItem}>
-            {idx + 1}.  {clause}
-          </Text>
-        ))}
-      </View>
-
-      {/* ── Signatures page 2 (identique) ─────── */}
-      <View style={styles.sigBlock}>
-        <SignatureBox
-          label="EMPLOYE"
-          name={formData.signature_employe || undefined}
-          subtext={
-            formData.employe_nom
-              ? `${formData.employe_prenom} ${formData.employe_nom}`.trim()
-              : ''
-          }
-        />
-        <SignatureBox
-          label="CHRISROI AGENCE"
-          name={formData.signature_agence || undefined}
-          subtext="Agent ChrisRoi"
-        />
-        <SignatureBox
-          label="EMPLOYEUR"
-          name={formData.signature_employeur || undefined}
-          subtext={formData.employeur_nom}
-        />
-      </View>
-    </View>
-  );
-
-  // ══════════════════════════════════════════════════════
-  //  RENDU PRINCIPAL
-  // ══════════════════════════════════════════════════════
-  const renderDocument = () => (
-    <View style={styles.documentContent}>
-      {renderPage1()}
-      {renderPage2()}
-    </View>
-  );
-
-  // ── Onglet Scanné ─────────────────────────────────────
   const renderScanTab = () => {
     const hasScan = scanData?.imageUrl;
-
     return (
-      <View style={{ flex: 1, padding: 20, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, padding: 0 }}>
         {scanLoading ? (
-          <Text style={styles.scanLoadingText}>Chargement...</Text>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}><Text style={{ color: Colors.textSecondary }}>Chargement...</Text></View>
         ) : hasScan ? (
-          <View style={styles.scanPreview}>
-            <Image
-              source={{ uri: scanData.imageUrl }}
-              style={styles.scanImage}
-              resizeMode="contain"
-            />
-            <Text style={styles.scanDate}>
-              Scanné le {new Date(scanData.created).toLocaleDateString('fr-FR')}
-            </Text>
+          <View style={{ flex: 1 }}>
+            <TouchableOpacity onPress={() => docViewer.open({ uri: scanData.imageUrl, label: 'Scan contrat signé', fileName: null, mimeType: 'image/jpeg' })} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0f', minHeight: 380 }}>
+              <Image source={{ uri: scanData.imageUrl }} style={{ width: '100%', height: 420 }} resizeMode="contain" />
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10, padding: 14 }}>
+              <SafeButton onPress={handleScanDocument} mode="outlined" style={{ flex: 1 }}>Remplacer</SafeButton>
+              <SafeButton onPress={async () => {
+                try {
+                  const isRemote = /^https?:\/\//i.test(scanData.imageUrl);
+                  let localUri = scanData.imageUrl;
+                  if (isRemote) {
+                    const tmp = (FileSystem as any).cacheDirectory + `scan_contrat_${contratId}.jpg`;
+                    const dl = await (FileSystem as any).downloadAsync(scanData.imageUrl, tmp);
+                    localUri = dl.uri;
+                  }
+                  const can = await Sharing.isAvailableAsync();
+                  if (can) await (Sharing as any).shareAsync(localUri, { dialogTitle: 'Scan contrat signé' });
+                } catch (e: any) { Alert.alert('Scan', e?.message || 'Téléchargement impossible.'); }
+              }} mode="contained" style={{ flex: 1 }}><Icon name="download-outline" size={16} color="#fff" /><Text style={{ color: "#fff", fontWeight: "600", marginLeft: 6 }}>Télécharger</Text></SafeButton>
+            </View>
           </View>
         ) : (
-          <View style={styles.scanEmpty}>
-            <Icon name="file-document-outline" size={48} color="#CCC" />
-            <Text style={styles.scanEmptyText}>Aucun scan pour ce document</Text>
-            {isEditing ? (
-              <>
-                {Platform.OS === 'web' ? (
-                  <>
-                    <TouchableOpacity
-                      style={styles.scanBtn}
-                      onPress={() => {
-                        const input = document.getElementById('scan-file-input-contrat');
-                        if (input) input.click();
-                      }}
-                    >
-                      <Icon name="camera-plus-outline" size={20} color="#FFF" />
-                      <Text style={styles.scanBtnText}>Scanner le document signé</Text>
-                    </TouchableOpacity>
-                    <input
-                      id="scan-file-input-contrat"
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={handleScanWeb}
-                    />
-                  </>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.scanBtn}
-                    onPress={handleScanDocument}
-                  >
-                    <Icon name="camera-plus-outline" size={20} color="#FFF" />
-                    <Text style={styles.scanBtnText}>Scanner le document signé</Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            ) : (
-              <Text style={styles.scanEmptyHint}>
-                Enregistrez d'abord le contrat pour pouvoir scanner.
-              </Text>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 }}>
+            <Icon name="file-image-outline" size={48} color={Colors.textTertiary} />
+            <Text style={{ color: Colors.textSecondary, textAlign: 'center' }}>Aucun scan. Enregistrez d'abord le contrat puis scannez le document signé.</Text>
+            <SafeButton onPress={handleScanDocument} mode="contained"><Icon name="camera" size={18} color="#fff" /><Text style={{ color: "#fff", fontWeight: "600", marginLeft: 6 }}>Scanner le document signé</Text></SafeButton>
+            {Platform.OS === 'web' && (
+              <View style={{ width: '100%', alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 8 }}>ou importer un fichier</Text>
+                <input type="file" accept="image/*,application/pdf" onChange={handleScanWeb as any} style={{ fontSize: 14 } as any} />
+              </View>
             )}
           </View>
         )}
@@ -1141,168 +623,242 @@ export default function ContratDocumentScreen() {
     );
   };
 
-  return (
-    <View style={{ flex: 1 }}>
-      {/* ── Header ─────────────────────────────────────── */}
-      <AppHeader
-        title={isEditing && formData.numero_dossier ? `Contrat #${formData.numero_dossier}` : 'Contrat de placement'}
-        showBack
-        onBack={() => navigation.goBack()}
-      />
-      {/* ── Barre de navigation liée (vue contrat existant) ── */}
-      {isEditing && (selectedEmploye || selectedEmployeur) && (
-        <View style={styles.linkedEntitiesBar}>
-          {selectedEmploye && (
-            <TouchableOpacity
-              style={styles.linkedEntityChip}
-              onPress={() =>
-                rootNavigation?.navigate('FicheInscriptionModal', {
-                  id: formData.employe_id,
-                  origin: { label: 'Contrat' },
-                })
-              }
-            >
-              <Icon name="account" size={16} color="#2a7a7a" />
-              <Text style={styles.linkedEntityText}>
-                {selectedEmploye.prenom} {selectedEmploye.nom}
-              </Text>
+  // ── Rendu numérique prestation ──────────────────────────
+  const renderNumerique = () => (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+      {/* En-tête prestation */}
+      <View style={digitalStyles.headerCard}>
+        <Text style={digitalStyles.headerTitle}>Contrat de prestation de service</Text>
+        <Text style={digitalStyles.headerSub}>Réf. {formData.numero_dossier || `CHR-${new Date().getFullYear()}-XXXX`} • 3 mois de suivi • Art. 1-10</Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+          <View style={digitalStyles.badge}><Text style={digitalStyles.badgeText}>CRA 500k • RCCM CI-2023-0063618S</Text></View>
+        </View>
+      </View>
+
+      {/* Client (ex-employeur) */}
+      <View style={digitalStyles.sectionCard}>
+        <View style={digitalStyles.sectionHead}>
+          <Text style={digitalStyles.sectionTitle}>Client</Text>
+          <TouchableOpacity onPress={() => setShowEmployeurPicker(true)} style={digitalStyles.pickBtn}>
+            <Icon name="account-search" size={16} color={Colors.primary} /><Text style={digitalStyles.pickBtnText}>{selectedEmployeur ? 'Changer' : 'Choisir un client'}</Text>
+          </TouchableOpacity>
+        </View>
+        {selectedEmployeur ? <Text style={digitalStyles.pickHint}>{selectedEmployeur.nom_complet || selectedEmployeur.nom} • {selectedEmployeur.telephone || ''}</Text> : <Text style={digitalStyles.pickHintMuted}>Sélectionnez un client existant pour pré-remplir — sinon saisissez manuellement.</Text>}
+        <LockedField fieldKey="employeur_nom" label="Nom complet du client *" value={formData.employeur_nom} onChangeText={(t) => updateForm('employeur_nom', t)} placeholder="Nom du client" required unlocked={fieldUnlocked('employeur_nom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="client_domicile" label="Domicilié à *" value={formData.client_domicile} onChangeText={(t) => updateForm('client_domicile', t)} placeholder="Adresse du client" required unlocked={fieldUnlocked('client_domicile')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1 }}><LockedField fieldKey="client_piece_numero" label="Pièce n° *" value={formData.client_piece_numero} onChangeText={(t) => updateForm('client_piece_numero', t)} placeholder="N° pièce" required unlocked={fieldUnlocked('client_piece_numero')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+          <View style={{ flex: 1 }}><LockedField fieldKey="client_piece_date" label="Délivrée le" value={formData.client_piece_date} onChangeText={(t) => updateForm('client_piece_date', t)} placeholder="JJ/MM/AAAA" unlocked={fieldUnlocked('client_piece_date')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+        </View>
+      </View>
+
+      {/* Employé concerné */}
+      <View style={digitalStyles.sectionCard}>
+        <View style={digitalStyles.sectionHead}>
+          <Text style={digitalStyles.sectionTitle}>Employé mis en relation</Text>
+          <TouchableOpacity onPress={() => setShowEmployePicker(true)} style={digitalStyles.pickBtn}>
+            <Icon name="account-search" size={16} color={Colors.primary} /><Text style={digitalStyles.pickBtnText}>{selectedEmploye ? 'Changer' : 'Choisir un employé'}</Text>
+          </TouchableOpacity>
+        </View>
+        {selectedEmploye ? <Text style={digitalStyles.pickHint}>{selectedEmploye.prenom} {selectedEmploye.nom} • {selectedEmploye.telephone || ''}</Text> : <Text style={digitalStyles.pickHintMuted}>Sélectionnez un employé existant — âge/sexe/adresse/pièce se pré-remplissent.</Text>}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1 }}><LockedField fieldKey="employe_nom" label="Nom" value={formData.employe_nom} onChangeText={(t) => updateForm('employe_nom', t)} placeholder="Nom" unlocked={fieldUnlocked('employe_nom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+          <View style={{ flex: 1 }}><LockedField fieldKey="employe_prenom" label="Prénom" value={formData.employe_prenom} onChangeText={(t) => updateForm('employe_prenom', t)} placeholder="Prénom" unlocked={fieldUnlocked('employe_prenom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1 }}><LockedField fieldKey="employe_age" label="Âge" value={formData.employe_age} onChangeText={(t) => updateForm('employe_age', t)} placeholder="ex: 27" keyboardType="numeric" unlocked={fieldUnlocked('employe_age')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={digitalStyles.fieldLabel}>Sexe</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+              {['Masculin','Féminin'].map((v) => {
+                const sel = formData.employe_sexe === v;
+                const unlocked = fieldUnlocked('employe_sexe');
+                return (
+                  <TouchableOpacity key={v} disabled={!unlocked} onPress={() => unlocked && updateForm('employe_sexe', v)} style={[digitalStyles.chip, sel && digitalStyles.chipSel, !unlocked && { opacity: 0.5 }]}>
+                    <Text style={[digitalStyles.chipText, sel && digitalStyles.chipTextSel]}>{v}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {isEditing && <LockToggle fieldKey="employe_sexe" unlocked={fieldUnlocked('employe_sexe')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} currentValue={formData.employe_sexe} />}
+          </View>
+        </View>
+        <LockedField fieldKey="poste" label="Poste attribué *" value={formData.poste} onChangeText={(t) => updateForm('poste', t)} placeholder="Ex: Nounou, aide ménagère..." required unlocked={fieldUnlocked('poste')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="employe_adresse_actuelle" label="Adresse actuelle de résidence" value={formData.employe_adresse_actuelle} onChangeText={(t) => updateForm('employe_adresse_actuelle', t)} placeholder="Quartier, commune..." unlocked={fieldUnlocked('employe_adresse_actuelle')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="employe_piece_reference" label="Pièce d'identité / Référence" value={formData.employe_piece_reference} onChangeText={(t) => updateForm('employe_piece_reference', t)} placeholder="N° CNI / passeport..." unlocked={fieldUnlocked('employe_piece_reference')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+      </View>
+
+      {/* Prix prestation */}
+      <View style={digitalStyles.sectionCard}>
+        <Text style={digitalStyles.sectionTitle}>Prix de la prestation (Art. 3 & 8)</Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1 }}><LockedField fieldKey="commission_fixe" label="Prix prestation" value={formData.commission_fixe} onChangeText={(t) => updateForm('commission_fixe', t)} placeholder="15000" keyboardType="numeric" unlocked={fieldUnlocked('commission_fixe')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+          <View style={{ flex: 1 }}><LockedField fieldKey="frais_transport" label="Frais transport (Art. 3)" value={formData.frais_transport} onChangeText={(t) => updateForm('frais_transport', t)} placeholder="5000" keyboardType="numeric" unlocked={fieldUnlocked('frais_transport')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+        </View>
+        <LockedField fieldKey="retenue_salaire_montant" label="Retenue 1er mois sur salaire net (Art. 8) — à reverser à l'agence" value={formData.retenue_salaire_montant} onChangeText={(t) => updateForm('retenue_salaire_montant', t)} placeholder="Ex: 26667" keyboardType="numeric" unlocked={fieldUnlocked('retenue_salaire_montant')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <Text style={digitalStyles.helpText}>Payable espèces ou Mobile Money dès signature (non remboursable). Retenue = montant prélevé par le client sur le salaire net du 1er mois.</Text>
+        <LockedField fieldKey="salaire" label="Salaire net employé (aide calcul retenue = 1/3 si vide)" value={formData.salaire} onChangeText={(t) => { updateForm('salaire', t); const n = parseFloat(t); if (!isNaN(n) && n > 0 && !formData.retenue_salaire_montant) updateForm('retenue_salaire_montant', String(Math.round(n/3))); }} placeholder="Ex: 80000" keyboardType="numeric" unlocked={fieldUnlocked('salaire')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1 }}><LockedField fieldKey="date_signature" label="Date de signature" value={formData.date_signature} onChangeText={(t) => updateForm('date_signature', t)} placeholder="JJ/MM/AAAA" unlocked={fieldUnlocked('date_signature')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+          <View style={{ flex: 1 }}><LockedField fieldKey="duree" label="Durée suivi" value={formData.duree} onChangeText={(t) => updateForm('duree', t)} placeholder="3 mois" unlocked={fieldUnlocked('duree')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+        </View>
+      </View>
+
+      {/* Annexes contrat */}
+      <View style={digitalStyles.sectionCard}>
+        <View style={digitalStyles.sectionHead}>
+          <Text style={digitalStyles.sectionTitle}>Documents annexes au contrat</Text>
+          <Text style={digitalStyles.sectionHint}>{isEditing ? `${documents.length} fichier(s)` : `${pendingDocuments.length} en attente`}</Text>
+        </View>
+        <Text style={digitalStyles.helpText}>Ajoutez des annexes (PDF, Word, photos) : pièces jointes au contrat. En création elles partent après enregistrement.</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          {DOCUMENT_TYPES.slice(0, 6).map((dt) => (
+            <TouchableOpacity key={dt.value} onPress={() => handlePickAnnexe(dt.value)} style={digitalStyles.docTypeChip}>
+              <Text style={digitalStyles.docTypeIcon}>{dt.icon}</Text>
+              <Text style={digitalStyles.docTypeLabel}>{dt.label}</Text>
             </TouchableOpacity>
-          )}
-          {selectedEmployeur && (
-            <TouchableOpacity
-              style={styles.linkedEntityChip}
-              onPress={() =>
-                tabNavigation?.navigate('EmployeursStack' as any, {
-                  screen: 'EmployeurDetail',
-                  params: { id: formData.employeur_id },
-                })
-              }
-            >
-              <Icon name="office-building" size={16} color="#5a7c3a" />
-              <Text style={styles.linkedEntityText}>
-                {formData.employeur_nom}
-              </Text>
-            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity onPress={() => handlePickAnnexe('autre')} style={[digitalStyles.docTypeChip, { marginTop: 8 }]}>
+          <Text style={digitalStyles.docTypeIcon}>📎</Text><Text style={digitalStyles.docTypeLabel}>Autre document</Text>
+        </TouchableOpacity>
+        {/* Liste */}
+        <View style={{ marginTop: 12 }}>
+          {(isEditing ? documents : pendingDocuments).length === 0 ? (
+            <Text style={digitalStyles.pickHintMuted}>Aucune annexe pour l'instant.</Text>
+          ) : (
+            (isEditing ? documents : pendingDocuments).map((doc: any, idx: number) => (
+              <View key={doc.id || `pending-${idx}`} style={digitalStyles.docRow}>
+                <TouchableOpacity onPress={() => openDocumentViewer(doc)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={digitalStyles.docTypeIcon}>{getDocumentTypeIcon(doc.type)}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={digitalStyles.docRowTitle} numberOfLines={1}>{getDocumentTypeLabel(doc.type)} {doc.nomFichier ? `• ${doc.nomFichier}` : doc.name ? `• ${doc.name}` : ''}</Text>
+                    <Text style={digitalStyles.docRowSub}>{doc.type}</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => isEditing ? requestDeleteDocument(doc.id) : setPendingDocuments((p) => p.filter((_, i) => i !== idx))} style={digitalStyles.docDeleteBtn}>
+                  <Icon name="trash-can-outline" size={18} color={Colors.danger} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => openDocumentViewer(doc)} style={digitalStyles.docViewBtn}>
+                  <Icon name="eye-outline" size={18} color={Colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={async () => {
+                  try {
+                    const uri = doc.imageUrl || doc.uri;
+                    if (!uri) return;
+                    const isRemote = /^https?:\/\//i.test(uri);
+                    let localUri = uri;
+                    if (isRemote) {
+                      const name = doc.nomFichier || doc.name || `annexe_${Date.now()}.pdf`;
+                      const tmp = (FileSystem as any).cacheDirectory + name.replace(/[^a-zA-Z0-9._-]/g,'_');
+                      const dl = await (FileSystem as any).downloadAsync(uri, tmp);
+                      localUri = dl.uri;
+                    }
+                    const can = await Sharing.isAvailableAsync();
+                    if (can) await Sharing.shareAsync(localUri);
+                  } catch (e: any) { Alert.alert('Téléchargement', e?.message || 'Impossible'); }
+                }} style={digitalStyles.docViewBtn}>
+                  <Icon name="download-outline" size={18} color={Colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            ))
           )}
         </View>
-      )}
+      </View>
 
-      {/* ── Onglets Numérique / Scanné ──────────────────── */}
+      {/* Actions */}
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+        <SafeButton onPress={handleSave} loading={loading} mode="contained" style={{ flex: 1 }}>{isEditing ? "Enregistrer" : "Créer le contrat"}</SafeButton>
+        <SafeButton onPress={handlePrint} mode="outlined" style={{ flex: 1 }}><Icon name="file-pdf-box" size={18} color={Colors.primary} /><Text style={{ color: Colors.primary, fontWeight: "600", marginLeft: 6 }}>Imprimer PDF</Text></SafeButton>
+      </View>
+      <Text style={digitalStyles.helpText}>Le PDF reprend fidèlement les 10 articles (3 pages) avec en-tête/pied répétés. Tous les champs ci-dessus sont verrouillés après création (C1).</Text>
+    </ScrollView>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
+      <AppHeader title={isEditing ? 'Contrat de prestation' : 'Nouveau contrat'} showBack />
+      {/* Tabs */}
       <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'numerique' && styles.tabActive]}
-          onPress={() => setActiveTab('numerique')}
-        >
-          <Icon
-            name="file-document-edit-outline"
-            size={16}
-            color={activeTab === 'numerique' ? Colors.primary : '#888'}
-          />
-          <Text
-            style={[styles.tabText, activeTab === 'numerique' && styles.tabTextActive]}
-          >
-            Numérique
-          </Text>
+        <TouchableOpacity onPress={() => setActiveTab('numerique')} style={[styles.tab, activeTab === 'numerique' && styles.tabActive]}>
+          <Icon name="file-document-edit-outline" size={16} color={activeTab === 'numerique' ? Colors.primary : Colors.textSecondary} />
+          <Text style={[styles.tabText, activeTab === 'numerique' && styles.tabTextActive]}>Numérique</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'scanne' && styles.tabActive]}
-          onPress={() => setActiveTab('scanne')}
-        >
-          <Icon
-            name="scanner"
-            size={16}
-            color={activeTab === 'scanne' ? Colors.primary : '#888'}
-          />
-          <Text
-            style={[styles.tabText, activeTab === 'scanne' && styles.tabTextActive]}
-          >
-            Scanné
-          </Text>
-          {scanData?.imageUrl && <View style={styles.scanBadge} />}
+        <TouchableOpacity onPress={() => setActiveTab('scanne')} style={[styles.tab, activeTab === 'scanne' && styles.tabActive]}>
+          <Icon name="scanner" size={16} color={activeTab === 'scanne' ? Colors.primary : Colors.textSecondary} />
+          <Text style={[styles.tabText, activeTab === 'scanne' && styles.tabTextActive]}>Scanné</Text>
         </TouchableOpacity>
       </View>
 
-      {/* ── Contenu selon l'onglet ──────────────────────── */}
-      {activeTab === 'numerique' ? (
-        <>
-          {/* Sélecteurs — visibles seulement tant qu'un choix n'est pas fait */}
-          {(!formData.employe_id || !formData.employeur_id) && (
-            <View style={styles.pickerSection}>
-              <TouchableOpacity
-                onPress={() => setShowEmployePicker(true)}
-                style={styles.pickerTrigger}
-              >
-                <Text style={styles.fieldLabel}>Employé</Text>
-                {selectedEmploye ? (
-                  <Text style={styles.pickerValue}>
-                    {selectedEmploye.prenom} {selectedEmploye.nom} —{' '}
-                    {selectedEmploye.categorie_emploi || ''}
-                  </Text>
-                ) : (
-                  <Text style={styles.pickerPlaceholder}>
-                    👤 Tap pour sélectionner...
-                  </Text>
-                )}
-              </TouchableOpacity>
+      {activeTab === 'numerique' ? renderNumerique() : renderScanTab()}
 
-              <TouchableOpacity
-                onPress={() => setShowEmployeurPicker(true)}
-                style={[styles.pickerTrigger, { marginTop: 8 }]}
-              >
-                <Text style={styles.fieldLabel}>Employeur</Text>
-                {selectedEmployeur ? (
-                  <Text style={styles.pickerValue}>
-                    {selectedEmployeur.nom_complet ||
-                      selectedEmployeur.raison_sociale ||
-                      selectedEmployeur.nom}
-                  </Text>
-                ) : (
-                  <Text style={styles.pickerPlaceholder}>
-                    🏢 Tap pour sélectionner...
-                  </Text>
-                )}
-              </TouchableOpacity>
+      {renderPickerModal(showEmployePicker, () => setShowEmployePicker(false), employes, handleSelectEmploye, formData.employe_id, true)}
+      {renderPickerModal(showEmployeurPicker, () => setShowEmployeurPicker(false), employeurs, handleSelectEmployeur, formData.employeur_id, false)}
+
+      {/* PIN suppression annexe */}
+      <Modal visible={pinVisible} transparent animationType="fade" onRequestClose={() => setPinVisible(false)}>
+        <View style={digitalStyles.pinOverlay}>
+          <View style={digitalStyles.pinCard}>
+            <Text style={digitalStyles.pinTitle}>Code PIN requis</Text>
+            <Text style={digitalStyles.pinSub}>Saisissez le code à 4 chiffres pour supprimer cette annexe.</Text>
+            <TextInput value={pinValue} onChangeText={setPinValue} placeholder="••••" placeholderTextColor="#9aa" keyboardType="numeric" maxLength={4} secureTextEntry style={digitalStyles.pinInput} />
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+              <TouchableOpacity onPress={() => setPinVisible(false)} style={[digitalStyles.pinBtn, { backgroundColor: Colors.surface }]}><Text style={digitalStyles.pinBtnText}>Annuler</Text></TouchableOpacity>
+              <TouchableOpacity onPress={confirmDeleteDocument} style={[digitalStyles.pinBtn, { backgroundColor: Colors.danger }]}><Text style={[digitalStyles.pinBtnText, { color: '#fff' }]}>Supprimer</Text></TouchableOpacity>
             </View>
-          )}
+          </View>
+        </View>
+      </Modal>
 
-          <A4Document
-            title={
-              isEditing
-                ? 'Contrat de placement (modification)'
-                : 'Nouveau contrat de placement'
-            }
-            onSave={handleSave}
-            onPrint={handleSave}
-            onAfterPrint={handleAfterPrint}
-            pageCount={2}
-          >
-            {renderDocument()}
-          </A4Document>
-        </>
-      ) : (
-        renderScanTab()
-      )}
-
-      {renderPickerModal(
-        showEmployePicker,
-        () => setShowEmployePicker(false),
-        employes,
-        handleSelectEmploye,
-        formData.employe_id,
-        true,
-      )}
-      {renderPickerModal(
-        showEmployeurPicker,
-        () => setShowEmployeurPicker(false),
-        employeurs,
-        handleSelectEmployeur,
-        formData.employeur_id,
-        false,
-      )}
+      <DocumentViewerOverlay viewerDoc={docViewer.doc} onClose={docViewer.close} onDownload={docViewer.download} downloading={docViewer.downloading} />
     </View>
   );
 }
-// ═══════════════════════════════════════════════════════════
+
+// ── Styles repris/adaptés de ContratDocumentScreen + Fiche verrouillage ─
+const digitalStyles = StyleSheet.create({
+  headerCard: { backgroundColor: '#0c1f3f', borderRadius: 12, padding: 14, marginBottom: 12 },
+  headerTitle: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  headerSub: { color: '#cbd5e1', fontSize: 11, marginTop: 4 },
+  badge: { backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
+  badgeText: { color: '#e2e8f0', fontSize: 10, fontWeight: '700' },
+  sectionCard: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#e2e8f0' },
+  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  sectionTitle: { fontWeight: '800', color: Colors.textPrimary, fontSize: 13 },
+  sectionHint: { fontSize: 11, color: Colors.textSecondary },
+  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#eef2ff', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  pickBtnText: { color: Colors.primary, fontWeight: '700', fontSize: 12 },
+  pickHint: { fontSize: 12, color: Colors.textSecondary, marginBottom: 8 },
+  pickHintMuted: { fontSize: 12, color: Colors.textTertiary, marginBottom: 8, fontStyle: 'italic' },
+  lockedRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 6 },
+  lockedRowLocked: { opacity: 0.96 },
+  lockBtn: { padding: 8, borderRadius: 8, backgroundColor: '#f1f5f9', marginBottom: 6 },
+  lockToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  lockToggleText: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600' },
+  fieldLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
+  helpText: { fontSize: 11, color: Colors.textSecondary, marginTop: 6, lineHeight: 14 },
+  chip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', backgroundColor: '#fff' },
+  chipSel: { backgroundColor: '#0c1f3f', borderColor: '#0c1f3f' },
+  chipText: { fontWeight: '700', color: Colors.textSecondary, fontSize: 12 },
+  chipTextSel: { color: '#fff' },
+  docTypeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 999 },
+  docTypeIcon: { fontSize: 14 },
+  docTypeLabel: { fontSize: 11, fontWeight: '700', color: Colors.textPrimary },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  docRowTitle: { fontSize: 12, fontWeight: '700', color: Colors.textPrimary },
+  docRowSub: { fontSize: 10, color: Colors.textSecondary },
+  docDeleteBtn: { padding: 6, borderRadius: 8, backgroundColor: '#fef2f2' },
+  docViewBtn: { padding: 6, borderRadius: 8, backgroundColor: '#f1f5f9' },
+  pinOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 } as any,
+  pinCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, width: '100%', maxWidth: 360 } as any,
+  pinTitle: { fontWeight: '800', fontSize: 14, color: '#111' } as any,
+  pinSub: { fontSize: 12, color: '#666', marginTop: 6 } as any,
+  pinInput: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 10, marginTop: 10, fontSize: 16, textAlign: 'center', letterSpacing: 6 } as any,
+  pinBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' } as any,
+  pinBtnText: { fontWeight: '700', fontSize: 12 } as any,
+});
+
+
 const styles = StyleSheet.create({
   // ── Document scroll ─────────────────
   documentScroll: {
@@ -1679,6 +1235,9 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
+  scanPreviewFull: { flex: 1, width: '100%', padding: 10, alignItems: 'center' },
+  scanImageWrap: { width: '100%', flex: 1, minHeight: 380, borderRadius: Radius.md, overflow: 'hidden', backgroundColor: '#F5F0EB' },
+  scanImageFull: { width: '100%', height: '100%' },
   scanImage: {
     width: '100%',
     height: '80%',
@@ -1721,6 +1280,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
   },
+  scanActions: { flexDirection: 'row', gap: 10, marginTop: 12, justifyContent: 'center' },
+  scanBtnSecondary: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: Colors.primary, backgroundColor: '#FFF' },
+  scanBtnSecondaryText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
   // ── Pickers (employee/employer selection) ──
   pickerSection: {
     marginBottom: 16,

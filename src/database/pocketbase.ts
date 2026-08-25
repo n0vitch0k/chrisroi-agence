@@ -27,7 +27,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 // TOUJOURS cette IP. C'est le fallback fiable si le scan auto échoue
 // (pare-feu qui bloque, ou démarrage avant que le réseau soit prêt).
 // Le scan auto prime : cette constante ne sert QUE si le scan ne trouve rien.
-const FIXED_LAN_IP = '192.168.1.6'; // ← À RÉSERVER dans la box (actuelle DHCP)
+const FIXED_LAN_IP = '192.168.1.25'; // ← À RÉSERVER dans la box
 
 const PB_PORT = 8090;
 

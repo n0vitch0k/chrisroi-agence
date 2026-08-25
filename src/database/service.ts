@@ -625,6 +625,37 @@ export const updateEmploye = async (id: string, data: any): Promise<void> => {
   await pb.collection('employes').update(id, updateData);
 };
 
+/** Sauvegarde partielle d'UN SEUL champ (verrouillage C1). */
+export const patchEmployeField = async (
+  id: string,
+  field: string,
+  value: any,
+): Promise<void> => {
+  const pb = getPb();
+  await pb.collection('employes').update(id, { [field]: value });
+  await logAction({
+    actionType: 'modification_champ',
+    entiteType: 'employe',
+    entiteId: id,
+    description: `Champ « ${field} » modifié`,
+  });
+};
+
+export const patchContratField = async (
+  id: string,
+  field: string,
+  value: any,
+): Promise<void> => {
+  const pb = getPb();
+  await pb.collection('contrats').update(id, { [field]: value });
+  await logAction({
+    actionType: 'modification_champ',
+    entiteType: 'contrat',
+    entiteId: id,
+    description: `Champ contrat « ${field} » modifié`,
+  });
+};
+
 export const deleteEmploye = async (id: string): Promise<void> => {
   const pb = getPb();
   await pb.collection('employes').delete(id);
@@ -805,7 +836,17 @@ export const createContrat = async (contrat: any): Promise<string> => {
       frais_dossier: contrat.frais_dossier || 0,
       frais_payes: !!contrat.frais_payes,
       statut: 'en_cours',
-      domicile_employe: contrat.domicile_employe || '',
+      domicile_employe: contrat.domicile_employe || contrat.employe_adresse_actuelle || '',
+      // Prestation snapshot (complétant, non supprimé)
+      client_domicile: contrat.client_domicile || '',
+      client_piece_numero: contrat.client_piece_numero || '',
+      client_piece_date: contrat.client_piece_date || '',
+      employe_age: contrat.employe_age ?? null,
+      employe_sexe: contrat.employe_sexe || '',
+      employe_adresse_actuelle: contrat.employe_adresse_actuelle || '',
+      employe_piece_reference: contrat.employe_piece_reference || '',
+      retenue_salaire_montant: contrat.retenue_salaire_montant ?? null,
+      date_signature: contrat.date_signature || contrat.date_contrat || '',
       signature_employe: contrat.signature_employe || '',
       signature_agence: contrat.signature_agence || '',
       signature_employeur: contrat.signature_employeur || '',
@@ -1416,14 +1457,16 @@ export const getDocumentsByEmploye = async (employeId: string): Promise<any[]> =
   try {
     const records = await pb.collection('documents').getList(1, 50, {
       filter: `employe_id="${employeId}"`,
-      sort: '-created',
     });
+    console.log('[UPLOAD-DIAG] getDocumentsByEmploye OK, items =', records.items.length);
     const pbUrl = getPocketBaseUrl();
     return records.items.map((item: any) => ({
       ...item,
-      imageUrl: item.image ? `${pbUrl}/api/files/documents/${item.id}/${item.image}` : null,
+      imageUrl: item.file ? `${pbUrl}/api/files/documents/${item.id}/${item.file}` : null,
+      nomFichier: item.file || null,
     }));
-  } catch {
+  } catch (e: any) {
+    console.error('[UPLOAD-DIAG] getDocumentsByEmploye ÉCHEC status=', e?.status, '| msg=', e?.message);
     return [];
   }
 };
@@ -1432,10 +1475,29 @@ export const getDocumentsByEmploye = async (employeId: string): Promise<any[]> =
  * Ajoute un document associé à une fiche d'employé.
  * type: une des valeurs DOCUMENT_TYPES ; imageUri: URI locale (RN) ou File (web).
  */
+/** Normalise un mime pour le file field `documents.file` (PB 0.39 exige des mimes explicites). */
+function resolveDocumentMime(ext: string, mimeIn?: string): string {
+  if (mimeIn) {
+    const m = mimeIn.toLowerCase();
+    if (m === 'image/jpg') return 'image/jpeg';
+    // Word .docx a un mime distinct de .doc — ne pas l'écraser en msword
+    if (m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return m;
+    if (m === 'application/msword' || m === 'application/pdf' || m.startsWith('image/')) return m;
+  }
+  if (ext === 'png') return 'image/png';
+  if (ext === 'webp') return 'image/webp';
+  if (ext === 'pdf') return 'application/pdf';
+  if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (ext === 'doc') return 'application/msword';
+  return 'image/jpeg';
+}
+
 export const uploadDocument = async (
   employeId: string,
   type: string,
   imageUri: string | File,
+  fileName?: string,
+  mimeType?: string,
 ): Promise<string | null> => {
   const pb = getPb();
   // ── DIAGNOSTIC TEMPORAIRE (à retirer après debug upload) ──
@@ -1445,18 +1507,19 @@ export const uploadDocument = async (
   try {
     let imageField: any;
     if (typeof imageUri === 'string') {
-      const ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+      const ext = (fileName || imageUri).split('.').pop()?.toLowerCase() || 'jpg';
+      const fileType = resolveDocumentMime(ext, mimeType);
       imageField = {
         uri: imageUri,
-        type: ext === 'png' ? 'image/png' : 'image/jpeg',
-        name: `doc_${type}_${Date.now()}.${ext}`,
+        type: fileType,
+        name: fileName || `doc_${type}_${Date.now()}.${ext}`,
       };
     } else {
       imageField = imageUri;
     }
-    console.log('[UPLOAD-DIAG] imageField =', JSON.stringify(imageField).slice(0, 120));
+    console.log('[UPLOAD-DIAG] imageField =', JSON.stringify(imageField).slice(0, 160));
     const record = await pb.collection('documents').create({
-      image: imageField,
+      file: imageField,
       employe_id: employeId,
       type,
     });
@@ -1494,7 +1557,8 @@ export const getDocumentsByEmployeur = async (employeurId: string): Promise<any[
     const pbUrl = getPocketBaseUrl();
     return records.items.map((item: any) => ({
       ...item,
-      imageUrl: item.image ? `${pbUrl}/api/files/documents/${item.id}/${item.image}` : null,
+      imageUrl: item.file ? `${pbUrl}/api/files/documents/${item.id}/${item.file}` : null,
+      nomFichier: item.file || null,
     }));
   } catch {
     return [];
@@ -1509,22 +1573,25 @@ export const uploadEmployeurDocument = async (
   employeurId: string,
   type: string,
   imageUri: string | File,
+  fileName?: string,
+  mimeType?: string,
 ): Promise<string | null> => {
   const pb = getPb();
   try {
     let imageField: any;
     if (typeof imageUri === 'string') {
-      const ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+      const ext = (fileName || imageUri).split('.').pop()?.toLowerCase() || 'jpg';
+      const fileType = resolveDocumentMime(ext, mimeType);
       imageField = {
         uri: imageUri,
-        type: ext === 'png' ? 'image/png' : 'image/jpeg',
-        name: `doc_${type}_${Date.now()}.${ext}`,
+        type: fileType,
+        name: fileName || `doc_${type}_${Date.now()}.${ext}`,
       };
     } else {
       imageField = imageUri;
     }
     const record = await pb.collection('documents').create({
-      image: imageField,
+      file: imageField,
       employeur_id: employeurId,
       type,
     });
@@ -1534,6 +1601,65 @@ export const uploadEmployeurDocument = async (
     return null;
   }
 };
+
+// ============== DOCUMENTS ASSOCIÉS À UN CONTRAT ==============
+// Même collection `documents` mais liés via contrat_id (ajout migration 1787300000).
+
+/** Liste les documents annexes liés à un contrat (tri : plus récent d'abord). */
+export const getDocumentsByContrat = async (contratId: string): Promise<any[]> => {
+  const pb = getPb();
+  try {
+    const records = await pb.collection('documents').getList(1, 50, {
+      filter: `contrat_id="${contratId}"`,
+      sort: '-created',
+    });
+    const pbUrl = getPocketBaseUrl();
+    return records.items.map((item: any) => ({
+      ...item,
+      imageUrl: item.file ? `${pbUrl}/api/files/documents/${item.id}/${item.file}` : null,
+      nomFichier: item.file || null,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Ajoute un document annexe à un contrat.
+ */
+export const uploadContratDocument = async (
+  contratId: string,
+  type: string,
+  imageUri: string | File,
+  fileName?: string,
+  mimeType?: string,
+): Promise<string | null> => {
+  const pb = getPb();
+  try {
+    let imageField: any;
+    if (typeof imageUri === 'string') {
+      const ext = (fileName || imageUri).split('.').pop()?.toLowerCase() || 'jpg';
+      const fileType = resolveDocumentMime(ext, mimeType);
+      imageField = {
+        uri: imageUri,
+        type: fileType,
+        name: fileName || `doc_${type}_${Date.now()}.${ext}`,
+      };
+    } else {
+      imageField = imageUri;
+    }
+    const record = await pb.collection('documents').create({
+      file: imageField,
+      contrat_id: contratId,
+      type,
+    });
+    return record.id;
+  } catch (e: any) {
+    console.error('[UPLOAD-DIAG] uploadContratDocument ÉCHEC', e?.status, e?.message, e?.data);
+    return null;
+  }
+};
+
 
 // ============== PHOTO D'IDENTITÉ EMPLOYÉ ==============
 

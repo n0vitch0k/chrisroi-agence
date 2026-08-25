@@ -23,8 +23,9 @@ import SectionCard from '../components/SectionCard';
 import FormField from '../components/FormField';
 import SafeButton from '../components/SafeButton';
 import A4Document from '../components/A4Document';
-import { createEmploye, getEmployeById, updateEmploye, uploadScan, getScan, uploadEmployePhoto, getEmployePhotoUrl, isLocalPhotoUri, getDocumentsByEmploye, uploadDocument, deleteDocument, getDocumentTypeLabel, getDocumentTypeIcon, DOCUMENT_TYPES, getEntityHistory } from '../database/service';
+import { createEmploye, getEmployeById, updateEmploye, patchEmployeField, uploadScan, getScan, uploadEmployePhoto, getEmployePhotoUrl, isLocalPhotoUri, getDocumentsByEmploye, uploadDocument, deleteDocument, getDocumentTypeLabel, getDocumentTypeIcon, DOCUMENT_TYPES, getEntityHistory } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as Sharing from 'expo-sharing';
 import { printToFileAsync } from 'expo-print';
@@ -36,6 +37,7 @@ import {
   formatDate,
 } from '../utils/constants';
 import { Colors, Spacing, Radius, Typography } from '../theme';
+import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
 
 // ─── Types ─────────────────────────────────────────────────
 interface PersonneUrgence {
@@ -99,6 +101,132 @@ function EditableField({
       multiline={multiline}
       textAlignVertical={multiline ? 'top' : 'center'}
     />
+  );
+}
+
+// ─── LockedField ───────────────────────────────────────────
+// En édition : champ verrouillé par défaut (cadenas fermé).
+// Appui sur le cadenas → déverrouille CE champ seul → on édite →
+// bouton « Valider » → sauvegarde partielle (PATCH du champ seul) → reverrouille.
+function LockedField({
+  fieldKey,
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  numberOfLines,
+  keyboardType,
+  required,
+  unlocked,
+  onToggleLock,
+  onPatch,
+  isEditing,
+  employeId,
+}: {
+  fieldKey: string;
+  label: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  numberOfLines?: number;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  required?: boolean;
+  unlocked: boolean;
+  onToggleLock: (key: string) => void;
+  onPatch: (key: string, value: any) => Promise<void>;
+  isEditing: boolean;
+  employeId?: string | null;
+}) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => { setLocal(value); }, [value]);
+
+  const handleSavePatch = async () => {
+    // En édition : on sauvegarde la valeur courante (déjà dans formData) vers PB
+    try {
+      await onPatch(fieldKey, value);
+      Alert.alert('Modifié', `${label} enregistré.`);
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Enregistrement impossible.');
+      return;
+    }
+    onToggleLock(fieldKey);
+  };
+
+  return (
+    <View>
+      <View style={[digitalStyles.lockedRow, !unlocked && digitalStyles.lockedRowLocked]}>
+        <FormField
+          label={label}
+          value={value}
+          onChangeText={(t) => onChangeText(t)}
+          placeholder={placeholder}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          keyboardType={keyboardType}
+          required={required}
+          disabled={!unlocked}
+          style={{ flex: 1 }}
+        />
+        {isEditing && (
+          <TouchableOpacity
+            onPress={unlocked ? handleSavePatch : () => onToggleLock(fieldKey)}
+            style={digitalStyles.lockBtn}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Icon name={unlocked ? 'check-circle' : 'lock'} size={20} color={unlocked ? Colors.success : Colors.textTertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── LockToggle ────────────────────────────────────────────
+// Petit bouton déverrouiller / valider pour les chips & checkboxes.
+function LockToggle({
+  fieldKey,
+  unlocked,
+  onToggleLock,
+  onPatch,
+  isEditing,
+  employeId,
+  currentValue,
+}: {
+  fieldKey: string;
+  unlocked: boolean;
+  onToggleLock: (key: string) => void;
+  onPatch: (key: string, value: any) => Promise<void>;
+  isEditing: boolean;
+  employeId?: string | null;
+  currentValue: any;
+}) {
+  const handleValidate = async () => {
+    if (!employeId) {
+      onToggleLock(fieldKey);
+      return;
+    }
+    try {
+      await onPatch(fieldKey, currentValue);
+      Alert.alert('Modifié', 'Champ enregistré.');
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Enregistrement impossible.');
+      return;
+    }
+    onToggleLock(fieldKey);
+  };
+  return (
+    <TouchableOpacity
+      onPress={unlocked ? handleValidate : () => onToggleLock(fieldKey)}
+      style={digitalStyles.lockToggleRow}
+      activeOpacity={0.7}
+    >
+      <Icon name={unlocked ? 'check-circle' : 'lock'} size={14} color={unlocked ? Colors.success : Colors.textTertiary} />
+      <Text style={[digitalStyles.lockToggleText, unlocked && { color: Colors.success }]}>
+        {unlocked ? 'Valider' : 'Déverrouiller'}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -273,6 +401,7 @@ export default function FicheInscriptionScreen() {
 
   // ── Enregistrement ──────────────────────────────────────
   const handleSave = async () => {
+    console.log('[UPLOAD-DIAG] handleSave appelé, isEditing =', isEditing, '| pendingDocuments.length =', pendingDocuments.length);
     if (!formData.nom.trim() || !formData.prenom.trim()) {
       Alert.alert('Champs requis', 'Le nom et le prénom sont obligatoires.');
       return;
@@ -311,6 +440,7 @@ export default function FicheInscriptionScreen() {
         id = employeId;
       } else {
         id = await createEmploye(employeData);
+        console.log('[UPLOAD-DIAG] createEmploye retourné id =', id);
       }
 
       // Upload de la photo d'identité (file field `photo`) si une URI locale est présente
@@ -329,22 +459,33 @@ export default function FicheInscriptionScreen() {
       // En création, l'employé vient d'être créé (id connu) : on upload tout
       // ce qui a été ajouté AVANT la sauvegarde (documents + scan).
       if (!isEditing) {
+        console.log('[UPLOAD-DIAG] handleSave création: pendingDocuments.length =', pendingDocuments.length, '| pendingScanUri =', pendingScanUri ? 'oui' : 'non');
+        let uploadedCount = 0;
+        let failedCount = 0;
+        for (const pd of pendingDocuments) {
+          console.log('[UPLOAD-DIAG] Upload pending doc:', pd.type, '| mime', (pd as any).mimeType || '—', '| name', (pd as any).name || '—');
+          const docId = await uploadDocument(id, pd.type, pd.uri, (pd as any).name, (pd as any).mimeType);
+          if (docId) uploadedCount++; else failedCount++;
+          console.log('[UPLOAD-DIAG] Pending doc uploadé, id =', docId);
+        }
+        if (pendingScanUri) {
+          try { await uploadScan('fiche_inscription', id, pendingScanUri); } catch (e) { console.warn('Upload scan échoué', e); }
+        }
+        // Recharger la vraie liste depuis PB (pas de faux `pending-*` qui cachent les erreurs)
         try {
-          for (const pd of pendingDocuments) {
-            await uploadDocument(id, pd.type, pd.uri);
-          }
-          if (pendingScanUri) {
-            await uploadScan('fiche_inscription', id, pendingScanUri);
-          }
-          // Recharger docs + scan pour affichage
           const docs = await getDocumentsByEmploye(id);
           setDocuments(docs || []);
-          const updatedScan = await getScan('fiche_inscription', id);
-          setScanData(updatedScan);
-        } catch (e) {
-          console.warn('Upload post-inscription échoué:', e);
+        } catch {}
+        if (uploadedCount > 0 && failedCount === 0) {
+          // succès silencieux : le compteur docs suffit, pas d'Alert qui casse le flux handleSave
+        } else if (failedCount > 0) {
+          Alert.alert('Documents', `${failedCount} document(s) n'ont pas pu être enregistrés.` + (uploadedCount ? ` ${uploadedCount} enregistré(s).` : ''));
         }
-        // Verrouillage fort : le formulaire devient lecture-seule après inscription.
+        const updatedScan = await getScan('fiche_inscription', id).catch(() => null);
+        setScanData(updatedScan);
+      }
+      // Verrouillage fort : le formulaire devient lecture-seule après inscription (édition ou création).
+      if (!isEditing) {
         setLocked(true);
         setPendingDocuments([]);
         setPendingScanUri(null);
@@ -419,11 +560,37 @@ export default function FicheInscriptionScreen() {
 
 
   // ── Scan du document signé ─────────────────────────────
-  // Ouvrir l'appareil photo ou la galerie pour prendre une photo du document signé
+  // Ouvrir le choix galerie / caméra (pas seulement caméra) — plus fiable en prod
+  // et évite les refus silencieux si la caméra n'est pas autorisée.
   const handleScanDocument = async () => {
     try {
       setScanLoading(true);
-      const ImagePicker = require('expo-image-picker').default;
+      // Demander les 2 permissions d'abord (Android 13+ = séparées)
+      const camPerm = await ImagePicker.requestCameraPermissionsAsync();
+      if (camPerm.status !== 'granted') {
+        // fallback : galerie si caméra refusée
+        const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (libPerm.status !== 'granted') {
+          Alert.alert('Permission refusée', "Autorisez l'appareil photo ou la galerie dans les réglages.");
+          setScanLoading(false);
+          return;
+        }
+        const libRes = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsEditing: false });
+        if (libRes.canceled || !libRes.assets[0]) { setScanLoading(false); return; }
+        const libUri = libRes.assets[0].uri;
+        if (!employeId) {
+          setPendingScanUri(libUri);
+          setScanLoading(false);
+          Alert.alert('Scan en attente', "Le scan sera enregistré après l'inscription.");
+          return;
+        }
+        await uploadScan('fiche_inscription', employeId, libUri);
+        const upLib = await getScan('fiche_inscription', employeId);
+        setScanData(upLib);
+        Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
+        setScanLoading(false);
+        return;
+      }
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: 'images',
         quality: 0.85,
@@ -449,7 +616,9 @@ export default function FicheInscriptionScreen() {
       setScanData(updated);
       Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
       setScanLoading(false);
-    } catch (_) {
+    } catch (e: any) {
+      console.warn('[scan] handleScanDocument error', e?.message || e);
+      Alert.alert('Scan', e?.message || "Le scan a échoué. Réessayez.");
       setScanLoading(false);
     }
   };
@@ -458,6 +627,7 @@ export default function FicheInscriptionScreen() {
   const handleScanWeb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = '';
     // Mode CRÉATION : on stocke le scan en attente (upload après handleSave)
     if (!employeId) {
       const reader = new FileReader();
@@ -472,8 +642,9 @@ export default function FicheInscriptionScreen() {
       const updated = await getScan('fiche_inscription', employeId);
       setScanData(updated);
       Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
-    } catch (_) {
-      Alert.alert('Erreur', 'Échec de l\'upload du scan');
+    } catch (e: any) {
+      console.warn('[scan] handleScanWeb error', e?.message || e);
+      Alert.alert('Erreur', e?.message || 'Échec de l\'upload du scan');
     } finally {
       setScanLoading(false);
     }
@@ -581,10 +752,72 @@ export default function FicheInscriptionScreen() {
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
   const [docsLoading, setDocsLoading] = useState(false);
+
+  // ── Verrouillage des champs en mode ÉDITION (C1) ──────────
+  // En édition, tous les champs sont verrouillés par défaut.
+  // On déverrouille champ par champ. Chaque clé = nom du champ FormData.
+  const [unlockedFields, setUnlockedFields] = useState<Set<string>>(new Set());
+  const fieldUnlocked = (key: string) => !isEditing || unlockedFields.has(key);
+  const toggleFieldLock = (key: string) =>
+    setUnlockedFields((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  // Sauvegarde partielle d'un champ (verrouillage C1) vers PB
+  const patchField = async (key: string, value: any) => {
+    if (!employeId) return;
+    await patchEmployeField(employeId, key, value);
+  };
+
+  // ── Code PIN pour suppression de document (B) ────────────
+  const DOC_DELETE_PIN = '0000'; // ⚠️ À remplacer par un vrai PIN sécurisé (config/env)
+  const [pinVisible, setPinVisible] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [pinTargetDocId, setPinTargetDocId] = useState<string | null>(null);
+  const requestDeleteDocument = (docId: string) => {
+    setPinTargetDocId(docId);
+    setPinValue('');
+    setPinVisible(true);
+  };
+  const confirmDeleteDocument = async () => {
+    if (pinValue !== DOC_DELETE_PIN) {
+      Alert.alert('Code PIN incorrect', 'La suppression est annulée.');
+      setPinVisible(false);
+      setPinTargetDocId(null);
+      return;
+    }
+    const id = pinTargetDocId;
+    setPinVisible(false);
+    setPinTargetDocId(null);
+    if (id) await doRemoveDocument(id);
+  };
+  const doRemoveDocument = async (docId: string) => {
+    try {
+      await deleteDocument(docId);
+      setDocuments((prev) => prev.filter((d) => d.id !== docId));
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Suppression impossible.');
+    }
+  };
   // En mode CRÉATION, on ne peut pas uploader avant que l'employé existe.
   // On garde les documents/scans en attente et on les upload après handleSave.
-  const [pendingDocuments, setPendingDocuments] = useState<{ type: string; uri: string }[]>([]);
+  const [pendingDocuments, setPendingDocuments] = useState<{ type: string; uri: string; name?: string; mimeType?: string }[]>([]);
   const [pendingScanUri, setPendingScanUri] = useState<string | null>(null);
+  // Visualiseur de document (plein écran) — composant partagé soigné
+  const docViewer = useDocumentViewer();
+
+  const openDocumentViewer = (doc: any) => {
+    const uri = doc?.imageUrl || doc?.uri;
+    if (!uri) return;
+    docViewer.open({
+      uri,
+      label: getDocumentTypeLabel(doc.type),
+      fileName: doc?.nomFichier || doc?.file || null,
+      mimeType: doc?.mimeType || null,
+    });
+  };
 
   const loadDocuments = useCallback(async () => {
     if (!employeId) return;
@@ -617,34 +850,56 @@ export default function FicheInscriptionScreen() {
   // En CRÉATION (pas encore d'employeId), on autorise quand même : le document
   // sera mis en attente et uploadé juste après l'inscription (handleSave).
   const openDocTypePicker = () => {
+    console.log('[UPLOAD-DIAG] openDocTypePicker appelé, DOCUMENT_TYPES.length =', DOCUMENT_TYPES.length);
+    console.log('[UPLOAD-DIAG] showDocTypePicker avant =', showDocTypePicker);
     setShowDocTypePicker(true);
+    console.log('[UPLOAD-DIAG] setShowDocTypePicker(true) appelé');
   };
 
   // Étape 2 : après choix du type, ouvrir la source (galerie / photo)
   const pickDocType = (type: string) => {
+    console.log('[UPLOAD-DIAG] pickDocType appelé, type =', type);
     setDocTypePending(type);
     setShowDocTypePicker(false);
     setShowDocSourcePicker(true);
   };
 
-  // Upload final du document (RN : URI locale)
-  const uploadPendingDocument = async (imageUri: string) => {
-    if (!docTypePending) return;
+  // Upload final du document (RN : URI locale, ou PDF/Word via DocumentPicker)
+  const uploadPendingDocument = async (imageUri: string, fileName?: string, mimeType?: string) => {
+    const capturedType = docTypePending;
+    if (!capturedType) {
+      console.log('[UPLOAD-DIAG] BOGUE : docTypePending est null !');
+      return;
+    }
+    console.log('[UPLOAD-DIAG] uploadPendingDocument appelé, docTypePending =', capturedType, '| employeId =', employeId || 'AUCUN');
     // Mode CRÉATION : on stocke en attente (upload après handleSave)
     if (!employeId) {
-      setPendingDocuments((prev) => [...prev, { type: docTypePending, uri: imageUri }]);
+      console.log('[UPLOAD-DIAG] Mode CRÉATION : ajout à pendingDocuments, uri =', imageUri.slice(0, 50));
+      setPendingDocuments((prev) => {
+        console.log('[UPLOAD-DIAG] pendingDocuments avant ajout =', prev.length);
+        return [...prev, { type: capturedType, uri: imageUri, name: fileName, mimeType }];
+      });
       setDocTypePending(null);
+      console.log('[UPLOAD-DIAG] Doc mis en attente pour upload post-inscription');
       return;
     }
     setDocsLoading(true);
+    const currentType = capturedType;
     try {
-      await uploadDocument(employeId, docTypePending, imageUri);
-      setDocTypePending(null);
-      await loadDocuments();
+      const docId = await uploadDocument(employeId, currentType, imageUri, fileName, mimeType);
+      console.log('[UPLOAD-DIAG] uploadPendingDocument revoyé id =', docId);
+      if (docId) {
+        // Recharger depuis PB pour obtenir le vrai fileUrl ; pas de faux aperçu local qui masque les erreurs
+        await loadDocuments();
+        Alert.alert('Document ajouté', 'Le document a bien été enregistré.');
+      } else {
+        Alert.alert('Erreur', "Échec de l'ajout du document.");
+      }
     } catch (e) {
       console.warn('uploadDocument error:', e);
       Alert.alert('Erreur', "Échec de l'ajout du document.");
     } finally {
+      setDocTypePending(null);
       setDocsLoading(false);
     }
   };
@@ -653,42 +908,39 @@ export default function FicheInscriptionScreen() {
   const handleDocWeb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !docTypePending) return;
+    const capturedType = docTypePending;
     // Mode CRÉATION : stocker en attente (upload après handleSave)
     if (!employeId) {
-      // convertir File en data URL pour le garder côté web
       const reader = new FileReader();
       reader.onload = () => {
-        setPendingDocuments((prev) => [...prev, { type: docTypePending, uri: reader.result as string }]);
+        setPendingDocuments((prev) => [...prev, { type: capturedType, uri: reader.result as string, name: file.name, mimeType: file.type }]);
       };
       reader.readAsDataURL(file);
       setDocTypePending(null);
+      e.target.value = '';
       return;
     }
     setDocsLoading(true);
     try {
-      await uploadDocument(employeId, docTypePending, file);
+      const docId = await uploadDocument(employeId, capturedType, file, file.name, file.type);
+      if (docId) {
+        await loadDocuments();
+        Alert.alert('Document ajouté', 'Le document a bien été enregistré.');
+      } else {
+        Alert.alert('Erreur', "Échec de l'ajout du document.");
+      }
       setDocTypePending(null);
-      await loadDocuments();
     } catch (err) {
       console.warn('handleDocWeb error:', err);
       Alert.alert('Erreur', "Échec de l'ajout du document.");
     } finally {
       setDocsLoading(false);
+      e.target.value = '';
     }
   };
 
   const removeDocument = (docId: string) => {
-    Alert.alert('Supprimer le document ?', 'Cette action est irréversible.', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Supprimer',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteDocument(docId);
-          loadDocuments();
-        },
-      },
-    ]);
+    requestDeleteDocument(docId);
   };
 
   // ── Helpers ────────────────────────────────────────────
@@ -744,9 +996,6 @@ export default function FicheInscriptionScreen() {
   // ════════════════════════════════════════════════════════
   const renderDigitalForm = () => (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled"
-      // Verrouillage fort : après inscription, tout le formulaire devient
-      // non-interactif (champs, chips, photo, documents). Le bouton est géré séparément.
-      pointerEvents={locked ? 'none' : 'auto'}
     >
       {/* ── Photo + Identité ── */}
       <SectionCard title="👤 Identité du candidat">
@@ -761,8 +1010,8 @@ export default function FicheInscriptionScreen() {
           )}
           <Text style={digitalStyles.photoTap}>Touchez pour changer</Text>
         </TouchableOpacity>
-        <FormField label="Nom" value={formData.nom} onChangeText={(t) => updateForm('nom', t)} placeholder="Nom de famille" required />
-        <FormField label="Prénom(s)" value={formData.prenom} onChangeText={(t) => updateForm('prenom', t)} placeholder="Prénom(s)" required />
+        <LockedField fieldKey="nom" label="Nom" value={formData.nom} onChangeText={(t) => updateForm('nom', t)} placeholder="Nom de famille" unlocked={fieldUnlocked('nom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="prenom" label="Prénom(s)" value={formData.prenom} onChangeText={(t) => updateForm('prenom', t)} placeholder="Prénom(s)" unlocked={fieldUnlocked('prenom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <View style={digitalStyles.row}>
           <View style={{ flex: 1, marginRight: 8 }}>
             <FormField
@@ -773,56 +1022,77 @@ export default function FicheInscriptionScreen() {
               keyboardType="numeric"
               error={dateError}
               autoCapitalize="none"
+              disabled={isEditing && !fieldUnlocked('date_naissance')}
             />
+            {isEditing && !fieldUnlocked('date_naissance') && (
+              <TouchableOpacity onPress={() => toggleFieldLock('date_naissance')} style={digitalStyles.lockBtnSmall}>
+                <Icon name="lock" size={16} color={Colors.textTertiary} />
+                <Text style={digitalStyles.lockText}>Déverrouiller</Text>
+              </TouchableOpacity>
+            )}
+            {isEditing && fieldUnlocked('date_naissance') && (
+              <TouchableOpacity onPress={async () => { await patchEmployeField(employeId, 'date_naissance', formData.date_naissance); toggleFieldLock('date_naissance'); }} style={digitalStyles.lockBtnSmall}>
+                <Icon name="check-circle" size={16} color={Colors.success} />
+                <Text style={[digitalStyles.lockText, { color: Colors.success }]}>Valider</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <View style={{ flex: 1, marginLeft: 8 }}>
-            <FormField label="Lieu naissance" value={formData.lieu_naissance} onChangeText={(t) => updateForm('lieu_naissance', t)} placeholder="Ville" />
+        <LockedField fieldKey="lieu_naissance" label="Lieu naissance" value={formData.lieu_naissance} onChangeText={(t) => updateForm('lieu_naissance', t)} placeholder="Ville" unlocked={fieldUnlocked('lieu_naissance')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
           </View>
         </View>
         {dateError ? (
           <Text style={digitalStyles.dateError}>{dateError}</Text>
         ) : null}
-        <FormField label="Téléphone" value={formData.telephone} onChangeText={(t) => updateForm('telephone', t)} keyboardType="phone-pad" placeholder="+225 XX XX XX XX" />
-        <FormField label="Nationalité" value={formData.nationalite} onChangeText={(t) => updateForm('nationalite', t)} placeholder="Nationalité" />
-        <FormField label="Résidence" value={formData.lieu_residence} onChangeText={(t) => updateForm('lieu_residence', t)} placeholder="Quartier, ville" />
-        <FormField label="Religion" value={formData.religion} onChangeText={(t) => updateForm('religion', t)} placeholder="(optionnel)" />
-        <FormField label="Ethnie" value={formData.ethnie} onChangeText={(t) => updateForm('ethnie', t)} placeholder="(optionnel)" />
+        <LockedField fieldKey="telephone" label="Téléphone" value={formData.telephone} onChangeText={(t) => updateForm('telephone', t)} keyboardType="phone-pad" placeholder="+225 XX XX XX XX" unlocked={fieldUnlocked('telephone')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="nationalite" label="Nationalité" value={formData.nationalite} onChangeText={(t) => updateForm('nationalite', t)} placeholder="Nationalité" unlocked={fieldUnlocked('nationalite')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="lieu_residence" label="Résidence" value={formData.lieu_residence} onChangeText={(t) => updateForm('lieu_residence', t)} placeholder="Quartier, ville" unlocked={fieldUnlocked('lieu_residence')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="religion" label="Religion" value={formData.religion} onChangeText={(t) => updateForm('religion', t)} placeholder="(optionnel)" unlocked={fieldUnlocked('religion')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="ethnie" label="Ethnie" value={formData.ethnie} onChangeText={(t) => updateForm('ethnie', t)} placeholder="(optionnel)" unlocked={fieldUnlocked('ethnie')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         {/* Sexe */}
         <Text style={digitalStyles.fieldLabel}>Sexe</Text>
         <View style={digitalStyles.chipRow}>
           {[{ value: 'masculin', label: 'Masculin' }, { value: 'feminin', label: 'Féminin' }].map((s) => (
             <TouchableOpacity
               key={s.value}
-              onPress={() => updateForm('sexe', s.value)}
-              style={[digitalStyles.chip, formData.sexe === s.value && digitalStyles.chipActive]}
+              onPress={() => { if (fieldUnlocked('sexe')) updateForm('sexe', s.value); }}
+              style={[digitalStyles.chip, formData.sexe === s.value && digitalStyles.chipActive, !fieldUnlocked('sexe') && digitalStyles.chipLocked]}
               activeOpacity={0.7}
+              disabled={!fieldUnlocked('sexe')}
             >
               <Text style={[digitalStyles.chipText, formData.sexe === s.value && digitalStyles.chipTextActive]}>{s.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
+        {isEditing && (
+          <LockToggle fieldKey="sexe" unlocked={fieldUnlocked('sexe')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} employeId={employeId} currentValue={(formData as any)['sexe']} />
+        )}
+
+        {/* ── Situation matrimoniale ── */}
       </SectionCard>
 
-      {/* ── Situation matrimoniale ── */}
       <SectionCard title="💍 Situation matrimoniale">
         <View style={digitalStyles.chipRow}>
           {SITUATIONS_MATRIMONIALES.map((s) => (
-            <TouchableOpacity key={s.value} onPress={() => updateForm('situation_matrimoniale', s.value)} style={[digitalStyles.chip, formData.situation_matrimoniale === s.value && digitalStyles.chipActive]} activeOpacity={0.7}>
+            <TouchableOpacity key={s.value} onPress={() => { if (fieldUnlocked('situation_matrimoniale')) updateForm('situation_matrimoniale', s.value); }} style={[digitalStyles.chip, formData.situation_matrimoniale === s.value && digitalStyles.chipActive, !fieldUnlocked('situation_matrimoniale') && digitalStyles.chipLocked]} activeOpacity={0.7} disabled={!fieldUnlocked('situation_matrimoniale')}>
               <Text style={[digitalStyles.chipText, formData.situation_matrimoniale === s.value && digitalStyles.chipTextActive]}>{s.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
+        {isEditing && <LockToggle fieldKey="situation_matrimoniale" unlocked={fieldUnlocked('situation_matrimoniale')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} employeId={employeId} currentValue={(formData as any)['situation_matrimoniale']} />}
+
+        {/* ── Niveau d'études ── */}
       </SectionCard>
 
-      {/* ── Niveau d'études ── */}
       <SectionCard title="📚 Niveau d'études">
         <View style={digitalStyles.chipRow}>
           {NIVEAUX_ETUDE.map((niv) => (
-            <TouchableOpacity key={niv.value} onPress={() => updateForm('niveau_etude', niv.value)} style={[digitalStyles.chip, formData.niveau_etude === niv.value && digitalStyles.chipActive]} activeOpacity={0.7}>
+            <TouchableOpacity key={niv.value} onPress={() => { if (fieldUnlocked('niveau_etude')) updateForm('niveau_etude', niv.value); }} style={[digitalStyles.chip, formData.niveau_etude === niv.value && digitalStyles.chipActive, !fieldUnlocked('niveau_etude') && digitalStyles.chipLocked]} activeOpacity={0.7} disabled={!fieldUnlocked('niveau_etude')}>
               <Text style={[digitalStyles.chipText, formData.niveau_etude === niv.value && digitalStyles.chipTextActive]}>{niv.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
+        {isEditing && <LockToggle fieldKey="niveau_etude" unlocked={fieldUnlocked('niveau_etude')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} employeId={employeId} currentValue={(formData as any)['niveau_etude']} />}
       </SectionCard>
 
       {/* ── Parents ── */}
@@ -857,12 +1127,18 @@ export default function FicheInscriptionScreen() {
 
       {/* ── Expérience ── */}
       <SectionCard title="💼 Expérience professionnelle">
-        <TouchableOpacity onPress={() => updateForm('a_deja_travaille', !formData.a_deja_travaille)} style={digitalStyles.checkRow} activeOpacity={0.7}>
-          <View style={[digitalStyles.checkbox, formData.a_deja_travaille && digitalStyles.checkboxChecked]}>
+        <TouchableOpacity
+          onPress={() => { if (fieldUnlocked('a_deja_travaille')) updateForm('a_deja_travaille', !formData.a_deja_travaille); }}
+          style={digitalStyles.checkRow}
+          activeOpacity={0.7}
+          disabled={!fieldUnlocked('a_deja_travaille')}
+        >
+          <View style={[digitalStyles.checkbox, formData.a_deja_travaille && digitalStyles.checkboxChecked, !fieldUnlocked('a_deja_travaille') && digitalStyles.checkboxLocked]}>
             {formData.a_deja_travaille && <Icon name="check" size={12} color="#FFF" />}
           </View>
           <Text style={digitalStyles.checkLabel}>A déjà travaillé</Text>
         </TouchableOpacity>
+        {isEditing && <LockToggle fieldKey="a_deja_travaille" unlocked={fieldUnlocked('a_deja_travaille')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} employeId={employeId} currentValue={(formData as any)['a_deja_travaille']} />}
         {experiences.map((exp, idx) => (
           <View key={idx} style={digitalStyles.expRow}>
             <Text style={digitalStyles.expTitle}>Exp. {idx + 1}</Text>
@@ -881,35 +1157,21 @@ export default function FicheInscriptionScreen() {
           <Icon name="plus-circle" size={16} color={Colors.primary} />
           <Text style={digitalStyles.addBtnText}>Ajouter une expérience</Text>
         </TouchableOpacity>
-        <FormField label="Détails de l'expérience" value={formData.experience_details} onChangeText={(t) => updateForm('experience_details', t)} multiline numberOfLines={3} placeholder="Décrivez brièvement..." />
+        <LockedField fieldKey="experience_details" label="Détails de l'expérience" value={formData.experience_details} onChangeText={(t) => updateForm('experience_details', t)} numberOfLines={3} placeholder="Décrivez brièvement..." unlocked={fieldUnlocked('experience_details')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <View style={digitalStyles.row}>
           <View style={{ flex: 1, marginRight: 8 }}>
-            <FormField label="Stages effectués" value={formData.stages_effectues} onChangeText={(t) => updateForm('stages_effectues', t)} multiline numberOfLines={2} placeholder="Stages" />
+        <LockedField fieldKey="stages_effectues" label="Stages effectués" value={formData.stages_effectues} onChangeText={(t) => updateForm('stages_effectues', t)} numberOfLines={2} placeholder="Stages" unlocked={fieldUnlocked('stages_effectues')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
           </View>
           <View style={{ flex: 1, marginLeft: 8 }}>
-            <FormField label="Formations" value={formData.formations} onChangeText={(t) => updateForm('formations', t)} multiline numberOfLines={2} placeholder="Formations" />
+        <LockedField fieldKey="formations" label="Formations" value={formData.formations} onChangeText={(t) => updateForm('formations', t)} numberOfLines={2} placeholder="Formations" unlocked={fieldUnlocked('formations')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
           </View>
         </View>
       </SectionCard>
 
       {/* ── Santé ── */}
       <SectionCard title="🩺 Santé (pour la fiche papier)">
-        <FormField
-          label="Allergie ou problèmes de santé"
-          value={formData.allergie_sante}
-          onChangeText={(t) => updateForm('allergie_sante', t)}
-          multiline
-          numberOfLines={2}
-          placeholder="Précisez ou laissez vide si aucun"
-        />
-        <FormField
-          label="Intervention(s) chirurgicale(s) déjà subie(s)"
-          value={formData.intervention_chirurgicale}
-          onChangeText={(t) => updateForm('intervention_chirurgicale', t)}
-          multiline
-          numberOfLines={2}
-          placeholder="Précisez ou laissez vide si aucune"
-        />
+        <LockedField fieldKey="allergie_sante" label="Allergie ou problèmes de santé" value={formData.allergie_sante} onChangeText={(t) => updateForm('allergie_sante', t)} numberOfLines={2} placeholder="Précisez ou laissez vide si aucun" unlocked={fieldUnlocked('allergie_sante')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="intervention_chirurgicale" label="Intervention(s) chirurgicale(s) déjà subie(s)" value={formData.intervention_chirurgicale} onChangeText={(t) => updateForm('intervention_chirurgicale', t)} numberOfLines={2} placeholder="Précisez ou laissez vide si aucune" unlocked={fieldUnlocked('intervention_chirurgicale')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
       </SectionCard>
 
       {/* ── Emploi recherché ── */}
@@ -917,12 +1179,13 @@ export default function FicheInscriptionScreen() {
         <Text style={digitalStyles.fieldLabel}>Catégorie d'emploi</Text>
         <View style={digitalStyles.chipRow}>
           {CATEGORIES_EMPLOI.map((cat) => (
-            <TouchableOpacity key={cat.value} onPress={() => updateForm('categorie_emploi', cat.value)} style={[digitalStyles.chip, formData.categorie_emploi === cat.value && digitalStyles.chipActive]} activeOpacity={0.7}>
+            <TouchableOpacity key={cat.value} onPress={() => { if (fieldUnlocked('categorie_emploi')) updateForm('categorie_emploi', cat.value); }} style={[digitalStyles.chip, formData.categorie_emploi === cat.value && digitalStyles.chipActive, !fieldUnlocked('categorie_emploi') && digitalStyles.chipLocked]} activeOpacity={0.7} disabled={!fieldUnlocked('categorie_emploi')}>
               <Text style={[digitalStyles.chipText, formData.categorie_emploi === cat.value && digitalStyles.chipTextActive]}>{cat.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        <FormField label="Motivation" value={formData.motivation} onChangeText={(t) => updateForm('motivation', t)} multiline numberOfLines={3} placeholder="Pourquoi souhaitez-vous travailler via notre agence ?" />
+        {isEditing && <LockToggle fieldKey="categorie_emploi" unlocked={fieldUnlocked('categorie_emploi')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} employeId={employeId} currentValue={(formData as any)['categorie_emploi']} />}
+        <LockedField fieldKey="motivation" label="Motivation" value={formData.motivation} onChangeText={(t) => updateForm('motivation', t)} numberOfLines={3} placeholder="Pourquoi souhaitez-vous travailler via notre agence ?" unlocked={fieldUnlocked('motivation')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
       </SectionCard>
 
       {/* ── Documents associés ── */}
@@ -941,10 +1204,49 @@ export default function FicheInscriptionScreen() {
           ) : (
             <View style={digitalStyles.docList}>
               {documents.map((d) => (
-                <View key={d.id} style={digitalStyles.docItem}>
-                  <Text style={digitalStyles.docIcon}>{getDocumentTypeIcon(d.type)}</Text>
-                  <Text style={digitalStyles.docLabel} numberOfLines={1}>{getDocumentTypeLabel(d.type)}</Text>
-                  <TouchableOpacity onPress={() => removeDocument(d.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <View key={d.id} style={digitalStyles.docItemRow}>
+                  <TouchableOpacity
+                    style={digitalStyles.docItemMain}
+                    onPress={() => openDocumentViewer(d)}
+                    activeOpacity={0.7}
+                    disabled={!d.imageUrl}
+                  >
+                    <Text style={digitalStyles.docIcon}>{getDocumentTypeIcon(d.type)}</Text>
+                    <Text style={digitalStyles.docLabel} numberOfLines={1}>{getDocumentTypeLabel(d.type)}</Text>
+                    {d.imageUrl ? <Icon name="eye-outline" size={14} color={Colors.textTertiary} style={{ marginLeft: 4 }} /> : null}
+                  </TouchableOpacity>
+                  {d.imageUrl ? (
+                    <TouchableOpacity onPress={async () => {
+                      const dl = d.imageUrl;
+                      // Téléchargement direct sans ouvrir le viewer d'abord — share sheet
+                      try {
+                        const name = d.nomFichier || d.file || `document_${d.id}`;
+                        let localUri = dl;
+                        if (/^https?:\/\//i.test(dl)) {
+                          const safe = String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+                          const FileSystem2 = await import('expo-file-system');
+                          const Sharing2 = await import('expo-sharing');
+                          const tmp = (FileSystem2 as any).cacheDirectory + safe;
+                          const res = await (FileSystem2 as any).downloadAsync(dl, tmp);
+                          localUri = res.uri;
+                          const can = await (Sharing2 as any).isAvailableAsync();
+                          if (can) await (Sharing2 as any).shareAsync(localUri, { dialogTitle: getDocumentTypeLabel(d.type) });
+                          else Alert.alert('Document', localUri);
+                          return;
+                        }
+                        const Sharing2 = await import('expo-sharing');
+                        const can = await (Sharing2 as any).isAvailableAsync();
+                        if (can) await (Sharing2 as any).shareAsync(localUri, { dialogTitle: getDocumentTypeLabel(d.type) });
+                      } catch (e: any) { Alert.alert('Téléchargement', e?.message || 'Impossible.'); }
+                    }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={digitalStyles.docDownload}>
+                      <Icon name="download-outline" size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                  ) : null}
+                  <TouchableOpacity
+                    onPress={() => removeDocument(d.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={digitalStyles.docRemove}
+                  >
                     <Icon name="close" size={16} color="#b85454" />
                   </TouchableOpacity>
                 </View>
@@ -1448,22 +1750,64 @@ export default function FicheInscriptionScreen() {
     const hasScan = scanData?.imageUrl;
 
     return (
-      <View style={{ flex: 1, padding: 20, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, padding: 0 }}>
         {scanLoading ? (
-          <Text style={docStyles.scanLoadingText}>Chargement...</Text>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={docStyles.scanLoadingText}>Chargement...</Text>
+          </View>
         ) : hasScan ? (
-          <View style={docStyles.scanPreview}>
-            <Image
-              source={{ uri: scanData.imageUrl }}
-              style={docStyles.scanImage}
-              resizeMode="contain"
-            />
+          <View style={docStyles.scanPreviewFull}>
+            <TouchableOpacity onPress={() => docViewer.open({ uri: scanData.imageUrl, label: 'Scan signé', fileName: scanData.image || null })} activeOpacity={0.88} style={docStyles.scanImageWrap}>
+              <Image
+                source={{ uri: scanData.imageUrl }}
+                style={docStyles.scanImageFull}
+                resizeMode="contain"
+              />
+              <View style={docStyles.scanTapHint}>
+                <Icon name="magnify-plus-outline" size={14} color="#FFF" />
+                <Text style={docStyles.scanTapHintText}>Plein écran</Text>
+              </View>
+            </TouchableOpacity>
             <Text style={docStyles.scanDate}>
               Scanné le {new Date(scanData.created).toLocaleDateString('fr-FR')}
             </Text>
+            <View style={docStyles.scanActions}>
+              <TouchableOpacity style={docStyles.scanBtnSecondary} onPress={handleScanDocument}>
+                <Icon name="camera-retake-outline" size={16} color={Colors.primary} />
+                <Text style={docStyles.scanBtnSecondaryText}>Remplacer</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={docStyles.scanBtnSecondary}
+                onPress={async () => {
+                  try {
+                    const dl = scanData.imageUrl;
+                    const name = scanData.image || `scan_${scanData.document_type || 'doc'}.jpg`;
+                    let localUri = dl;
+                    if (/^https?:\/\//i.test(dl)) {
+                      const FileSystem2 = await import('expo-file-system');
+                      const Sharing2 = await import('expo-sharing');
+                      const safe = String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+                      const tmp = (FileSystem2 as any).cacheDirectory + safe;
+                      const res = await (FileSystem2 as any).downloadAsync(dl, tmp);
+                      localUri = res.uri;
+                      const can = await (Sharing2 as any).isAvailableAsync();
+                      if (can) await (Sharing2 as any).shareAsync(localUri, { dialogTitle: 'Scan signé' });
+                      else Alert.alert('Scan', localUri);
+                      return;
+                    }
+                    const Sharing2 = await import('expo-sharing');
+                    const can = await (Sharing2 as any).isAvailableAsync();
+                    if (can) await (Sharing2 as any).shareAsync(localUri, { dialogTitle: 'Scan signé' });
+                  } catch (e: any) { Alert.alert('Scan', e?.message || 'Téléchargement impossible.'); }
+                }}
+              >
+                <Icon name="download-outline" size={16} color={Colors.primary} />
+                <Text style={docStyles.scanBtnSecondaryText}>Télécharger</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
-          <View style={docStyles.scanEmpty}>
+          <View style={docStyles.scanEmptyFull}>
             <Icon name="file-document-outline" size={48} color="#CCC" />
             <Text style={docStyles.scanEmptyText}>Aucun scan pour ce document</Text>
             {Platform.OS === 'web' ? (
@@ -1632,7 +1976,7 @@ export default function FicheInscriptionScreen() {
             <Text style={docStyles.sourceTitle}>
               {docTypePending ? getDocumentTypeIcon(docTypePending) + ' ' + getDocumentTypeLabel(docTypePending) : 'Document'}
             </Text>
-            <Text style={docStyles.sourceSubtitle}>Galerie ou appareil photo</Text>
+            <Text style={docStyles.sourceSubtitle}>Photo, PDF ou document Word</Text>
             <TouchableOpacity
               style={docStyles.sourceItem}
               onPress={async () => {
@@ -1652,7 +1996,7 @@ export default function FicheInscriptionScreen() {
               }}
             >
               <Icon name="image-multiple-outline" size={22} color={Colors.primary} />
-              <Text style={docStyles.sourceLabel}>Choisir dans la galerie</Text>
+              <Text style={docStyles.sourceLabel}>Photo / Image</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={docStyles.sourceItem}
@@ -1676,6 +2020,26 @@ export default function FicheInscriptionScreen() {
               <Text style={docStyles.sourceLabel}>Prendre une photo</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              style={docStyles.sourceItem}
+              onPress={async () => {
+                setShowDocSourcePicker(false);
+                try {
+                  const doc = await DocumentPicker.getDocumentAsync({
+                    type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                    copyToCacheDirectory: true,
+                  });
+                  if (!doc.canceled && doc.assets && doc.assets[0]) {
+                    uploadPendingDocument(doc.assets[0].uri, doc.assets[0].name, doc.assets[0].mimeType);
+                  }
+                } catch (e: any) {
+                  Alert.alert('Erreur', e?.message || "Impossible d'ouvrir le document.");
+                }
+              }}
+            >
+              <Icon name="file-document-outline" size={22} color={Colors.primary} />
+              <Text style={docStyles.sourceLabel}>PDF / Word (document numérique)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[docStyles.sourceItem, docStyles.sourceCancel]}
               onPress={() => {
                 setShowDocSourcePicker(false);
@@ -1692,11 +2056,47 @@ export default function FicheInscriptionScreen() {
       {Platform.OS === 'web' && showDocSourcePicker ? (
         <input
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,application/pdf,.doc,.docx"
           style={{ display: 'none' }}
           onChange={handleDocWeb}
         />
       ) : null}
+
+      <DocumentViewerOverlay viewerDoc={docViewer.doc} onClose={docViewer.close} onDownload={docViewer.download} downloading={docViewer.downloading} />
+
+      {/* ── Modale : code PIN suppression document (B) ── */}
+      <Modal
+        visible={pinVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPinVisible(false)}
+      >
+        <View style={docStyles.modalBackdrop}>
+          <View style={docStyles.pinSheet}>
+            <Icon name="lock-outline" size={28} color={Colors.primary} />
+            <Text style={docStyles.pinTitle}>Code PIN requis</Text>
+            <Text style={docStyles.pinSubtitle}>Confirmez la suppression du document</Text>
+            <TextInput
+              style={docStyles.pinInput}
+              value={pinValue}
+              onChangeText={setPinValue}
+              keyboardType="numeric"
+              secureTextEntry
+              maxLength={8}
+              placeholder="••••"
+              autoFocus
+            />
+            <View style={docStyles.pinActions}>
+              <TouchableOpacity style={docStyles.pinCancel} onPress={() => setPinVisible(false)}>
+                <Text style={docStyles.pinCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={docStyles.pinConfirm} onPress={confirmDeleteDocument}>
+                <Text style={docStyles.pinConfirmText}>Supprimer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -2008,6 +2408,14 @@ const docStyles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
+  scanPreviewFull: {
+    flex: 1,
+    width: '100%',
+    padding: 10,
+    alignItems: 'center',
+  },
+  scanImageWrap: { width: '100%', flex: 1, minHeight: 380, borderRadius: Radius.md, overflow: 'hidden' as const, backgroundColor: '#F5F0EB' },
+  scanImageFull: { width: '100%', height: '100%' },
   scanImage: {
     width: '100%',
     height: '80%',
@@ -2021,6 +2429,13 @@ const docStyles = StyleSheet.create({
   scanEmpty: {
     alignItems: 'center',
     gap: 12,
+  },
+  scanEmptyFull: {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 12,
+    padding: 20,
   },
   scanEmptyText: {
     fontSize: 14,
@@ -2050,6 +2465,11 @@ const docStyles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
   },
+  scanTapHint: { position: 'absolute' as const, bottom: 8, right: 8, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, backgroundColor: 'rgba(0,0,0,0.62)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  scanTapHintText: { color: '#FFF', fontSize: 11, fontWeight: '600' as const },
+  scanActions: { flexDirection: 'row' as const, gap: 10, marginTop: 12 },
+  scanBtnSecondary: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: Colors.primary, backgroundColor: '#FFF' },
+  scanBtnSecondaryText: { fontSize: 13, fontWeight: '600' as const, color: Colors.primary },
   // Champs éditables
   editableField: {
     fontSize: 12,
@@ -2162,6 +2582,101 @@ const docStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // ── Visualiseur plein écran ──
+  viewerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewerHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 16,
+    zIndex: 10,
+  },
+  viewerTitle: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 12,
+  },
+  viewerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // ── Modale PIN suppression ──
+  pinSheet: {
+    width: '85%',
+    maxWidth: 360,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  pinTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginTop: 12,
+  },
+  pinSubtitle: {
+    fontSize: 13,
+    color: Colors.textTertiary,
+    marginTop: 4,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  pinInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 22,
+    textAlign: 'center',
+    letterSpacing: 6,
+    backgroundColor: Colors.surface,
+  },
+  pinActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    width: '100%',
+  },
+  pinCancel: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#F2F2F2',
+    alignItems: 'center',
+  },
+  pinCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
+  },
+  pinConfirm: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.danger,
+    alignItems: 'center',
+  },
+  pinConfirmText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
+  },
   docTypeItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2238,8 +2753,61 @@ const digitalStyles = StyleSheet.create({
   docEmpty: { fontSize: 13, color: '#999', fontStyle: 'italic' as const, marginTop: 8 },
   docList: { marginTop: 8, gap: 6 },
   docItem: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, paddingVertical: 6 },
+  docItemRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.borderLight },
+  docItemMain: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
   docIcon: { fontSize: 18 },
   docLabel: { flex: 1, fontSize: 13, color: Colors.textPrimary },
+  docDownload: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: Colors.primary + '30', alignItems: 'center' as const, justifyContent: 'center' as const },
+  docRemove: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FDECEC',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  lockedRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    gap: 6,
+    flex: 1,
+  },
+  lockedRowLocked: {
+    opacity: 0.7,
+  },
+  lockBtn: {
+    marginTop: 28,
+    padding: 4,
+  },
+  lockBtnSmall: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  lockText: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+  },
+  chipLocked: {
+    opacity: 0.55,
+  },
+  checkboxLocked: {
+    opacity: 0.55,
+  },
+  lockToggleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  lockToggleText: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    fontWeight: '600' as const,
+  },
   histRow: { flexDirection: 'row' as const, gap: 8, marginBottom: 8 },
   histContent: { flex: 1 },
   histText: { fontSize: 13, color: Colors.textPrimary },

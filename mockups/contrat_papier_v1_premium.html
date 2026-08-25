@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contrat — CHRISROI AGENCE — v1 premium</title>
+<style>
+@page { size: A4; margin: 10mm; }
+* { box-sizing: border-box; }
+body { margin:0; background:#eef1f5; color:#10151c; font-family: Arial, Helvetica, sans-serif; line-height:1.38; font-size:13px; }
+.sheet { width: min(210mm, calc(100% - 32px)); margin:24px auto; background:#fff; border:1px solid #cfd6e2; box-shadow:0 10px 30px rgba(15,23,42,.12); }
+
+/* Header dark navy — même ADN que fiche papier */
+.header { background:#0c1f3f; color:#fff; padding:14px 20px 14px; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.brand { display:flex; align-items:center; gap:12px; }
+.logo { width:44px; height:44px; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:15px; color:#0c1f3f; letter-spacing:.5px; flex-shrink:0; }
+.brand h1 { margin:0; font-size:17px; line-height:1; text-transform:uppercase; letter-spacing:.04em; }
+.brand small { display:block; font-size:10px; opacity:.85; font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-top:2px; }
+.ref { text-align:right; }
+.ref-num { display:inline-block; background:#fff; color:#0c1f3f; font-weight:800; font-size:11px; padding:6px 10px; border-radius:999px; letter-spacing:.02em; }
+.ref-date { margin-top:6px; font-size:11px; opacity:.9; }
+.titlebar { padding:14px 20px 0; text-align:center; }
+.titlebar h2 { margin:0; font-size:20px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:#0c1f3f; }
+.titlebar p { margin:4px 0 0; font-size:11px; color:#5c6675; letter-spacing:.04em; text-transform:uppercase; }
+.badges { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+.pill { display:inline-flex; align-items:center; gap:6px; border:1px solid #c8d0dc; background:#f8fafc; border-radius:999px; padding:6px 10px; font-size:11px; font-weight:700; color:#0c1f3f; }
+.pill.dark { background:#0c1f3f; color:#fff; border-color:#0c1f3f; }
+.pill.green { background:#eafff3; border-color:#b7e8c9; color:#0a6b2f; }
+.dot { width:7px; height:7px; border-radius:50%; background:#0a6b2f; }
+
+.layout { padding:14px 20px 18px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.card { border:1px solid #c8d0dc; border-radius:8px; overflow:hidden; background:#fff; break-inside:avoid; }
+.card-head { background:#0c1f3f; color:#fff; padding:7px 10px; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; }
+.card-head span { opacity:.9; font-weight:600; text-transform:none; letter-spacing:0; font-size:10px; }
+.card-body { padding:10px 12px; }
+.kv { width:100%; border-collapse:collapse; font-size:12.5px; }
+.kv td { padding:6px 0; border-bottom:1px solid #eef1f5; vertical-align:top; }
+.kv td.k { color:#5c6675; width:42%; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.02em; }
+.kv td.v { color:#0f172a; font-weight:700; text-align:right; }
+.kv tr:last-child td { border-bottom:none; }
+.money { color:#0a6b2f !important; }
+
+.finance { margin-top:14px; border:1px solid #b7e8c9; background: linear-gradient(180deg,#f4fff7 0%,#eafff3 100%); border-radius:8px; overflow:hidden; }
+.finance-head { padding:8px 12px; background:#0a6b2f; color:#fff; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.finance-body { padding:10px 12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.amount-box { text-align:center; border:1px solid #dbeafe; background:#fff; border-radius:8px; padding:10px 6px; }
+.amount-box strong { display:block; font-size:16px; color:#0c1f3f; }
+.amount-box span { font-size:10px; color:#5c6675; text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
+.amount-box.emph { border-color:#0a6b2f; background:#0a6b2f; }
+.amount-box.emph strong, .amount-box.emph span { color:#fff; }
+
+.clauses { margin-top:14px; }
+.clauses h3 { margin:0 0 8px; background:#0c1f3f; color:#fff; padding:7px 10px; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; border-radius:6px; }
+.clause { border:1px solid #c8d0dc; background:#f8fafc; padding:9px 10px; font-size:12px; line-height:1.5; color:#1e293b; margin-bottom:8px; border-radius:6px; }
+.clause strong { color:#0c1f3f; }
+
+.timeline { display:flex; gap:10px; margin-top:10px; }
+.step { flex:1; text-align:center; border:1px dashed #c8d0dc; border-radius:8px; padding:10px 6px; background:#fff; }
+.step b { display:block; font-size:11px; color:#0c1f3f; }
+.step span { font-size:10px; color:#5c6675; }
+
+.signatures { margin-top:14px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.sig { border:1px solid #98a2b3; border-radius:8px; min-height:118px; padding:10px; display:flex; flex-direction:column; justify-content:space-between; background:#fff; }
+.sig p { margin:0; font-size:10px; color:#5c6675; text-transform:uppercase; letter-spacing:.03em; font-weight:700; }
+.sig small { color:#0c1f3f; font-weight:800; font-size:11px; }
+.sig-line { border-top:1px solid #98a2b3; margin-top:32px; padding-top:6px; font-size:10px; color:#5c6675; text-align:center; }
+
+.footer { padding:10px 20px 16px; font-size:10px; color:#5c6675; text-align:center; border-top:1px solid #eef1f5; }
+
+@media print {
+  body { background:#fff; }
+  .sheet { width:100%; margin:0; border:none; box-shadow:none; }
+}
+@media (max-width:720px){
+  .grid2, .finance-body, .signatures { grid-template-columns:1fr; }
+  .header { flex-direction:column; align-items:flex-start; }
+  .ref { text-align:left; }
+}
+</style>
+</head>
+<body>
+<main class="sheet" aria-label="Contrat CHRISROI AGENCE">
+  <header class="header">
+    <div class="brand">
+      <div class="logo">CR</div>
+      <div>
+        <h1>ChrisRoi Agence</h1>
+        <small>Agence de placement — Abidjan</small>
+      </div>
+    </div>
+    <div class="ref">
+      <div class="ref-num">CONTRAT-2026-0142</div>
+      <div class="ref-date">Émis le 20 août 2026</div>
+    </div>
+  </header>
+
+  <div class="titlebar">
+    <h2>Contrat de placement</h2>
+    <p>Personnel domestique — mise à disposition chez l'employeur</p>
+    <div class="badges">
+      <span class="pill dark">Nounou · Aide ménagère</span>
+      <span class="pill"><span class="dot"></span> Hébergé sur place</span>
+      <span class="pill green">Actif</span>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- 2 colonnes : Employé / Employeur -->
+    <div class="grid2">
+      <section class="card">
+        <div class="card-head">Employé(e) <span>fiche #EMP-8841</span></div>
+        <div class="card-body">
+          <table class="kv">
+            <tr><td class="k">Nom complet</td><td class="v">KOUASSI Marie Claire</td></tr>
+            <tr><td class="k">Née le</td><td class="v">12 avril 1998 à Abidjan</td></tr>
+            <tr><td class="k">Téléphone</td><td class="v">07 09 12 34 56</td></tr>
+            <tr><td class="k">Domicile</td><td class="v">Yopougon — Niangon</td></tr>
+            <tr><td class="k">Pièce</td><td class="v">CNI · CI-4021-9981</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">Employeur <span>fiche #ER-312</span></div>
+        <div class="card-body">
+          <table class="kv">
+            <tr><td class="k">Nom complet</td><td class="v">DIALLO Ibrahim</td></tr>
+            <tr><td class="k">Téléphone</td><td class="v">05 44 88 22 11</td></tr>
+            <tr><td class="k">Adresse</td><td class="v">Cocody — Riviera Palmeraie, lot 42</td></tr>
+            <tr><td class="k">Type</td><td class="v">Particulier</td></tr>
+            <tr><td class="k">Besoin</td><td class="v">Garde d'enfant + ménage</td></tr>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Détails mission -->
+    <section class="card" style="margin-top:14px">
+      <div class="card-head">Mission <span>du 01 sept. 2026 au 31 août 2027</span></div>
+      <div class="card-body">
+        <table class="kv">
+          <tr><td class="k">Poste</td><td class="v">Nounou / Aide ménagère</td></tr>
+          <tr><td class="k">Type de contrat</td><td class="v">Hébergé — logement fourni</td></tr>
+          <tr><td class="k">Lieu de travail</td><td class="v">Domicile de l'employeur (Cocody)</td></tr>
+          <tr><td class="k">Horaires</td><td class="v">Lun–Sam · 07:00–18:00 · Repos dimanche</td></tr>
+          <tr><td class="k">Date de début</td><td class="v">01 septembre 2026</td></tr>
+          <tr><td class="k">Date de fin</td><td class="v">31 août 2027 (renouvelable)</td></tr>
+        </table>
+        <div class="timeline">
+          <div class="step"><b>Signature</b><span>20 août 2026</span></div>
+          <div class="step"><b>Prise de poste</b><span>01 sept. 2026</span></div>
+          <div class="step"><b>Fin prévue</b><span>31 août 2027</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Finance -->
+    <section class="finance">
+      <div class="finance-head">Rémunération & frais</div>
+      <div class="finance-body">
+        <div class="amount-box emph"><span>Salaire mensuel</span><strong>80 000 FCFA</strong></div>
+        <div class="amount-box"><span>Commission agence</span><strong>26 667 FCFA</strong><span style="text-transform:none; letter-spacing:0; font-weight:600; margin-top:4px; display:block;">1/3 du 1er mois</span></div>
+        <div class="amount-box"><span>Frais de dossier</span><strong>5 000 FCFA</strong><span style="text-transform:none; letter-spacing:0; font-weight:600; margin-top:4px; display:block;">à la signature</span></div>
+      </div>
+      <div style="padding:0 12px 10px; font-size:11px; color:#334155;">Salaire net payable par l'employeur chaque fin de mois. Commission et frais dus à l'agence selon clauses ci-dessous.</div>
+    </section>
+
+    <!-- Clauses CHRISROI -->
+    <section class="clauses">
+      <h3>Clauses générales — ChrisRoi Agence</h3>
+      <div class="clause"><strong>Art. 1 — Objet.</strong> L'agence met à disposition de l'employeur l'employé(e) ci-dessus pour les tâches convenues. L'employé(e) reste placé(e) sous l'autorité de l'employeur au quotidien.</div>
+      <div class="clause"><strong>Art. 2 — Hébergement.</strong> Contrat hébergé : l'employeur fournit un logement décent, couchage et repas. Hygiène et intimité garanties.</div>
+      <div class="clause"><strong>Art. 3 — Rémunération.</strong> Le salaire indiqué est versé intégralement à l'employé(e). La <strong>commission d'agence (1/3 du premier salaire)</strong> et les <strong>frais de dossier (5 000 FCFA)</strong> sont dus à la signature et non remboursables après prise de poste.</div>
+      <div class="clause"><strong>Art. 4 — Remplacement.</strong> En cas d'incompatibilité avérée dans les 30 premiers jours, l'agence propose un remplacement (1 fois) sans nouvelle commission, frais de dossier restant dus.</div>
+      <div class="clause"><strong>Art. 5 — Obligations.</strong> Employeur : cadre de travail respectueux, repos hebdomadaire, paiement à date. Employé(e) : assiduité, discrétion, respect du domicile.</div>
+      <div class="clause"><strong>Art. 6 — Litiges.</strong> Règlement amiable via l'agence. À défaut, juridiction compétente d'Abidjan.</div>
+    </section>
+
+    <!-- Signatures -->
+    <section class="signatures">
+      <div class="sig">
+        <div>
+          <p>L'employé(e)</p>
+          <small>KOUASSI Marie Claire</small>
+        </div>
+        <div class="sig-line">Signature précédée de « Lu et approuvé »</div>
+      </div>
+      <div class="sig">
+        <div>
+          <p>ChrisRoi Agence</p>
+          <small>Le Directeur</small>
+        </div>
+        <div class="sig-line">Cachet de l'agence</div>
+      </div>
+      <div class="sig">
+        <div>
+          <p>L'employeur</p>
+          <small>DIALLO Ibrahim</small>
+        </div>
+        <div class="sig-line">Signature précédée de « Lu et approuvé »</div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    ChrisRoi Agence — Abidjan, Côte d'Ivoire · Tél. 07 XX XX XX XX · CONTRAT-2026-0142 · Document généré le 20/08/2026 · 1 page
+  </footer>
+</main>
+</body>
+</html>

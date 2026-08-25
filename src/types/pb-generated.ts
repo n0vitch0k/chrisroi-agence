@@ -18,6 +18,7 @@ export const Collections = {
 	Employes: "employes",
 	Employeurs: "employeurs",
 	ExperiencesPro: "experiences_pro",
+	JournalActions: "journal_actions",
 	Parents: "parents",
 	PersonnesUrgence: "personnes_urgence",
 	Scans: "scans",
@@ -121,7 +122,16 @@ export const ContratsTypeContratOptions = {
 	"temps_partiel": "temps_partiel",
 } as const
 export type ContratsTypeContratOptions = typeof ContratsTypeContratOptions[keyof typeof ContratsTypeContratOptions]
+
+export const ContratsEmployeSexeOptions = {
+	"Masculin": "Masculin",
+	"Féminin": "Féminin",
+} as const
+export type ContratsEmployeSexeOptions = typeof ContratsEmployeSexeOptions[keyof typeof ContratsEmployeSexeOptions]
 export type ContratsRecord = {
+	client_domicile?: string
+	client_piece_date?: IsoDateString
+	client_piece_numero?: string
 	commission_agence?: number
 	commission_fixe?: number
 	commission_payee?: boolean
@@ -129,10 +139,15 @@ export type ContratsRecord = {
 	date_contrat?: IsoDateString
 	date_debut?: IsoDateString
 	date_fin?: IsoDateString
+	date_signature?: IsoDateString
 	demande_id?: string
 	domicile_employe?: string
 	duree?: string
+	employe_adresse_actuelle?: string
+	employe_age?: number
 	employe_id?: RecordIdString
+	employe_piece_reference?: string
+	employe_sexe?: ContratsEmployeSexeOptions
 	employeur_id?: RecordIdString
 	frais_dossier?: number
 	frais_payes?: boolean
@@ -141,6 +156,7 @@ export type ContratsRecord = {
 	notes?: string
 	numero_dossier?: string
 	poste?: string
+	retenue_salaire_montant?: number
 	salaire?: number
 	signature_agence?: string
 	signature_employe?: string
@@ -172,12 +188,17 @@ export const DocumentsTypeOptions = {
 	"permis_conduire": "permis_conduire",
 	"passeport": "passeport",
 	"cv": "cv",
+	"registre_commerce": "registre_commerce",
+	"licence_commerciale": "licence_commerciale",
+	"autre": "autre",
 } as const
 export type DocumentsTypeOptions = typeof DocumentsTypeOptions[keyof typeof DocumentsTypeOptions]
 export type DocumentsRecord = {
-	employe_id: RecordIdString
+	contrat_id?: RecordIdString
+	employe_id?: RecordIdString
+	employeur_id?: RecordIdString
+	file?: FileNameString
 	id: string
-	image: FileNameString
 	type: DocumentsTypeOptions
 }
 
@@ -189,6 +210,12 @@ export const EmployesSituationMatrimonialeOptions = {
 	"veuf": "veuf",
 } as const
 export type EmployesSituationMatrimonialeOptions = typeof EmployesSituationMatrimonialeOptions[keyof typeof EmployesSituationMatrimonialeOptions]
+
+export const EmployesSexeOptions = {
+	"Masculin": "Masculin",
+	"Féminin": "Féminin",
+} as const
+export type EmployesSexeOptions = typeof EmployesSexeOptions[keyof typeof EmployesSexeOptions]
 export type EmployesRecord = {
 	a_deja_travaille?: boolean
 	categorie_emploi?: string
@@ -207,8 +234,10 @@ export type EmployesRecord = {
 	nom: string
 	photo?: FileNameString
 	photo_uri?: string
+	piece_reference?: string
 	prenom: string
 	religion?: string
+	sexe?: EmployesSexeOptions
 	situation_matrimoniale?: EmployesSituationMatrimonialeOptions
 	stages_effectues?: string
 	statut?: string
@@ -232,6 +261,8 @@ export type EmployeursRecord = {
 	nom_complet: string
 	nom_contact?: string
 	notes?: string
+	piece_date?: IsoDateString
+	piece_numero?: string
 	prenom_contact?: string
 	telephone?: string
 	type_besoin?: EmployeursTypeBesoinOptions
@@ -247,6 +278,19 @@ export type ExperiencesProRecord = {
 	lieu?: string
 	ordre?: number
 	updated: IsoAutoDateString
+}
+
+export type JournalActionsRecord = {
+	action_type: string
+	created: IsoAutoDateString
+	description: string
+	details?: string
+	entite_id?: string
+	entite_type: string
+	id: string
+	updated: IsoAutoDateString
+	user_display: string
+	user_id: string
 }
 
 export type ParentsRecord = {
@@ -273,7 +317,12 @@ export type PersonnesUrgenceRecord = {
 }
 
 export type ScansRecord = {
+	created: IsoAutoDateString
+	document_id?: string
+	document_type?: string
 	id: string
+	image?: FileNameString
+	updated: IsoAutoDateString
 }
 
 export type UsersRecord = {
@@ -302,6 +351,7 @@ export type DocumentsResponse<Texpand = unknown> = Required<DocumentsRecord> & B
 export type EmployesResponse<Texpand = unknown> = Required<EmployesRecord> & BaseSystemFields<Texpand>
 export type EmployeursResponse<Texpand = unknown> = Required<EmployeursRecord> & BaseSystemFields<Texpand>
 export type ExperiencesProResponse<Texpand = unknown> = Required<ExperiencesProRecord> & BaseSystemFields<Texpand>
+export type JournalActionsResponse<Texpand = unknown> = Required<JournalActionsRecord> & BaseSystemFields<Texpand>
 export type ParentsResponse<Texpand = unknown> = Required<ParentsRecord> & BaseSystemFields<Texpand>
 export type PersonnesUrgenceResponse<Texpand = unknown> = Required<PersonnesUrgenceRecord> & BaseSystemFields<Texpand>
 export type ScansResponse<Texpand = unknown> = Required<ScansRecord> & BaseSystemFields<Texpand>
@@ -322,6 +372,7 @@ export type CollectionRecords = {
 	employes: EmployesRecord
 	employeurs: EmployeursRecord
 	experiences_pro: ExperiencesProRecord
+	journal_actions: JournalActionsRecord
 	parents: ParentsRecord
 	personnes_urgence: PersonnesUrgenceRecord
 	scans: ScansRecord
@@ -341,6 +392,7 @@ export type CollectionResponses = {
 	employes: EmployesResponse
 	employeurs: EmployeursResponse
 	experiences_pro: ExperiencesProResponse
+	journal_actions: JournalActionsResponse
 	parents: ParentsResponse
 	personnes_urgence: PersonnesUrgenceResponse
 	scans: ScansResponse

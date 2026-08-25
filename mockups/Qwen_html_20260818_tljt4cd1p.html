@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fiche d'inscription — CHRISROI AGENCE</title>
+
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eef1f5;
+      color: #10151c;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.35;
+    }
+
+    .sheet {
+      width: min(210mm, calc(100% - 32px));
+      margin: 24px auto;
+      background: #ffffff;
+      border: 1px solid #cfd6e2;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+    }
+
+    .header {
+      background: #0c1f3f;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 22px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .header p {
+      margin: 0;
+      text-align: right;
+      font-size: 13px;
+      line-height: 1.4;
+      opacity: 0.92;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 126px;
+      gap: 18px;
+      padding: 18px 22px;
+      align-items: start;
+    }
+
+    .photo-frame {
+      margin: 0;
+      border: 2px solid #0c1f3f;
+      padding: 4px;
+      background: #ffffff;
+      width: 126px;
+    }
+
+    .photo-frame img {
+      display: block;
+      width: 100%;
+      height: 142px;
+      object-fit: cover;
+      background: #e8edf5;
+    }
+
+    .section {
+      padding: 0 22px 18px;
+      break-inside: avoid;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      background: #0c1f3f;
+      color: #ffffff;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+      margin: 0;
+    }
+
+    .field {
+      margin: 0;
+      padding: 0;
+      break-inside: avoid;
+    }
+
+    .field dt {
+      margin: 0;
+      font-size: 11px;
+      color: #5c6675;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .field dd {
+      margin: 4px 0 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: #10151c;
+      min-height: 1.2em;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .marital {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .option {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #c8d0dc;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-size: 13px;
+      color: #5c6675;
+      background: #ffffff;
+    }
+
+    .option.selected {
+      border-color: #0c1f3f;
+      color: #0c1f3f;
+      font-weight: 700;
+      background: #edf3ff;
+    }
+
+    .option.selected::before {
+      content: "✓";
+    }
+
+    .contacts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .contact-card {
+      border: 1px solid #c8d0dc;
+      border-radius: 6px;
+      padding: 12px;
+      break-inside: avoid;
+      background: #ffffff;
+    }
+
+    .contact-card h3 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: #0c1f3f;
+    }
+
+    .clauses {
+      display: grid;
+      gap: 8px;
+    }
+
+    .clause {
+      margin: 0;
+      border: 1px solid #c8d0dc;
+      background: #f8fafc;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .signature-box {
+      border: 1px solid #98a2b3;
+      border-radius: 6px;
+      min-height: 110px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      break-inside: avoid;
+    }
+
+    .signature-box p {
+      margin: 0;
+      font-size: 12px;
+      color: #5c6675;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .signature-line {
+      border-top: 1px solid #98a2b3;
+      margin-top: 36px;
+      padding-top: 6px;
+      font-size: 12px;
+      color: #5c6675;
+    }
+
+    .footer {
+      padding: 0 22px 22px;
+      font-size: 11px;
+      color: #5c6675;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .sheet {
+        width: 100%;
+        margin: 0;
+        border: none;
+        box-shadow: none;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .layout,
+      .fields,
+      .contacts,
+      .signature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .photo-frame {
+        justify-self: start;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header p {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="sheet" aria-label="Fiche d'inscription CHRISROI AGENCE">
+
+    <header class="header">
+      <h1>Fiche d'inscription</h1>
+      <p>
+        CHRISROI AGENCE<br>
+        Agence de placement
+      </p>
+    </header>
+
+    <section class="layout" aria-labelledby="employe-title">
+      <div>
+        <h2 id="employe-title" class="section-title">Employé(e)</h2>
+
+        <dl class="fields">
+          <div class="field">
+            <dt>Date</dt>
+            <dd>16/08/2026</dd>
+          </div>
+
+          <div class="field">
+            <dt>Nom et prénoms</dt>
+            <dd>KOUASSI Marie Claire</dd>
+          </div>
+
+          <div class="field">
+            <dt>Date et lieu de naissance</dt>
+            <dd>12/04/1998 à Abidjan</dd>
+          </div>
+
+          <div class="field">
+            <dt>Numéro de téléphone</dt>
+            <dd>+225 07 07 12 34 56</dd>
+          </div>
+
+          <div class="field">
+            <dt>Lieu d'habitation</dt>
+            <dd>Cocody, Abidjan</dd>
+          </div>
+
+          <div class="field">
+            <dt>Nationalité</dt>
+            <dd>Ivoirienne</dd>
+          </div>
+
+          <div class="field">
+            <dt>Sexe</dt>
+            <dd>Féminin</dd>
+          </div>
+
+          <div class="field full">
+            <dt>Situation matrimoniale</dt>
+            <dd>
+              <div class="marital" role="group" aria-label="Situation matrimoniale">
+                <span class="option">Marié(e)</span>
+                <span class="option selected">
+                  Concubinage
+                  <span class="sr-only">(sélectionné)</span>
+                </span>
+                <span class="option">Célibataire</span>
+              </div>
+            </dd>
+          </div>
+
+          <div class="field">
+            <dt>Religion</dt>
+            <dd>Catholique</dd>
+          </div>
+
+          <div class="field">
+            <dt>Ethnie</dt>
+            <dd>Agni</dd>
+          </div>
+
+          <div class="field">
+            <dt>Emploi recherché</dt>
+            <dd>Serveuse</dd>
+          </div>
+
+          <div class="field">
+            <dt>Niveau d'études</dt>
+            <dd>Bac +2</dd>
+          </div>
+
+          <div class="field full">
+            <dt>Avez-vous déjà travaillé ? Si oui, précisez</dt>
+            <dd>Oui, 2 ans en restauration</dd>
+          </div>
+
+          <div class="field full">
+            <dt>Avez-vous des allergies ou des problèmes de santé ? Si oui, précisez</dt>
+            <dd>Non</dd>
+          </div>
+
+          <div class="field full">
+            <dt>Avez-vous déjà subi une ou plusieurs interventions chirurgicales ? Si oui, précisez</dt>
+            <dd>Non</dd>
+          </div>
+        </dl>
+      </div>
+
+      <figure class="photo-frame">
+        <img
+          src="https://pb2.chrisroiagence.com/api/files/users/dfbvw9fodyl3w1a/photo_demo.png"
+          alt="Photo d'identité de KOUASSI Marie Claire"
+        >
+      </figure>
+    </section>
+
+    <section class="section" aria-labelledby="urgences-title">
+      <h2 id="urgences-title" class="section-title">
+        Personnes à contacter en cas d'urgence
+      </h2>
+
+      <div class="contacts">
+        <article class="contact-card">
+          <h3>Contact 1</h3>
+
+          <dl class="fields" style="grid-template-columns: 1fr;">
+            <div class="field">
+              <dt>Nom et prénoms</dt>
+              <dd>KOUASSI Jean</dd>
+            </div>
+
+            <div class="field">
+              <dt>Contact</dt>
+              <dd>+225 05 05 98 76 54</dd>
+            </div>
+
+            <div class="field">
+              <dt>Lieu d'habitation</dt>
+              <dd>Yopougon</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="contact-card">
+          <h3>Contact 2</h3>
+
+          <dl class="fields" style="grid-template-columns: 1fr;">
+            <div class="field">
+              <dt>Nom et prénoms</dt>
+              <dd>TRAORE Aminata</dd>
+            </div>
+
+            <div class="field">
+              <dt>Contact</dt>
+              <dd>+225 01 01 23 45 67</dd>
+            </div>
+
+            <div class="field">
+              <dt>Lieu d'habitation</dt>
+              <dd>Abobo</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="clauses-title">
+      <h2 id="clauses-title" class="section-title">Clauses</h2>
+
+      <div class="clauses">
+        <!--
+          Les clauses initiales :
+          - "Le tiers (1/3) sur le premier salaire : Oui"
+          - "Frais de dossier : 5000 FCFA valable pour un (1) mois et non remboursable"
+          peuvent poser un problème juridique.
+
+          Je ne les ai pas remises telles quelles dans la version corrigée.
+          Il faut les remplacer par une formulation validée juridiquement.
+        -->
+
+        <p class="clause">
+          Le candidat / la candidate déclare exactes les informations communiquées sur la présente fiche.
+        </p>
+
+        <p class="clause">
+          Conditions de placement et frais :
+          <strong>[texte à valider juridiquement]</strong>.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="signatures-title">
+      <h2 id="signatures-title" class="section-title">Signatures</h2>
+
+      <div class="signature-grid">
+        <div class="signature-box">
+          <p>Employé(e)</p>
+          <div class="signature-line">Signature</div>
+        </div>
+
+        <div class="signature-box">
+          <p>CHRISROI AGENCE</p>
+          <div class="signature-line">Signature et cachet</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Fiche remplie sans pointillés — les valeurs sont affichées en texte.
+    </footer>
+
+  </main>
+</body>
+</html>

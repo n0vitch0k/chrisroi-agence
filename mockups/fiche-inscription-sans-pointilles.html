@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aperçu Fiche d'Inscription — SANS pointillés (CHRISROI AGENCE)</title>
+<style>
+  :root{
+    --bleu:#1b2a4a;
+    --ink:#111;
+    --line:#555;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#e9e9ec;
+    font-family:"Times New Roman",Georgia,serif;
+    color:var(--ink);
+    padding:24px;
+    display:flex;
+    justify-content:center;
+  }
+  .page{
+    background:#fff;
+    width:210mm;
+    min-height:297mm;
+    padding:14mm 14mm 12mm;
+    box-shadow:0 4px 24px rgba(0,0,0,.18);
+  }
+
+  /* En-tête */
+  .top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+  }
+  .titleBox{
+    border:1.5px solid var(--line);
+    padding:6px 26px;
+    text-align:center;
+    margin:0 auto;
+  }
+  .titleBox h1{
+    margin:0;
+    font-size:22px;
+    letter-spacing:2px;
+    font-weight:700;
+  }
+  .photoBox{
+    width:46mm;
+    height:54mm;
+    border:1.5px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    color:#bbb;
+    font-size:13px;
+    overflow:hidden;
+    background:#fafafa;
+    flex:0 0 auto;
+  }
+  .photoBox img{width:100%;height:100%;object-fit:cover;}
+
+  /* Bandeau section (BLEU NUIT) */
+  .sectionBar{
+    background:var(--bleu);
+    color:#fff;
+    text-align:center;
+    font-weight:700;
+    letter-spacing:1.5px;
+    padding:5px 8px;
+    margin:16px 0 10px;
+    font-size:15px;
+  }
+
+  /* Lignes de champ — SANS pointillés */
+  .row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    margin:7px 0;
+    font-size:13.5px;
+  }
+  .label{ color:#333; white-space:nowrap; }
+  .val{ font-weight:600; text-align:right; }
+
+  /* cases à cocher */
+  .checks{
+    display:flex;
+    gap:22px;
+    margin:6px 0 10px 4px;
+    font-size:13px;
+  }
+  .check{ display:flex; align-items:center; gap:6px; }
+  .box{
+    width:13px;height:13px;border:1.3px solid var(--line);
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;line-height:1;
+  }
+  .box.checked{background:var(--bleu);color:#fff;border-color:var(--bleu);}
+
+  /* deux colonnes urgence */
+  .urgGrid{ display:flex; gap:14px; }
+  .urgCol{ flex:1; }
+  .urgTitle{font-weight:700;font-size:13px;margin-bottom:4px;}
+
+  /* Pied */
+  .clause{
+    margin-top:16px;
+    font-size:13px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+  }
+  .clause .k{ color:#333; }
+  .clause .v{ font-weight:600; }
+  .small{font-size:11px;color:#555;font-weight:400;}
+  .signs{
+    display:flex;
+    justify-content:space-between;
+    margin-top:26px;
+  }
+  .sign{ text-align:center; width:40%; }
+  .sign .line{
+    border-top:1px solid var(--line);
+    margin-top:34px;
+    padding-top:4px;
+    font-size:12.5px;
+    font-weight:600;
+  }
+  .note{text-align:center;color:#888;margin-top:18px;font-size:11px;font-style:italic;}
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- EN-TÊTE -->
+    <div class="top">
+      <div style="width:46mm"></div>
+      <div class="titleBox"><h1>FICHE D'INSCRIPTION</h1></div>
+      <div class="photoBox">
+        <!-- Photo s'affiche si présente dans les données -->
+        <img src="https://pb2.chrisroiagence.com/api/files/users/dfbvw9fodyl3w1a/photo_demo.png"
+             onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span>Photo</span>')" alt="Photo"/>
+      </div>
+    </div>
+
+    <!-- SECTION EMPLOYE -->
+    <div class="sectionBar">EMPLOYE</div>
+
+    <div class="row"><span class="label">Date :</span><span class="val">2026-08-16</span></div>
+    <div class="row"><span class="label">Nom et Prénoms :</span><span class="val">KOUASSI Marie Claire</span></div>
+    <div class="row"><span class="label">Date et lieu de naissance :</span><span class="val">1998-04-12 à Abidjan</span></div>
+    <div class="row"><span class="label">Numéro de téléphone :</span><span class="val">+225 07 12 34 56</span></div>
+    <div class="row"><span class="label">Lieu d'habitation :</span><span class="val">Cocody, Abidjan</span></div>
+    <div class="row"><span class="label">Nationalité :</span><span class="val">Ivoirienne</span></div>
+    <div class="row"><span class="label">Sexe :</span><span class="val">Féminin</span></div>
+
+    <div class="row"><span class="label">Situation matrimoniale :</span><span class="val"></span></div>
+    <div class="checks">
+      <span class="check"><span class="box"></span> Marié(e)</span>
+      <span class="check"><span class="box"></span> Concubinage</span>
+      <span class="check"><span class="box checked">✓</span> Célibataire</span>
+    </div>
+
+    <div class="row"><span class="label">Religion :</span><span class="val">Catholique</span></div>
+    <div class="row"><span class="label">Ethnie :</span><span class="val">Agni</span></div>
+    <div class="row"><span class="label">Emploi recherché :</span><span class="val">Serveuse</span></div>
+    <div class="row"><span class="label">Niveau d'étude :</span><span class="val">Bac +2</span></div>
+    <div class="row"><span class="label">Avez-vous déjà travaillé ? Si oui précisez :</span><span class="val">Oui, 2 ans en restauration</span></div>
+    <div class="row"><span class="label">Avez-vous une allergie ou des problèmes de santé ? Si oui précisez :</span><span class="val">Non</span></div>
+    <div class="row"><span class="label">Avez-vous déjà subi une/des intervention(s) chirurgicale(s) si oui précisez :</span><span class="val">Non</span></div>
+
+    <!-- SECTION URGENCE -->
+    <div class="sectionBar">PERSONNES A CONTACTER EN CAS D'URGENCE</div>
+    <div class="urgGrid">
+      <div class="urgCol">
+        <div class="urgTitle">1)</div>
+        <div class="row"><span class="label">Nom et prénoms :</span><span class="val">KOUASSI Jean</span></div>
+        <div class="row"><span class="label">Contact :</span><span class="val">+225 05 98 76 54</span></div>
+        <div class="row"><span class="label">Lieu d'habitation :</span><span class="val">Yopougon</span></div>
+      </div>
+      <div class="urgCol">
+        <div class="urgTitle">2)</div>
+        <div class="row"><span class="label">Nom et prénoms :</span><span class="val">TRAORE Aminata</span></div>
+        <div class="row"><span class="label">Contact :</span><span class="val">+225 01 23 45 67</span></div>
+        <div class="row"><span class="label">Lieu d'habitation :</span><span class="val">Abobo</span></div>
+      </div>
+    </div>
+
+    <!-- PIED -->
+    <div class="clause"><span class="k">Le tiers (1/3) sur le premier salaire :</span><span class="v">Oui</span></div>
+    <div class="clause"><span class="k">Frais de dossier :</span><span class="v">5000 FCFA</span><span class="small">valable pour un(1) mois et non remboursable.</span></div>
+
+    <div class="signs">
+      <div class="sign"><div class="line">EMPLOYE</div></div>
+      <div class="sign"><div class="line">CHRISROI AGENCE</div></div>
+    </div>
+
+    <div class="note">Maquette de validation — fiche REMPLIE, SANS pointillés (les valeurs sont affichées en texte). Bandeaux bleu nuit, cadre photo, cases matrimoniale, clauses + signatures conservés.</div>
+  </div>
+</body>
+</html>

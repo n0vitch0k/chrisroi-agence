@@ -32,6 +32,8 @@ import {
   getEntityHistory,
 } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { printToFileAsync } from 'expo-print';
 import { buildFichePapierHtml, FichePapierData, fileUriToDataUri } from '../utils/fichePrint';
@@ -47,6 +49,7 @@ import {
   getSituationMatrimonialeLabel,
 } from '../utils/constants';
 import { Colors, Spacing, Radius, Shadows } from '../theme';
+import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
 
 const InfoRow = ({ icon, label, value, style }: { icon: string; label: string; value: string; style?: ViewStyle }) => (
   <View style={[styles.infoRow, style]}>
@@ -106,6 +109,33 @@ export default function EmployeDetailScreen() {
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
   const [docsLoading, setDocsLoading] = useState(false);
+  const docViewer = useDocumentViewer();
+
+  const openViewerFor = (d: any) => {
+    const uri = d?.imageUrl;
+    if (!uri) return;
+    docViewer.open({ uri, label: getDocumentTypeLabel(d.type), fileName: d?.nomFichier || d?.file || null, mimeType: d?.mimeType || null });
+  };
+
+  const handleDownloadDoc = async (d: any) => {
+    const uri = d?.imageUrl;
+    if (!uri) { Alert.alert('Document', 'Aucun fichier à télécharger.'); return; }
+    try {
+      const name = d?.nomFichier || d?.file || `document_${d.id || Date.now()}`;
+      let localUri = uri;
+      if (/^https?:\/\//i.test(uri)) {
+        const safe = String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+        const tmp = (FileSystem as any).cacheDirectory + safe;
+        const dl = await (FileSystem as any).downloadAsync(uri, tmp);
+        localUri = dl.uri;
+      }
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) await Sharing.shareAsync(localUri, { dialogTitle: getDocumentTypeLabel(d.type) });
+      else Alert.alert('Document', localUri);
+    } catch (e: any) {
+      Alert.alert('Téléchargement', e?.message || 'Impossible de télécharger.');
+    }
+  };
 
   const loadEmploye = async () => {
     try {
@@ -205,18 +235,23 @@ export default function EmployeDetailScreen() {
     setShowDocSourcePicker(true);
   };
 
-  const uploadPendingDocument = async (imageUri: string) => {
+  const uploadPendingDocument = async (imageUri: string, fileName?: string, mimeType?: string) => {
     if (!employeId || !docTypePending) return;
+    const captured = docTypePending;
     setDocsLoading(true);
     try {
-      await uploadDocument(employeId, docTypePending, imageUri);
-      setDocTypePending(null);
-      const docs = await getDocumentsByEmploye(employeId);
-      setDocuments(docs || []);
+      const docId = await uploadDocument(employeId, captured, imageUri, fileName, mimeType);
+      if (docId) {
+        const docs = await getDocumentsByEmploye(employeId);
+        setDocuments(docs || []);
+      } else {
+        Alert.alert('Erreur', "Échec de l'ajout du document.");
+      }
     } catch (e) {
       console.warn('uploadDocument error:', e);
       Alert.alert('Erreur', "Échec de l'ajout du document.");
     } finally {
+      setDocTypePending(null);
       setDocsLoading(false);
     }
   };
@@ -416,9 +451,15 @@ export default function EmployeDetailScreen() {
           ) : (
             <View style={styles.docGrid}>
               {documents.map((d) => (
-                <View key={d.id} style={styles.docTile}>
+                <TouchableOpacity key={d.id} style={styles.docTile} onPress={() => openViewerFor(d)} activeOpacity={0.78} disabled={!d.imageUrl}>
                   {d.imageUrl ? (
-                    <Image source={{ uri: d.imageUrl }} style={styles.docThumb} resizeMode="cover" />
+                    /\.(pdf|doc|docx)$/i.test(d.nomFichier || d.file || '') ? (
+                      <View style={styles.docThumbPlaceholder}>
+                        <Icon name={/\.pdf$/i.test(d.nomFichier || d.file || '') ? 'file-pdf-box' : 'file-word-outline'} size={30} color={Colors.primary} />
+                      </View>
+                    ) : (
+                      <Image source={{ uri: d.imageUrl }} style={styles.docThumb} resizeMode="cover" />
+                    )
                   ) : (
                     <View style={styles.docThumbPlaceholder}>
                       <Text style={{ fontSize: 26 }}>{getDocumentTypeIcon(d.type)}</Text>
@@ -427,6 +468,15 @@ export default function EmployeDetailScreen() {
                   <Text style={styles.docTileLabel} numberOfLines={1}>
                     {getDocumentTypeLabel(d.type)}
                   </Text>
+                  {d.imageUrl ? (
+                    <TouchableOpacity
+                      style={styles.docTileDownload}
+                      onPress={() => handleDownloadDoc(d)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Icon name="download-outline" size={13} color={Colors.primary} />
+                    </TouchableOpacity>
+                  ) : null}
                   <TouchableOpacity
                     style={styles.docTileRemove}
                     onPress={() => removeDocument(d.id)}
@@ -434,7 +484,7 @@ export default function EmployeDetailScreen() {
                   >
                     <Icon name="close" size={14} color="#b85454" />
                   </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           )}
@@ -543,7 +593,7 @@ export default function EmployeDetailScreen() {
           <Text style={styles.sourceTitle}>
             {docTypePending ? getDocumentTypeIcon(docTypePending) + ' ' + getDocumentTypeLabel(docTypePending) : 'Document'}
           </Text>
-          <Text style={styles.sourceSubtitle}>Galerie ou appareil photo</Text>
+          <Text style={styles.sourceSubtitle}>Photo, PDF ou document Word</Text>
           <TouchableOpacity
             style={styles.sourceItem}
             onPress={async () => {
@@ -593,6 +643,29 @@ export default function EmployeDetailScreen() {
             <Text style={styles.sourceLabel}>Prendre une photo</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={styles.sourceItem}
+            onPress={async () => {
+              setShowDocSourcePicker(false);
+              try {
+                const doc = await DocumentPicker.getDocumentAsync({
+                  type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                  copyToCacheDirectory: true,
+                });
+                if (!doc.canceled && doc.assets && doc.assets[0]) {
+                  await uploadPendingDocument(doc.assets[0].uri, doc.assets[0].name, doc.assets[0].mimeType);
+                } else {
+                  setDocTypePending(null);
+                }
+              } catch (e: any) {
+                Alert.alert('Erreur', e?.message || "Impossible d'ouvrir le document.");
+                setDocTypePending(null);
+              }
+            }}
+          >
+            <Icon name="file-document-outline" size={22} color={Colors.primary} />
+            <Text style={styles.sourceLabel}>PDF / Word (document numérique)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.sourceItem, styles.sourceCancel]}
             onPress={() => {
               setShowDocSourcePicker(false);
@@ -604,6 +677,7 @@ export default function EmployeDetailScreen() {
         </View>
       </View>
     </Modal>
+    <DocumentViewerOverlay viewerDoc={docViewer.doc} onClose={docViewer.close} onDownload={docViewer.download} downloading={docViewer.downloading} />
     </>
   );
 }
@@ -676,6 +750,7 @@ const styles = StyleSheet.create({
   docThumbPlaceholder: { width: '100%', aspectRatio: 0.75, borderRadius: Radius.sm, backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.borderLight, alignItems: 'center', justifyContent: 'center' },
   docTileLabel: { fontSize: 11, color: Colors.textSecondary, marginTop: 4, textAlign: 'center' },
   docTileRemove: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#FDECEC', alignItems: 'center', justifyContent: 'center' },
+  docTileDownload: { position: 'absolute', top: 4, left: 4, width: 22, height: 22, borderRadius: 11, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: Colors.primary + '30', alignItems: 'center', justifyContent: 'center' },
   // ── Modales documents ───────────────────────────────
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sourceSheet: { backgroundColor: Colors.surface, borderTopLeftRadius: Radius.lg, borderTopRightRadius: Radius.lg, padding: Spacing.lg, paddingBottom: Spacing.xxl, maxHeight: '75%' },

@@ -1,0 +1,7 @@
+npm install -g eas-cli
+
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "production" environment on EAS.
+
+C:\Users\BROU WILLIAMS\Downloads\chrisroi-agence\chrisroi-agence\node_modules\expo\bin\cli config --json exited with non-zero code: 3221225794
+    Error: build command failed.
