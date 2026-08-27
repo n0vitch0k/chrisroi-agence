@@ -344,7 +344,7 @@ export default function EmployeDetailScreen() {
               </TouchableOpacity>
             }
           >
-            <Menu.Item onPress={() => { setMenuVisible(false); navigation.navigate('ContratsStack', { screen: 'ContratDocument', params: { employe_id: employeId } }); }}
+            <Menu.Item onPress={() => { setMenuVisible(false); rootNavigation?.navigate('ContratDocumentModal', { employe_id: employeId } as any); }}
               title="Créer un contrat" leadingIcon="file-plus-outline" />
             <Divider />
             <Menu.Item onPress={() => { setMenuVisible(false); handleDelete(); }}
@@ -508,8 +508,8 @@ export default function EmployeDetailScreen() {
                     {getStatutLabel(contrat.statut)}
                   </Chip>
                 </View>
-                <TouchableOpacity onPress={() => rootNavigation?.navigate('EmployeursStack' as any, {
-                  screen: 'EmployeurDetail',
+                <TouchableOpacity onPress={() => rootNavigation?.navigate('EmployesStack' as any, {
+                  screen: 'EmployeurForm',
                   params: { id: contrat.employeur_id || contrat.expand?.employeur_id?.id }
                 })}>
                   <Text style={styles.contratCompany}>{contrat.nom_complet}</Text>

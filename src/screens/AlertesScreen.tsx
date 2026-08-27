@@ -64,7 +64,7 @@ export default function AlertesScreen() {
     if (!alerte.lu) handleMarquerLue(alerte.id);
     if (alerte.contrat_id) navigation.navigate('ContratDocumentModal', { id: alerte.contrat_id, origin: { label: 'Alertes' } });
     else if (alerte.employe_id) navigation.navigate('EmployesStack', { screen: 'EmployeDetail', params: { id: alerte.employe_id } });
-    else if (alerte.employeur_id) navigation.navigate('EmployeursStack', { screen: 'EmployeurDetail', params: { id: alerte.employeur_id } });
+    else if (alerte.employeur_id) navigation.navigate('EmployesStack', { screen: 'EmployeurForm', params: { id: alerte.employeur_id } });
   };
 
   const alertesNonLues = alertes.filter((a) => !a.lu);

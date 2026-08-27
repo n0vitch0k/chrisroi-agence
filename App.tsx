@@ -20,8 +20,6 @@ import type {
   TabParamList,
   DashboardStackParamList,
   EmployesStackParamList,
-  EmployeursStackParamList,
-  ContratsStackParamList,
   SuiviStackParamList,
 } from './src/types/navigation';
 
@@ -31,12 +29,8 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import GlobalSearchScreen from './src/screens/GlobalSearchScreen';
 import FicheInscriptionScreen from './src/screens/FicheInscriptionScreen';
 import EmployeDetailScreen from './src/screens/EmployeDetailScreen';
-import EmployeursScreen from './src/screens/EmployeursScreen';
 import EmployeurFormScreen from './src/screens/EmployeurFormScreen';
-import EmployeurDetailScreen from './src/screens/EmployeurDetailScreen';
-import ContratsScreen from './src/screens/ContratsScreen';
 import ContratDocumentScreen from './src/screens/ContratDocumentScreen';
-import ContratDetailScreen from './src/screens/ContratDetailScreen';
 import SuiviScreen from './src/screens/SuiviScreen';
 import AlertesScreen from './src/screens/AlertesScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -49,8 +43,6 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 const DashStack = createNativeStackNavigator<DashboardStackParamList>();
 const EmpStack = createNativeStackNavigator<EmployesStackParamList>();
-const EmpStack2 = createNativeStackNavigator<EmployeursStackParamList>();
-const ContStack = createNativeStackNavigator<ContratsStackParamList>();
 
 // Thème Paper — Warm Earth
 const theme = {
@@ -112,53 +104,17 @@ function EmployesStackScreen() {
         component={FicheInscriptionScreen}
         options={{ headerShown: false, presentation: 'modal' }}
       />
-    </EmpStack.Navigator>
-  );
-}
-
-// ─── Employeurs Stack ─────────────────────────────────────
-function EmployeursStackScreen() {
-  return (
-    <EmpStack2.Navigator screenOptions={{ headerShown: false }}>
-      <EmpStack2.Screen
-        name="EmployeursList"
-        component={EmployeursScreen}
-        options={{ headerShown: false }}
-      />
-      <EmpStack2.Screen
-        name="EmployeurDetail"
-        component={EmployeurDetailScreen}
-        options={{ headerShown: false }}
-      />
-      <EmpStack2.Screen
+      <EmpStack.Screen
         name="EmployeurForm"
         component={EmployeurFormScreen}
         options={{ headerShown: false, presentation: 'modal' }}
       />
-    </EmpStack2.Navigator>
-  );
-}
-
-// ─── Contrats Stack ───────────────────────────────────────
-function ContratsStackScreen() {
-  return (
-    <ContStack.Navigator screenOptions={{ headerShown: false }}>
-      <ContStack.Screen
-        name="ContratsList"
-        component={ContratsScreen}
-        options={{ headerShown: false }}
-      />
-      <ContStack.Screen
-        name="ContratDetail"
-        component={ContratDetailScreen}
-        options={{ headerShown: false }}
-      />
-      <ContStack.Screen
+      <EmpStack.Screen
         name="ContratDocument"
         component={ContratDocumentScreen}
         options={{ headerShown: false, presentation: 'modal' }}
       />
-    </ContStack.Navigator>
+    </EmpStack.Navigator>
   );
 }
 
@@ -188,8 +144,8 @@ function TabNavigator() {
           switch (route.name) {
             case 'DashboardStack': iconName = focused ? 'calendar-today' : 'calendar-outline'; break;
             case 'EmployesStack': iconName = focused ? 'folder-search' : 'folder-search-outline'; break;
-            case 'EmployeursStack': iconName = focused ? 'office-building' : 'office-building-outline'; break;
-            case 'ContratsStack': iconName = focused ? 'file-document' : 'file-document-outline'; break;
+            case 'EmployeursTab': iconName = focused ? 'office-building' : 'office-building-outline'; break;
+            case 'ContratsTab': iconName = focused ? 'file-document' : 'file-document-outline'; break;
             case 'SuiviStack': iconName = focused ? 'cash-multiple' : 'cash'; break;
             default: iconName = 'circle';
           }
@@ -219,19 +175,24 @@ function TabNavigator() {
         component={DashboardStack}
         options={{ tabBarLabel: "Aujourd'hui" }}
       />
+      {/* Dossiers : écran principal, affiche toutes les sections. */}
       <Tab.Screen
         name="EmployesStack"
         component={EmployesStackScreen}
         options={{ tabBarLabel: 'Dossiers' }}
       />
+      {/* Employeurs : même écran Dossier, filtré sur la section "employeur". */}
       <Tab.Screen
-        name="EmployeursStack"
-        component={EmployeursStackScreen}
+        name="EmployeursTab"
+        component={EmployesStackScreen}
+        initialParams={{ screen: 'EmployesList', params: { section: 'employeur' } }}
         options={{ tabBarLabel: 'Employeurs' }}
       />
+      {/* Contrats : même écran Dossier, filtré sur la section "contrat". */}
       <Tab.Screen
-        name="ContratsStack"
-        component={ContratsStackScreen}
+        name="ContratsTab"
+        component={EmployesStackScreen}
+        initialParams={{ screen: 'EmployesList', params: { section: 'contrat' } }}
         options={{ tabBarLabel: 'Contrats' }}
       />
       <Tab.Screen

@@ -1854,10 +1854,7 @@ export default function FicheInscriptionScreen() {
         <View style={docStyles.linkedActionsBar}>
           <TouchableOpacity
             style={docStyles.linkedActionBtn}
-            onPress={() => rootNavigation?.navigate('ContratsStack' as any, {
-              screen: 'ContratsList',
-              params: undefined
-            })}
+            onPress={() => rootNavigation?.navigate('ContratsTab' as any, undefined)}
           >
             <Icon name="file-document-outline" size={16} color="#1E88E5" />
             <Text style={docStyles.linkedActionText}>Voir les contrats</Text>

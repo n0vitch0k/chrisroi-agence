@@ -69,5 +69,5 @@ export const printAsync = async (options: { html: string }): Promise<void> => {
   await webImpl(options);
 };
 
-// Compatibilité ascendante : nom historique utilisé dans ContratDetailScreen
+// Alias historique conservé pour la compatibilité ascendante des imports.
 export const nativePrintAsync = printAsync;

@@ -36,8 +36,10 @@ export type OriginInfo = {
 export type TabParamList = {
   DashboardStack: NavigatorScreenParams<DashboardStackParamList>;
   EmployesStack: NavigatorScreenParams<EmployesStackParamList>;
-  EmployeursStack: NavigatorScreenParams<EmployeursStackParamList>;
-  ContratsStack: NavigatorScreenParams<ContratsStackParamList>;
+  /** Onglet redirigeant vers l'écran Dossier, section Employeurs. */
+  EmployeursTab: NavigatorScreenParams<EmployesStackParamList>;
+  /** Onglet redirigeant vers l'écran Dossier, section Contrats. */
+  ContratsTab: NavigatorScreenParams<EmployesStackParamList>;
   SuiviStack: NavigatorScreenParams<SuiviStackParamList>;
 };
 
@@ -47,24 +49,17 @@ export type DashboardStackParamList = {
   GlobalSearch: undefined;
 };
 
-// ─── Employés ──────────────────────────────────────────────
+// ─── Employés / Dossier (l'écran "Dossier" global) ─────────
+// L'EmployesStack expose TOUS les écrans de navigation profonde
+// (liste employés, détail employé, fiche d'inscription, formulaire
+// employeur, formulaire contrat). La navbar y entre par 3 chemins
+// différents (Dossiers/Employeurs/Contrats) avec un paramètre `section`
+// qui détermine la section à afficher dans l'écran principal.
 export type EmployesStackParamList = {
-  EmployesList: undefined;
+  EmployesList: { section?: 'all' | 'employe' | 'employeur' | 'contrat' } | undefined;
   EmployeDetail: { id: string };
   FicheInscription: { id?: string } | undefined;
-};
-
-// ─── Employeurs ────────────────────────────────────────────
-export type EmployeursStackParamList = {
-  EmployeursList: undefined;
   EmployeurForm: { id?: string } | undefined;
-  EmployeurDetail: { id: string };
-};
-
-// ─── Contrats ──────────────────────────────────────────────
-export type ContratsStackParamList = {
-  ContratsList: undefined;
-  ContratDetail: { id: string };
   ContratDocument: { id?: string; employe_id?: string } | undefined;
 };
 
@@ -81,31 +76,6 @@ export type EmployeListNavProps = CompositeScreenProps<
 
 export type EmployeDetailNavProps = CompositeScreenProps<
   NativeStackScreenProps<EmployesStackParamList, 'EmployeDetail'>,
-  BottomTabScreenProps<TabParamList>
->;
-
-export type EmployeurListNavProps = CompositeScreenProps<
-  NativeStackScreenProps<EmployeursStackParamList, 'EmployeursList'>,
-  BottomTabScreenProps<TabParamList>
->;
-
-export type EmployeurDetailNavProps = CompositeScreenProps<
-  NativeStackScreenProps<EmployeursStackParamList, 'EmployeurDetail'>,
-  BottomTabScreenProps<TabParamList>
->;
-
-export type EmployeurFormNavProps = CompositeScreenProps<
-  NativeStackScreenProps<EmployeursStackParamList, 'EmployeurForm'>,
-  BottomTabScreenProps<TabParamList>
->;
-
-export type ContratListNavProps = CompositeScreenProps<
-  NativeStackScreenProps<ContratsStackParamList, 'ContratsList'>,
-  BottomTabScreenProps<TabParamList>
->;
-
-export type ContratDetailNavProps = CompositeScreenProps<
-  NativeStackScreenProps<ContratsStackParamList, 'ContratDetail'>,
   BottomTabScreenProps<TabParamList>
 >;
 
@@ -151,37 +121,15 @@ export type FicheInscriptionNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList>
 >;
 
-// Employeurs
-export type EmployeurListNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<EmployeursStackParamList, 'EmployeursList'>,
-  BottomTabNavigationProp<TabParamList>
->;
-
-export type EmployeurDetailNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<EmployeursStackParamList, 'EmployeurDetail'>,
-  BottomTabNavigationProp<TabParamList>
->;
-
+// EmployeurForm (exposé dans l'EmployesStack)
 export type EmployeurFormNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<EmployeursStackParamList, 'EmployeurForm'>,
+  NativeStackNavigationProp<EmployesStackParamList, 'EmployeurForm'>,
   BottomTabNavigationProp<TabParamList>
 >;
 
-// Contrats
-export type ContratListNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<ContratsStackParamList, 'ContratsList'>,
-  BottomTabNavigationProp<TabParamList>
->;
-
-export type ContratDetailNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<ContratsStackParamList, 'ContratDetail'>,
-  BottomTabNavigationProp<TabParamList>
->;
-
-// Alias historique : ContratDocumentScreen utilisait le type de l'ancien ContratForm.
-// Renommé proprement — ContratDocumentScreen est le SEUL formulaire de contrat.
+// ContratDocument (exposé dans l'EmployesStack)
 export type ContratDocumentNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<ContratsStackParamList, 'ContratDocument'>,
+  NativeStackNavigationProp<EmployesStackParamList, 'ContratDocument'>,
   BottomTabNavigationProp<TabParamList>
 >;
 

@@ -190,7 +190,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
             badgeText={registreCounts.contrats > 0 ? `${registreCounts.contrats} actifs` : undefined}
             badgeBg="#e8f0dc"
             badgeColor="#5a7c3a"
-            onPress={() => navigateTab('ContratsStack', { screen: 'ContratDocument' })}
+            onPress={() => navigateTab('EmployesStack', { screen: 'ContratDocument' })}
           />
           <QuickAction
             icon="📸"
@@ -209,7 +209,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
             badgeText={registreCounts.employeurs > 0 ? `${registreCounts.employeurs} inscrits` : undefined}
             badgeBg="#d8ecec"
             badgeColor="#2a7a7a"
-            onPress={() => navigateTab('EmployeursStack', { screen: 'EmployeurForm' })}
+            onPress={() => navigateTab('EmployesStack', { screen: 'EmployeurForm' })}
           />
         </View>
 

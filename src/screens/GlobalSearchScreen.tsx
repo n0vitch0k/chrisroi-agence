@@ -11,7 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Chip } from 'react-native-paper';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import {
   getAllEmployes,
   getAllEmployeurs,
@@ -34,6 +34,19 @@ const M = { ...Colors, shadow: Shadows.card.shadowColor } as const;
 
 type ResultType = 'employe' | 'employeur' | 'contrat';
 type StatutFilter = 'tous' | 'disponible' | 'en_poste';
+
+/**
+ * Section par défaut à afficher. Piloté par la navbar :
+ *   - onglet "Dossiers"    → 'all'        (toutes les sections)
+ *   - onglet "Employeurs"  → 'employeur'  (section Employeurs)
+ *   - onglet "Contrats"    → 'contrat'    (section Contrats)
+ */
+type DossierSection = 'all' | ResultType;
+
+// Paramètres reçus depuis la navbar (App.tsx → initialParams).
+type GlobalSearchRouteParams = {
+  section?: DossierSection;
+};
 
 type SearchResult = {
   id: string;
@@ -61,25 +74,37 @@ const STATUT_FILTERS: { key: StatutFilter; label: string; dot: string; dotBg: st
   { key: 'en_poste', label: 'En poste', dot: M.info, dotBg: M.infoDim, textColor: M.info, bg: M.infoDim },
 ];
 
-const TYPE_FILTERS: Array<{ label: string; value: ResultType | 'all' | 'urgent' }> = [
+const TYPE_FILTERS: Array<{ label: string; value: DossierSection }> = [
   { label: 'Tout', value: 'all' },
   { label: 'Employés', value: 'employe' },
   { label: 'Employeurs', value: 'employeur' },
   { label: 'Contrats', value: 'contrat' },
-  { label: 'Urgent', value: 'urgent' },
 ];
 
 export default function GlobalSearchScreen() {
   const navigation = useNavigation<GlobalNavigationProp>();
-  const tabNavigation = navigation.getParent();
+  const route = useRoute<RouteProp<any, any>>();
   const insets = useSafeAreaInsets();
 
+  // Section demandée par la navbar. Lue au mount et à chaque focus
+  // (pour qu'un clic sur l'onglet "Employeurs" puis "Dossiers" soit pris
+  // en compte sans devoir recharger l'app).
+  const requestedSection = (route.params?.section as DossierSection) || 'all';
+
   const [query, setQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<ResultType | 'all' | 'urgent'>('all');
+  const [typeFilter, setTypeFilter] = useState<DossierSection>(requestedSection);
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('tous');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [employes, setEmployes] = useState<any[]>([]);
+
+  // Sync le typeFilter quand la navbar change la section
+  useFocusEffect(useCallback(() => {
+    const sec = (route.params?.section as DossierSection) || 'all';
+    setTypeFilter(sec);
+    setRefreshing(true);
+    loadResults();
+  }, [route.params?.section]));
 
   // ─── Chargement des données ───────────────────────────────
   const loadResults = useCallback(async () => {
@@ -137,7 +162,8 @@ export default function GlobalSearchScreen() {
           ],
           icon: item.type_besoin === 'particulier' ? '🏠' : '🏢',
           avatarStyle: 'purple',
-          onPress: () => navigation.navigate('EmployeursStack', { screen: 'EmployeurDetail', params: { id: item.id } }),
+          // Ouvre directement la fiche employeur en édition.
+          onPress: () => navigation.navigate('EmployeForm' as any, { id: item.id }),
         });
       });
 
@@ -181,13 +207,7 @@ export default function GlobalSearchScreen() {
   const filteredResults = useMemo(() => {
     let items = results;
     if (typeFilter !== 'all') {
-      if (typeFilter === 'urgent') {
-        items = items.filter((item) =>
-          item.details.some((d) => d.includes('Urgent') || d.includes('Fin dans'))
-        );
-      } else {
-        items = items.filter((item) => item.type === typeFilter);
-      }
+      items = items.filter((item) => item.type === typeFilter);
     }
     if (typeFilter === 'employe' || typeFilter === 'all') {
       const employeItems = items.filter((item) => item.type === 'employe');
@@ -206,7 +226,6 @@ export default function GlobalSearchScreen() {
   // Comptages
   const countByType = (type: string) =>
     type === 'all' ? results.length :
-    type === 'urgent' ? results.filter((i) => i.details.some((d) => d.includes('Urgent') || d.includes('Fin dans'))).length :
     results.filter((i) => i.type === type).length;
 
   const countByStatut = (s: string) =>
@@ -258,7 +277,7 @@ export default function GlobalSearchScreen() {
             <>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnPrimary]}
-                onPress={() => tabNavigation?.navigate('ContratsStack' as any, { screen: 'ContratDocument', params: { employe_id: item.id?.replace('employe-', '') } })}
+                onPress={() => navigation.navigate('ContratDocumentModal' as any, { employe_id: item.id?.replace('employe-', '') })}
                 activeOpacity={0.8}
               >
                 <Text style={styles.actionBtnIcon}>📋</Text>
