@@ -14,12 +14,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  getCommissionsAPercevoir,
   getAllEmployes,
   getAllEmployeurs,
   getAllContrats,
-  getContratsFinProche,
-  createFinContratAlertes,
 } from '../database/service';
 import { Colors, Shadows } from '../theme';
 
@@ -95,62 +92,6 @@ const DossierRow = ({
   </TouchableOpacity>
 );
 
-// ─── Composant : UrgentCard (maquette V1) ───────────────────────
-const UrgentCard = ({
-  title,
-  badgeText,
-  badgeBg,
-  badgeColor,
-  meta,
-  stat1Label,
-  stat1Value,
-  stat2Label,
-  stat2Value,
-  stat2ValueColor,
-  actionLabel,
-  actionBg,
-  actionOnPress,
-}: {
-  title: string;
-  badgeText: string;
-  badgeBg: string;
-  badgeColor: string;
-  meta: string;
-  stat1Label: string;
-  stat1Value: string | number;
-  stat2Label?: string;
-  stat2Value?: string | number;
-  stat2ValueColor?: string;
-  actionLabel: string;
-  actionBg: string;
-  actionOnPress: () => void;
-}) => (
-  <View style={styles.urgentCard}>
-    <View style={styles.urgentHead}>
-      <Text style={styles.urgentTitle}>{title}</Text>
-      <View style={[styles.urgentBadge, { backgroundColor: badgeBg }]}>
-        <Text style={[styles.urgentBadgeText, { color: badgeColor }]}>{badgeText}</Text>
-      </View>
-    </View>
-    <Text style={styles.urgentMeta}>{meta}</Text>
-    <View style={styles.urgentStats}>
-      <View style={styles.urgentStat}>
-        <Text style={styles.urgentStatLabel}>{stat1Label}</Text>
-        <Text style={styles.urgentStatValue}>{stat1Value}</Text>
-      </View>
-      {stat2Label && stat2Value !== undefined && (
-        <View style={styles.urgentStat}>
-          <Text style={styles.urgentStatLabel}>{stat2Label}</Text>
-          <Text style={[styles.urgentStatValue, stat2ValueColor ? { color: stat2ValueColor } : undefined]}>{stat2Value}</Text>
-        </View>
-      )}
-    </View>
-    <TouchableOpacity style={[styles.urgentBtn, { backgroundColor: actionBg }]} onPress={actionOnPress} activeOpacity={0.7}>
-      <Text style={styles.urgentBtnText}>{actionLabel}</Text>
-    </TouchableOpacity>
-  </View>
-);
-
 // ─── Screen ─────────────────────────────────────────────────────
 export default function DashboardScreen({ user }: DashboardScreenProps) {
   const navigation = useNavigation<GlobalNavigationProp>();
@@ -160,29 +101,22 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
   const navigateTab = (screen: string, params?: any) => tabNavigation?.navigate(screen as any, params as any);
   const navigateRoot = (screen: string, params?: any) => rootNavigation?.navigate(screen as any, params as any);
   
-  const [commissions, setCommissions] = useState<any[]>([]);
-  const [contratsFinProche, setContratsFinProche] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [registreCounts, setRegistreCounts] = useState({ fiches: 0, contrats: 0, employeurs: 0 });
 
   const loadData = useCallback(async () => {
     try {
-      const [commissionsData, employesData, employeursData, contratsData, finProcheData] = await Promise.all([
-        getCommissionsAPercevoir(),
+      const [employesData, employeursData, contratsData] = await Promise.all([
         getAllEmployes(),
         getAllEmployeurs(),
         getAllContrats(),
-        getContratsFinProche(),
       ]);
-      setCommissions(commissionsData || []);
-      setContratsFinProche(finProcheData || []);
       setRegistreCounts({
         fiches: (employesData || []).length,
         contrats: (contratsData || []).length,
         employeurs: (employeursData || []).length,
       });
-      createFinContratAlertes().catch(console.error);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -196,8 +130,6 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
   const onRefresh = useCallback(() => { setRefreshing(true); loadData(); }, [loadData]);
 
   const totalRegistre = registreCounts.fiches + registreCounts.contrats + registreCounts.employeurs;
-  const totalCommissionEnAttente = commissions.reduce((s, c) => s + (c.commission_agence || 0), 0);
-  const totalCommissionPerue = commissions.reduce((s, c) => s + (c.commission_payee ? c.commission_agence : 0), 0);
 
   return (
     <ScrollView
@@ -220,7 +152,6 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.iconBtn} onPress={() => navigateRoot('AlertesModal')} activeOpacity={0.7}>
               <Icon name="bell-outline" size={22} color="#fff" />
-              {commissions.length > 0 && <View style={styles.badgeDot} />}
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={() => navigateRoot('JournalModal')} activeOpacity={0.7}>
               <Icon name="text-box-outline" size={22} color="#fff" />
@@ -306,64 +237,6 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
             <Text style={styles.emptyText}>Ajoutez des candidats, contrats ou employeurs pour commencer.</Text>
           </View>
         )}
-
-        {/* ── Urgences (maquette V1) ── */}
-        <Text style={styles.sectionTitle}>Urgences du jour</Text>
-
-        {contratsFinProche.length > 0 ? (
-          contratsFinProche.slice(0, 1).map((c: any) => {
-            const jours = Math.ceil((new Date(c.date_fin).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-            return (
-              <UrgentCard
-                key={c.id}
-                title={`⏰ ${c.expand?.employe_id?.prenom || ''} ${c.expand?.employe_id?.nom || ''} · Fin dans ${jours}j`}
-                badgeText="URGENT"
-                badgeBg="#fdeaea"
-                badgeColor="#b85454"
-                meta={`${c.expand?.employeur_id?.nom_complet || 'Employeur'} · ${(c.salaire || 0).toLocaleString()} FCFA`}
-                stat1Label="Commission"
-                stat1Value={`${(c.commission_agence || 0).toLocaleString()} F`}
-                stat2Label="Type"
-                stat2Value={c.type_contrat === 'heberge' ? 'Hébergé' : c.type_contrat === 'non_heberge' ? 'Non hébergé' : 'Personnalisé'}
-                actionLabel="📋 Proposer prolongation"
-                actionBg="#b85454"
-                actionOnPress={() => navigateTab('ContratsStack', { screen: 'ContratDetail', params: { id: c.id } })}
-              />
-            );
-          })
-        ) : (
-          <UrgentCard
-            title="Aucune urgence contrat"
-            badgeText="OK"
-            badgeBg="#e8f0dc"
-            badgeColor="#5a7c3a"
-            meta="Tous les contrats sont à bonne échéance"
-            stat1Label="Contrats surveillés"
-            stat1Value={registreCounts.contrats}
-            actionLabel="Voir contrats"
-            actionBg="#5a7c3a"
-            actionOnPress={() => navigateTab('ContratsStack', { screen: 'ContratsList' })}
-          />
-        )}
-
-        {commissions.length > 0 && (
-          <UrgentCard
-            title={`💰 ${commissions[0].expand?.employe_id?.prenom || ''} ${commissions[0].expand?.employe_id?.nom || ''} · Commission à percevoir`}
-            badgeText="À FAIRE"
-            badgeBg="#faf3d1"
-            badgeColor="#b8860b"
-            meta={`${(commissions[0].commission_agence || 0).toLocaleString()} FCFA · ${commissions[0].expand?.employeur_id?.nom_complet || 'Employeur'}`}
-            stat1Label="Contrat"
-            stat1Value={commissions[0].id?.slice(-8) || '—'}
-            stat2Label="Échéance"
-            stat2Value="Demain"
-            stat2ValueColor="#b8860b"
-            actionLabel="✓ Marquer perçu"
-            actionBg="#5a7c3a"
-            actionOnPress={() => navigateTab('SuiviStack', { screen: 'SuiviMain' })}
-          />
-        )}
-
       </View>
     </ScrollView>
   );
@@ -429,17 +302,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-  },
-  badgeDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#b85454',
-    borderWidth: 2,
-    borderColor: '#c45a2a',
   },
   greeting: { fontSize: 14, color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' },
   userName: { fontSize: 24, fontWeight: '700', color: '#fff', marginTop: 2, letterSpacing: -0.3 },
@@ -543,58 +405,6 @@ const styles = StyleSheet.create({
   dossierRowLabel: { fontSize: 15, fontWeight: '600', color: '#3d3530' },
   dossierRowCount: { fontSize: 12, color: '#b8a99e' },
   dossierDivider: { height: 1, backgroundColor: '#f5ebe0', marginHorizontal: 18 },
-
-  // ── Urgent Card (V1) ──
-  urgentCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#eedec9',
-    shadowColor: 'rgba(61,53,48,0.04)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
-    marginTop: 10,
-  },
-  urgentHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  urgentTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#3d3530',
-    flex: 1,
-    marginRight: 8,
-  },
-  urgentBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  urgentBadgeText: { fontSize: 10, fontWeight: '700' },
-  urgentMeta: { fontSize: 13, color: '#8a7d72', marginBottom: 14 },
-  urgentStats: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 14,
-  },
-  urgentStat: { flex: 1 },
-  urgentStatLabel: { fontSize: 10, color: '#b8a99e', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4 },
-  urgentStatValue: { fontSize: 15, fontWeight: '800', color: '#3d3530', marginTop: 2 },
-  urgentBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    padding: 12,
-    borderRadius: 12,
-  },
-  urgentBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
   // ── Empty state ──
   emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 20 },
