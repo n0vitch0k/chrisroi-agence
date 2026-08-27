@@ -762,9 +762,9 @@ export const createEmployeur = async (employeur: any): Promise<string> => {
   const now = new Date().toISOString();
 
   // Trim + skip des champs vides côté service : la collection `employeurs`
-  // a une validation `validation_is_email` sur le champ email (et probablement
-  // d'autres champs string). On évite les 400 "Failed to create record" en
-  // omettant les champs vides que l'utilisateur n'a pas remplis.
+  // a une validation `validation_is_email` sur le champ email. Si on envoie
+  // `""`, PB rejette en 400. En omettant la clé du payload, la validation
+  // passe (champ null côté PB = pas de validation format).
   const payload: Record<string, any> = {
     date_enregistrement: employeur.date_enregistrement || now,
     nom_complet: (employeur.nom_complet || '').trim(),
