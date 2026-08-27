@@ -761,17 +761,24 @@ export const createEmployeur = async (employeur: any): Promise<string> => {
   const pb = getPb();
   const now = new Date().toISOString();
 
-  const record = await pb.collection('employeurs').create({
+  // Trim + skip des champs vides côté service : la collection `employeurs`
+  // a une validation `validation_is_email` sur le champ email (et probablement
+  // d'autres champs string). On évite les 400 "Failed to create record" en
+  // omettant les champs vides que l'utilisateur n'a pas remplis.
+  const payload: Record<string, any> = {
     date_enregistrement: employeur.date_enregistrement || now,
-    nom_complet: employeur.nom_complet,
+    nom_complet: (employeur.nom_complet || '').trim(),
     type_besoin: employeur.type_besoin || 'particulier',
-    adresse: employeur.adresse || '',
-    telephone: employeur.telephone || '',
-    email: employeur.email || '',
-    nom_contact: employeur.nom_contact || '',
-    prenom_contact: employeur.prenom_contact || '',
-    notes: employeur.notes || '',
-  });
+    adresse: (employeur.adresse || '').trim(),
+    telephone: (employeur.telephone || '').trim(),
+    nom_contact: (employeur.nom_contact || '').trim(),
+    prenom_contact: (employeur.prenom_contact || '').trim(),
+    notes: (employeur.notes || '').trim(),
+  };
+  const email = (employeur.email || '').trim();
+  if (email) payload.email = email;
+
+  const record = await pb.collection('employeurs').create(payload);
   return record.id;
 };
 
