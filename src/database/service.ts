@@ -807,6 +807,27 @@ export const deleteEmployeur = async (id: string): Promise<void> => {
   const pb = getPb();
   await pb.collection('employeurs').delete(id);
 };
+
+/**
+ * Patch un seul champ d'un employeur (utilisé par le verrouillage C1 de
+ * l'écran d'édition — chaque champ déverrouillé peut être modifié
+ * individuellement sans repasser par le formulaire complet).
+ */
+export const patchEmployeurField = async (
+  employeurId: string,
+  key: string,
+  value: any,
+): Promise<void> => {
+  const pb = getPb();
+  const trimmedValue = typeof value === 'string' ? value.trim() : value;
+  // Cohérent avec createEmployeur : on omet la clé email si vide après trim,
+  // pour éviter le 400 validation_is_email côté PocketBase.
+  if (key === 'email' && !trimmedValue) {
+    await pb.collection('employeurs').update(employeurId, { email: null });
+    return;
+  }
+  await pb.collection('employeurs').update(employeurId, { [key]: trimmedValue });
+};
 // ============== GESTION DES CONTRATS ==============
 
 export const createContrat = async (contrat: any): Promise<string> => {

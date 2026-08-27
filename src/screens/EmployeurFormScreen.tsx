@@ -15,17 +15,98 @@ import {
 } from 'react-native';
 // SafeButton remplace Button react-native-paper sur web
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { createEmployeur, getEmployeurById, updateEmployeur } from '../database/service';
+import {
+  createEmployeur, getEmployeurById, updateEmployeur, patchEmployeurField,
+} from '../database/service';
 import {
   getDocumentsByEmployeur, uploadEmployeurDocument, deleteDocument,
   DOCUMENT_TYPES, getDocumentTypeLabel, getDocumentTypeIcon,
 } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { Colors, Spacing, Radius, Shadows, Typography } from '../theme';
 import FormField from '../components/FormField';
 import SafeButton from '../components/SafeButton';
 import AppHeader from '../components/AppHeader';
 import { SegmentedButtons } from 'react-native-paper';
+
+// ── LockedField (C1) — pattern identique à ContratDocumentScreen ──
+function LockedField({
+  fieldKey,
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  numberOfLines,
+  keyboardType,
+  autoCapitalize,
+  required,
+  error,
+  unlocked,
+  onToggleLock,
+  onPatch,
+  isEditing,
+}: {
+  fieldKey: string;
+  label: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  numberOfLines?: number;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  required?: boolean;
+  error?: string | undefined;
+  unlocked: boolean;
+  onToggleLock: (key: string) => void;
+  onPatch: (key: string, value: any) => Promise<void>;
+  isEditing: boolean;
+}) {
+  const handleSavePatch = async () => {
+    try {
+      await onPatch(fieldKey, value);
+      Alert.alert('Modifié', `${label} enregistré.`);
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Enregistrement impossible.');
+      return;
+    }
+    onToggleLock(fieldKey);
+  };
+  return (
+    <View style={empStyles.lockedRow}>
+      <View style={{ flex: 1 }}>
+        <FormField
+          label={label}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          required={required}
+          error={error}
+          disabled={!unlocked}
+        />
+      </View>
+      {isEditing && (
+        <TouchableOpacity
+          onPress={unlocked ? handleSavePatch : () => onToggleLock(fieldKey)}
+          style={empStyles.lockBtn}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Icon
+            name={unlocked ? 'check-circle' : 'lock'}
+            size={22}
+            color={unlocked ? Colors.success : Colors.textTertiary}
+          />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
 
 type EmployeurType = 'particulier' | 'entreprise' | 'commerce';
 
@@ -49,12 +130,33 @@ export default function EmployeurFormScreen() {
     notes: '',
   });
 
-  // ── Documents associés (édition uniquement) ──
+  // ── Documents associés ──
   const [documents, setDocuments] = useState<any[]>([]);
+  // Documents ajoutés AVANT la création : on les garde en mémoire et on les
+  // uploade juste après le create (pattern identique à ContratDocumentScreen).
+  const [pendingDocuments, setPendingDocuments] = useState<
+    { type: string; uri: string; name?: string; mimeType?: string }[]
+  >([]);
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
   const [docsLoading, setDocsLoading] = useState(false);
+
+  // C1 verrouillage : en édition, tous les champs sont locked par défaut ;
+  // l'utilisateur clique 🔓 pour déverrouiller, modifie, puis ✅ pour valider.
+  const [unlockedFields, setUnlockedFields] = useState<Set<string>>(new Set());
+  const fieldUnlocked = (key: string) => !isEditing || unlockedFields.has(key);
+  const toggleFieldLock = (key: string) =>
+    setUnlockedFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const patchField = async (key: string, value: any) => {
+    if (!employeurId) return;
+    await patchEmployeurField(employeurId, key, value);
+  };
 
   useEffect(() => {
     if (employeurId) loadEmployeur();
@@ -133,12 +235,35 @@ export default function EmployeurFormScreen() {
 
     setLoading(true);
     try {
+      let createdId: string | undefined = employeurId;
       if (isEditing) {
         await updateEmployeur(employeurId, formData);
         Alert.alert('Succès', 'Employeur modifié avec succès');
       } else {
-        await createEmployeur(formData);
-        Alert.alert('Succès', 'Employeur enregistré avec succès');
+        createdId = await createEmployeur(formData);
+        // Si des documents ont été ajoutés en attente, on les uploade maintenant.
+        if (pendingDocuments.length > 0 && createdId) {
+          let ok = 0, fail = 0;
+          for (const p of pendingDocuments) {
+            const rid = await uploadEmployeurDocument(
+              createdId, p.type, p.uri, p.name, p.mimeType,
+            );
+            if (rid) ok++; else fail++;
+          }
+          setPendingDocuments([]);
+          if (fail > 0) {
+            Alert.alert(
+              'Employeur créé',
+              `${ok} document(s) ajouté(s), ${fail} échec(s).`,
+            );
+          } else if (ok > 0) {
+            Alert.alert('Succès', `Employeur créé avec ${ok} document(s).`);
+          } else {
+            Alert.alert('Succès', 'Employeur enregistré avec succès');
+          }
+        } else {
+          Alert.alert('Succès', 'Employeur enregistré avec succès');
+        }
       }
       navigation.goBack();
     } catch (error) {
@@ -161,7 +286,8 @@ export default function EmployeurFormScreen() {
 
   const openDocTypePicker = () => {
     if (!employeurId) {
-      Alert.alert('Info', "Enregistrez d'abord l'employeur avant d'ajouter des documents.");
+      // Mode création : les documents sont mis en attente et uploadés après save.
+      setShowDocTypePicker(true);
       return;
     }
     setShowDocTypePicker(true);
@@ -174,15 +300,24 @@ export default function EmployeurFormScreen() {
   };
 
   const uploadPendingDocument = async (imageUri: string) => {
-    if (!employeurId || !docTypePending) return;
+    if (!docTypePending) return;
     setDocsLoading(true);
     try {
-      await uploadEmployeurDocument(employeurId, docTypePending, imageUri);
+      if (employeurId) {
+        // Édition : upload direct
+        await uploadEmployeurDocument(employeurId, docTypePending, imageUri);
+        const docs = await getDocumentsByEmployeur(employeurId);
+        setDocuments(docs || []);
+      } else {
+        // Création : ajout en attente, sera uploadé après save
+        setPendingDocuments((prev) => [
+          ...prev,
+          { type: docTypePending, uri: imageUri },
+        ]);
+      }
       setDocTypePending(null);
-      const docs = await getDocumentsByEmployeur(employeurId);
-      setDocuments(docs || []);
     } catch (e) {
-      console.warn('uploadEmployeurDocument error:', e);
+      console.warn('uploadPendingDocument error:', e);
       Alert.alert('Erreur', "Échec de l'ajout du document.");
     } finally {
       setDocsLoading(false);
@@ -191,13 +326,21 @@ export default function EmployeurFormScreen() {
 
   const handleDocWeb = async (e: any) => {
     const file = e.target.files?.[0];
-    if (!file || !employeurId || !docTypePending) return;
+    if (!file || !docTypePending) return;
     setDocsLoading(true);
     try {
-      await uploadEmployeurDocument(employeurId, docTypePending, file);
+      if (employeurId) {
+        await uploadEmployeurDocument(employeurId, docTypePending, file);
+        const docs = await getDocumentsByEmployeur(employeurId);
+        setDocuments(docs || []);
+      } else {
+        // Création : on garde l'objet File pour l'upload différé
+        setPendingDocuments((prev) => [
+          ...prev,
+          { type: docTypePending, uri: file },
+        ]);
+      }
       setDocTypePending(null);
-      const docs = await getDocumentsByEmployeur(employeurId);
-      setDocuments(docs || []);
     } catch (err) {
       console.warn('handleDocWeb error:', err);
       Alert.alert('Erreur', "Échec de l'ajout du document.");
@@ -216,6 +359,19 @@ export default function EmployeurFormScreen() {
           await deleteDocument(docId);
           const docs = await getDocumentsByEmployeur(employeurId);
           setDocuments(docs || []);
+        },
+      },
+    ]);
+  };
+
+  const removePendingDocument = (index: number) => {
+    Alert.alert('Retirer ce document ?', "Il ne sera pas ajouté à l'employeur.", [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Retirer',
+        style: 'destructive',
+        onPress: () => {
+          setPendingDocuments((prev) => prev.filter((_, i) => i !== index));
         },
       },
     ]);
@@ -253,7 +409,8 @@ export default function EmployeurFormScreen() {
             style={styles.segmented}
           />
 
-          <FormField
+          <LockedField
+            fieldKey="nom_complet"
             label={nomLabel}
             value={formData.nom_complet}
             onChangeText={updateField('nom_complet')}
@@ -261,9 +418,14 @@ export default function EmployeurFormScreen() {
             error={submitted && !formData.nom_complet.trim() ? 'Ce champ est requis' : undefined}
             placeholder={nomPlaceholder}
             autoCapitalize="words"
+            unlocked={fieldUnlocked('nom_complet')}
+            onToggleLock={toggleFieldLock}
+            onPatch={patchField}
+            isEditing={isEditing}
           />
 
-          <FormField
+          <LockedField
+            fieldKey="adresse"
             label="Adresse"
             value={formData.adresse}
             onChangeText={updateField('adresse')}
@@ -273,9 +435,14 @@ export default function EmployeurFormScreen() {
             multiline
             numberOfLines={2}
             autoCapitalize="sentences"
+            unlocked={fieldUnlocked('adresse')}
+            onToggleLock={toggleFieldLock}
+            onPatch={patchField}
+            isEditing={isEditing}
           />
 
-          <FormField
+          <LockedField
+            fieldKey="telephone"
             label="Téléphone"
             value={formData.telephone}
             onChangeText={updateField('telephone')}
@@ -283,15 +450,24 @@ export default function EmployeurFormScreen() {
             error={submitted && !formData.telephone.trim() ? 'Ce champ est requis' : undefined}
             placeholder="Ex: 01 02 03 04 05"
             keyboardType="phone-pad"
+            unlocked={fieldUnlocked('telephone')}
+            onToggleLock={toggleFieldLock}
+            onPatch={patchField}
+            isEditing={isEditing}
           />
 
-          <FormField
+          <LockedField
+            fieldKey="email"
             label="Email (optionnel)"
             value={formData.email}
             onChangeText={updateField('email')}
             placeholder={formData.type_besoin === 'particulier' ? 'Ex: fatou.diallo@email.com' : 'Ex: contact@entreprise.com'}
             keyboardType="email-address"
             autoCapitalize="none"
+            unlocked={fieldUnlocked('email')}
+            onToggleLock={toggleFieldLock}
+            onPatch={patchField}
+            isEditing={isEditing}
           />
         </View>
 
@@ -307,7 +483,8 @@ export default function EmployeurFormScreen() {
               </Text>
             </View>
 
-            <FormField
+            <LockedField
+              fieldKey="nom_contact"
               label={`Nom du ${contactLabel}`}
               value={formData.nom_contact}
               onChangeText={updateField('nom_contact')}
@@ -315,9 +492,14 @@ export default function EmployeurFormScreen() {
               error={submitted && !formData.nom_contact.trim() ? 'Ce champ est requis' : undefined}
               placeholder="Ex: Diallo"
               autoCapitalize="words"
+              unlocked={fieldUnlocked('nom_contact')}
+              onToggleLock={toggleFieldLock}
+              onPatch={patchField}
+              isEditing={isEditing}
             />
 
-            <FormField
+            <LockedField
+              fieldKey="prenom_contact"
               label={contactPrenomLabel}
               value={formData.prenom_contact}
               onChangeText={updateField('prenom_contact')}
@@ -325,34 +507,44 @@ export default function EmployeurFormScreen() {
               error={submitted && !formData.prenom_contact.trim() ? 'Ce champ est requis' : undefined}
               placeholder="Ex: Fatou"
               autoCapitalize="words"
+              unlocked={fieldUnlocked('prenom_contact')}
+              onToggleLock={toggleFieldLock}
+              onPatch={patchField}
+              isEditing={isEditing}
             />
 
             {formData.type_besoin === 'entreprise' && (
-              <FormField
+              <LockedField
+                fieldKey="fonction_contact"
                 label="Fonction du contact (optionnel)"
                 value={formData.fonction_contact}
                 onChangeText={updateField('fonction_contact')}
                 placeholder="Ex: RH, Directeur, Manager..."
                 autoCapitalize="words"
+                unlocked={fieldUnlocked('fonction_contact')}
+                onToggleLock={toggleFieldLock}
+                onPatch={patchField}
+                isEditing={isEditing}
               />
             )}
           </View>
         )}
 
-        {/* ─── Section: Documents (édition uniquement) ─── */}
-        {isEditing && (
-          <View style={card}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
-                <Text style={sectionIconText}>D</Text>
-              </View>
-              <Text style={sectionTitle}>Documents</Text>
-              <TouchableOpacity onPress={openDocTypePicker} disabled={docsLoading} style={styles.sectionAdd}>
-                <Text style={{ color: Colors.primary, fontWeight: '600' }}>+ Ajouter</Text>
-              </TouchableOpacity>
+        {/* ─── Section: Documents (création + édition) ─── */}
+        <View style={card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIcon}>
+              <Text style={sectionIconText}>D</Text>
             </View>
+            <Text style={sectionTitle}>Documents</Text>
+            <TouchableOpacity onPress={openDocTypePicker} disabled={docsLoading} style={styles.sectionAdd}>
+              <Text style={{ color: Colors.primary, fontWeight: '600' }}>+ Ajouter</Text>
+            </TouchableOpacity>
+          </View>
 
-            {documents.length === 0 ? (
+          {isEditing ? (
+            // Édition : on affiche les documents déjà uploadés
+            documents.length === 0 ? (
               <Text style={styles.emptyHint}>Aucun document joint.</Text>
             ) : (
               documents.map((doc) => (
@@ -365,9 +557,32 @@ export default function EmployeurFormScreen() {
                   </TouchableOpacity>
                 </View>
               ))
-            )}
-          </View>
-        )}
+            )
+          ) : (
+            // Création : on affiche les documents en attente (seront uploadés après save)
+            pendingDocuments.length === 0 ? (
+              <Text style={styles.emptyHint}>
+                Aucun document. Ils seront ajoutés à l'employeur lors de l'enregistrement.
+              </Text>
+            ) : (
+              <>
+                <Text style={styles.pendingHint}>
+                  {pendingDocuments.length} document(s) en attente — ajoutés à l'enregistrement.
+                </Text>
+                {pendingDocuments.map((p, idx) => (
+                  <View key={idx} style={styles.docItem}>
+                    <Text style={styles.docLabel}>
+                      {getDocumentTypeIcon(p.type)} {getDocumentTypeLabel(p.type)}
+                    </Text>
+                    <TouchableOpacity onPress={() => removePendingDocument(idx)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Text style={{ color: Colors.danger, fontSize: 12 }}>Retirer</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </>
+            )
+          )}
+        </View>
 
         {/* ─── Section: Notes ─── */}
         <View style={card}>
@@ -378,7 +593,8 @@ export default function EmployeurFormScreen() {
             <Text style={sectionTitle}>Notes</Text>
           </View>
 
-          <FormField
+          <LockedField
+            fieldKey="notes"
             label="Notes additionnelles"
             value={formData.notes}
             onChangeText={updateField('notes')}
@@ -386,6 +602,10 @@ export default function EmployeurFormScreen() {
             multiline
             numberOfLines={4}
             autoCapitalize="sentences"
+            unlocked={fieldUnlocked('notes')}
+            onToggleLock={toggleFieldLock}
+            onPatch={patchField}
+            isEditing={isEditing}
           />
         </View>
 
@@ -586,6 +806,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 14,
   },
+  pendingHint: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginBottom: Spacing.xs,
+  },
 
   /* ─── Submit Button ─── */
   submitButton: {
@@ -609,4 +835,20 @@ const docModal = StyleSheet.create({
   itemIcon: { fontSize: 22, width: 28, textAlign: 'center' },
   itemLabel: { fontSize: 15, color: Colors.textPrimary },
   cancel: { borderTopWidth: 1, borderTopColor: Colors.borderLight, marginTop: Spacing.sm },
+});
+
+// ── Styles pour LockedField (C1) — alignés sur ContratDocumentScreen ──
+const empStyles = StyleSheet.create({
+  lockedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  lockBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
 });
