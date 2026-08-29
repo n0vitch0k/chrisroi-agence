@@ -1488,11 +1488,14 @@ export const getDocumentsByEmploye = async (employeId: string): Promise<any[]> =
     });
     console.log('[UPLOAD-DIAG] getDocumentsByEmploye OK, items =', records.items.length);
     const pbUrl = getPocketBaseUrl();
-    return records.items.map((item: any) => ({
-      ...item,
-      imageUrl: item.file ? `${pbUrl}/api/files/documents/${item.id}/${item.file}` : null,
-      nomFichier: item.file || null,
-    }));
+    return records.items.map((item: any) => {
+      const fname = item.file || item.image || null;
+      return {
+        ...item,
+        imageUrl: fname ? `${pbUrl}/api/files/documents/${item.id}/${fname}` : null,
+        nomFichier: fname,
+      };
+    });
   } catch (e: any) {
     console.error('[UPLOAD-DIAG] getDocumentsByEmploye ÉCHEC status=', e?.status, '| msg=', e?.message);
     return [];
@@ -1547,10 +1550,12 @@ export const uploadDocument = async (
     }
     console.log('[UPLOAD-DIAG] imageField =', JSON.stringify(imageField).slice(0, 160));
     const record = await pb.collection('documents').create({
+      // Compat VPS (champ `image`) + local (champ `file`) — on envoie les deux pour éviter le 400
       file: imageField,
+      image: imageField,
       employe_id: employeId,
       type,
-    });
+    } as any);
     console.log('[UPLOAD-DIAG] SUCCÈS record.id =', record.id);
     return record.id;
   } catch (e: any) {
@@ -1583,11 +1588,14 @@ export const getDocumentsByEmployeur = async (employeurId: string): Promise<any[
       sort: '-created',
     });
     const pbUrl = getPocketBaseUrl();
-    return records.items.map((item: any) => ({
-      ...item,
-      imageUrl: item.file ? `${pbUrl}/api/files/documents/${item.id}/${item.file}` : null,
-      nomFichier: item.file || null,
-    }));
+    return records.items.map((item: any) => {
+      const fname = item.file || item.image || null;
+      return {
+        ...item,
+        imageUrl: fname ? `${pbUrl}/api/files/documents/${item.id}/${fname}` : null,
+        nomFichier: fname,
+      };
+    });
   } catch {
     return [];
   }
@@ -1619,10 +1627,12 @@ export const uploadEmployeurDocument = async (
       imageField = imageUri;
     }
     const record = await pb.collection('documents').create({
+      // Compat VPS `image` + local `file`
       file: imageField,
+      image: imageField,
       employeur_id: employeurId,
       type,
-    });
+    } as any);
     return record.id;
   } catch (e: any) {
     console.error('uploadEmployeurDocument error:', e?.status, e?.message, e?.data);
@@ -1642,11 +1652,14 @@ export const getDocumentsByContrat = async (contratId: string): Promise<any[]> =
       sort: '-created',
     });
     const pbUrl = getPocketBaseUrl();
-    return records.items.map((item: any) => ({
-      ...item,
-      imageUrl: item.file ? `${pbUrl}/api/files/documents/${item.id}/${item.file}` : null,
-      nomFichier: item.file || null,
-    }));
+    return records.items.map((item: any) => {
+      const fname = item.file || item.image || null;
+      return {
+        ...item,
+        imageUrl: fname ? `${pbUrl}/api/files/documents/${item.id}/${fname}` : null,
+        nomFichier: fname,
+      };
+    });
   } catch {
     return [];
   }
@@ -1677,10 +1690,12 @@ export const uploadContratDocument = async (
       imageField = imageUri;
     }
     const record = await pb.collection('documents').create({
+      // Compat VPS `image` + local `file`, + contrat_id (absent sur VPS mais ignoré si strict false)
       file: imageField,
+      image: imageField,
       contrat_id: contratId,
       type,
-    });
+    } as any);
     return record.id;
   } catch (e: any) {
     console.error('[UPLOAD-DIAG] uploadContratDocument ÉCHEC', e?.status, e?.message, e?.data);
