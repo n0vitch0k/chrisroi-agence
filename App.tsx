@@ -217,37 +217,16 @@ export default function App() {
 
 function AppContent() {
   const { user, isLoading, onLogin, onLogout } = useAuth();
-  const [splashDone, setSplashDone] = useState(false);
+  const [animDone, setAnimDone] = useState(false);
 
   const handleSplashFinish = useCallback(() => {
-    setSplashDone(true);
+    setAnimDone(true);
   }, []);
 
-  // Phase 1 : Animation splash — jouée UNE seule fois, jamais rejouée
-  if (!splashDone) {
-    return <AnimatedSplash onFinish={handleSplashFinish} />;
-  }
-
-  // Phase 2 : Splash terminé, mais connexion PB encore en cours (timeout 8s)
-  if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: Colors.primary,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <ActivityIndicator size="large" color="#FFFFFF" />
-        <Text style={{ color: '#FFFFFF', marginTop: 16, fontSize: 14, opacity: 0.85 }}>
-          Connexion au serveur...
-        </Text>
-        <Text style={{ color: '#FFFFFF', marginTop: 8, fontSize: 12, opacity: 0.6 }}>
-          Vérifiez que PocketBase est accessible
-        </Text>
-      </View>
-    );
+  // Splash couvre tout : animation + connexion PB (plus d'écran spinner séparé)
+  // Le texte "Connexion en cours..." s'affiche juste au-dessus des 3 points rebondissants
+  if (!animDone || isLoading) {
+    return <AnimatedSplash onFinish={handleSplashFinish} statusText={isLoading ? "Connexion en cours..." : undefined} />;
   }
 
   // Phase 3 : App (si user connecté) ou Login

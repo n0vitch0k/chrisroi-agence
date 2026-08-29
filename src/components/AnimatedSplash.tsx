@@ -6,9 +6,10 @@ const { width, height } = Dimensions.get('window');
 
 interface AnimatedSplashProps {
   onFinish?: () => void;
+  statusText?: string;
 }
 
-export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
+export default function AnimatedSplash({ onFinish, statusText }: AnimatedSplashProps) {
   const line = useRef(new Animated.Value(0)).current;
   const title = useRef(new Animated.Value(0)).current;
   const subtitle = useRef(new Animated.Value(0)).current;
@@ -140,6 +141,7 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   const titleColor = bgPhase.interpolate({ inputRange: [0, 1], outputRange: ['#f5e6c8', '#c45a2a'], extrapolate: 'clamp' }) as any;
   const subtitleColor = bgPhase.interpolate({ inputRange: [0, 1], outputRange: ['#d4a853', '#8a7d72'], extrapolate: 'clamp' }) as any;
   const taglineColor = bgPhase.interpolate({ inputRange: [0, 1], outputRange: ['rgba(255,255,255,0.88)', '#6b5f55'], extrapolate: 'clamp' }) as any;
+  const statusColor = bgPhase.interpolate({ inputRange: [0, 1], outputRange: ['rgba(255,255,255,0.88)', '#6b5f55'], extrapolate: 'clamp' }) as any;
   const lineBg = bgPhase.interpolate({ inputRange: [0, 1], outputRange: ['#d4a853', '#c45a2a'], extrapolate: 'clamp' }) as any;
   const dividerBg = bgPhase.interpolate({ inputRange: [0, 1], outputRange: ['rgba(212,168,83,0.45)', 'rgba(196,90,42,0.28)'], extrapolate: 'clamp' }) as any;
   const bgCColor = bgPhase.interpolate({ inputRange: [0, 1], outputRange: ['#d4a853', '#c45a2a'], extrapolate: 'clamp' }) as any;
@@ -175,6 +177,13 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
           <Animated.Text style={[s.tagline, { color: taglineColor }]}>Agence de placement de personnel</Animated.Text>
         </Animated.View>
       </View>
+
+      {/* Statut connexion juste au-dessus des points */}
+      {statusText ? (
+        <View style={s.statusWrap}>
+          <Animated.Text style={[s.statusText, { color: statusColor }]}>{statusText}</Animated.Text>
+        </View>
+      ) : null}
 
       {/* Dots en bas d'écran, loading séquentiel */}
       <View style={s.dotsRow}>
@@ -229,6 +238,21 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
+  },
+  statusWrap: {
+    position: 'absolute',
+    bottom: 82,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusText: {
+    fontSize: 12,
+    letterSpacing: 0.6,
+    color: '#8a7d72',
+    textAlign: 'center',
+    opacity: 0.95,
   },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
   dotT: { backgroundColor: '#c45a2a' },
