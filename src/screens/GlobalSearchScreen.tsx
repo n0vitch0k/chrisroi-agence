@@ -162,8 +162,8 @@ export default function GlobalSearchScreen() {
           ],
           icon: item.type_besoin === 'particulier' ? '🏠' : '🏢',
           avatarStyle: 'purple',
-          // Ouvre directement la fiche employeur en édition.
-          onPress: () => navigation.navigate('EmployeForm' as any, { id: item.id }),
+          // Ouvre directement la fiche employeur en édition (via le stack EmployesStack).
+          onPress: () => navigation.navigate('EmployesStack' as any, { screen: 'EmployeurForm', params: { id: item.id } }),
         });
       });
 
