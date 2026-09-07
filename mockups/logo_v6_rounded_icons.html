@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Logo v6 — Icônes carrées bords arrondis</title>
+<style>
+  :root {
+    --sand: #fdf8f3;
+    --ink: #0d0a09;
+    --gold: #d4a853;
+    --gold-deep: #b8860b;
+    --terra: #c45a2a;
+    --terra-deep: #8b3a1a;
+    --warm-grad: linear-gradient(135deg, #c45a2a 0%, #d4a853 60%, #b8860b 100%);
+    --night-grad: linear-gradient(160deg, #1a1208 0%, #2a1810 50%, #0d0a09 100%);
+    --gold-grad: linear-gradient(140deg, #f4d585 0%, #d4a853 50%, #8b6914 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--sand);
+    color: #2a1810;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .sub {
+    text-align: center;
+    color: #7a6a5a;
+    margin-bottom: 48px;
+    font-size: 14px;
+  }
+
+  /* === Carte variante === */
+  .variant {
+    margin: 0 auto 56px;
+    max-width: 1100px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 40px 32px 32px;
+    box-shadow: 0 8px 32px rgba(60, 30, 10, 0.08);
+  }
+  .variant-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #2a1810;
+  }
+  .variant-desc {
+    text-align: center;
+    font-size: 13px;
+    color: #8a7a6a;
+    margin-bottom: 32px;
+  }
+
+  /* === Grille preview === */
+  .preview-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 48px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .preview-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .preview-label {
+    font-size: 11px;
+    color: #9a8a7a;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* === Carré arrondi (le coeur du rendu) === */
+  .icon {
+    border-radius: 22.5%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 8px 24px rgba(60, 30, 10, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* === Variante 1 : Couronne Warm Earth === */
+  .v1 {
+    background: var(--warm-grad);
+  }
+  .v1 .crown {
+    width: 58%;
+    height: 58%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .v1 svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
+
+  /* === Variante 2 : Monogramme CR === */
+  .v2 {
+    background: var(--night-grad);
+  }
+  .v2 .mono {
+    color: var(--gold);
+    font-family: "Georgia", "Times New Roman", serif;
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  /* === Variante 3 : Or pur === */
+  .v3 {
+    background: var(--gold-grad);
+  }
+  .v3 .crown3 { width: 58%; height: 58%; }
+  .v3 svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 4px rgba(80,50,0,0.4)); }
+
+  /* === Tailles === */
+  .sz-1024 { width: 200px; height: 200px; }
+  .sz-180  { width: 180px; height: 180px; }
+  .sz-56   { width: 56px;  height: 56px;  }
+  .sz-36   { width: 36px;  height: 36px;  }
+
+  /* Texte dans icône */
+  .v2.sz-1024 .mono, .v2.sz-180 .mono { font-size: 96px; }
+  .v2.sz-56 .mono   { font-size: 30px; }
+  .v2.sz-36 .mono   { font-size: 20px; }
+
+  /* === Bloc "comment ça s'affiche" === */
+  .realistic {
+    margin-top: 24px;
+    padding: 28px 20px;
+    background: linear-gradient(180deg, #f7efe6 0%, #ede0d0 100%);
+    border-radius: 18px;
+  }
+  .realistic-title {
+    text-align: center;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #8a7a6a;
+    margin-bottom: 18px;
+    font-weight: 600;
+  }
+
+  /* === Faux home screen iOS === */
+  .phone {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 32px;
+    padding: 24px 18px;
+    max-width: 320px;
+    margin: 0 auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .phone-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px 12px;
+  }
+  .phone-app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .phone-app .icon {
+    border-radius: 22.5%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+  .phone-app .nm {
+    font-size: 10px;
+    color: #fff;
+    text-align: center;
+    line-height: 1.2;
+  }
+  /* Icônes dummy autour (juste pour le réalisme) */
+  .ico-msg { background: linear-gradient(135deg, #4ade80, #16a34a); }
+  .ico-cal { background: #fff; color: #ef4444; }
+  .ico-ff  { background: #f1f5f9; color: #3b82f6; }
+  .ico-mus { background: linear-gradient(135deg, #fb7185, #e11d48); }
+  .ico-set { background: linear-gradient(135deg, #6b7280, #374151); }
+  .ico-map { background: linear-gradient(135deg, #34d399, #059669); }
+  .ico-cam { background: linear-gradient(135deg, #4b5563, #1f2937); }
+  .ico-our { border: 2px solid #d4a853; }
+
+  .ico-ff svg, .ico-cal svg, .ico-set svg, .ico-cam svg, .ico-our svg {
+    width: 60%; height: 60%;
+  }
+
+  /* === Comparatif côte à côte === */
+  .compare {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin: 24px 0 8px;
+  }
+  .compare-cell { text-align: center; }
+  .compare-cell .nm2 {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #5a4a3a;
+    font-weight: 600;
+  }
+
+  footer {
+    text-align: center;
+    color: #9a8a7a;
+    font-size: 12px;
+    margin-top: 60px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Icônes carrées — bords arrondis</h1>
+<p class="sub">3 variantes • style app icon moderne (iOS / Android) • coins radius 22.5%</p>
+
+<!-- ========== VARIANTE 1 : Couronne Warm Earth ========== -->
+<div class="variant">
+  <div class="variant-title">V1 — Couronne Warm Earth</div>
+  <div class="variant-desc">Couronne or sur fond terracotta → or (ta palette, version jour)</div>
+
+  <div class="preview-row">
+    <div class="preview-cell">
+      <div class="icon v1 sz-1024">
+        <div class="crown">
+          <!-- Couronne stylisée Great Vibes simplifiée -->
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fde68a"/>
+                <stop offset="50%" stop-color="#fbbf24"/>
+                <stop offset="100%" stop-color="#b45309"/>
+              </linearGradient>
+            </defs>
+            <!-- 3 pointes -->
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="url(#g1)" stroke="#7c2d12" stroke-width="2" stroke-linejoin="round"/>
+            <!-- Base -->
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="url(#g1)" stroke="#7c2d12" stroke-width="2"/>
+            <!-- Joyaux -->
+            <circle cx="50" cy="73" r="3" fill="#c45a2a" stroke="#7c2d12" stroke-width="1"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">1024 × 1024</div>
+    </div>
+
+    <div class="preview-cell">
+      <div class="icon v1 sz-180">
+        <div class="crown">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="url(#g1)" stroke="#7c2d12" stroke-width="3" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="url(#g1)" stroke="#7c2d12" stroke-width="3"/>
+            <circle cx="50" cy="73" r="3" fill="#c45a2a" stroke="#7c2d12" stroke-width="1"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">180 × 180 (iOS @3x)</div>
+    </div>
+
+    <div class="preview-cell">
+      <div class="icon v1 sz-56">
+        <div class="crown">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="url(#g1)" stroke="#7c2d12" stroke-width="6" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="url(#g1)" stroke="#7c2d12" stroke-width="6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">56 × 56</div>
+    </div>
+
+    <div class="preview-cell">
+      <div class="icon v1 sz-36">
+        <div class="crown">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="url(#g1)" stroke="#7c2d12" stroke-width="8" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="url(#g1)" stroke="#7c2d12" stroke-width="8"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">36 × 36</div>
+    </div>
+  </div>
+
+  <div class="realistic">
+    <div class="realistic-title">Aperçu home screen iOS</div>
+    <div class="phone">
+      <div class="phone-grid">
+        <div class="phone-app"><div class="icon ico-msg sz-56"></div><div class="nm">Messages</div></div>
+        <div class="phone-app"><div class="icon ico-cal sz-56"></div><div class="nm">Calendrier</div></div>
+        <div class="phone-app"><div class="icon ico-our v1 sz-56"><div class="crown"><svg viewBox="0 0 100 100"><path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z" fill="url(#g1)" stroke="#7c2d12" stroke-width="6"/></svg></div></div><div class="nm">ChrisRoi</div></div>
+        <div class="phone-app"><div class="icon ico-map sz-56"></div><div class="nm">Plans</div></div>
+        <div class="phone-app"><div class="icon ico-ff sz-56"></div><div class="nm">Firefox</div></div>
+        <div class="phone-app"><div class="icon ico-mus sz-56"></div><div class="nm">Musique</div></div>
+        <div class="phone-app"><div class="icon ico-set sz-56"></div><div class="nm">Réglages</div></div>
+        <div class="phone-app"><div class="icon ico-cam sz-56"></div><div class="nm">Appareil</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== VARIANTE 2 : Monogramme CR Nuit ========== -->
+<div class="variant">
+  <div class="variant-title">V2 — Monogramme CR Nuit</div>
+  <div class="variant-desc">C R entrelacés en or sur fond nuit profond (version nuit, cohérent splash)</div>
+
+  <div class="preview-row">
+    <div class="preview-cell">
+      <div class="icon v2 sz-1024"><span class="mono">CR</span></div>
+      <div class="preview-label">1024 × 1024</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon v2 sz-180"><span class="mono">CR</span></div>
+      <div class="preview-label">180 × 180</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon v2 sz-56"><span class="mono">CR</span></div>
+      <div class="preview-label">56 × 56</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon v2 sz-36"><span class="mono">CR</span></div>
+      <div class="preview-label">36 × 36</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== VARIANTE 3 : Or pur Premium ========== -->
+<div class="variant">
+  <div class="variant-title">V3 — Or Premium</div>
+  <div class="variant-desc">Couronne en noir profond sur fond or brossé (look joaillerie luxe)</div>
+
+  <div class="preview-row">
+    <div class="preview-cell">
+      <div class="icon v3 sz-1024">
+        <div class="crown3">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="#1a1208" stroke="#1a1208" stroke-width="2" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="#1a1208"/>
+            <circle cx="50" cy="73" r="3" fill="#8b3a1a"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">1024 × 1024</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon v3 sz-180">
+        <div class="crown3">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="#1a1208" stroke="#1a1208" stroke-width="3" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="#1a1208"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">180 × 180</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon v3 sz-56">
+        <div class="crown3">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="#1a1208" stroke="#1a1208" stroke-width="6" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="#1a1208"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">56 × 56</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon v3 sz-36">
+        <div class="crown3">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="#1a1208" stroke="#1a1208" stroke-width="8" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="#1a1208"/>
+          </svg>
+        </div>
+      </div>
+      <div class="preview-label">36 × 36</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== COMPARATIF FINAL ========== -->
+<div class="variant" style="background: linear-gradient(180deg, #fdf8f3 0%, #ede0d0 100%);">
+  <div class="variant-title">Comparatif côte à côte</div>
+  <div class="variant-desc">Les 3 à 180px pour choisir</div>
+  <div class="compare">
+    <div class="compare-cell">
+      <div class="icon v1 sz-180">
+        <div class="crown">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="url(#g1)" stroke="#7c2d12" stroke-width="3" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="url(#g1)" stroke="#7c2d12" stroke-width="3"/>
+            <circle cx="50" cy="73" r="3" fill="#c45a2a"/>
+          </svg>
+        </div>
+      </div>
+      <div class="nm2">V1 Couronne</div>
+    </div>
+    <div class="compare-cell">
+      <div class="icon v2 sz-180"><span class="mono">CR</span></div>
+      <div class="nm2">V2 Monogramme</div>
+    </div>
+    <div class="compare-cell">
+      <div class="icon v3 sz-180">
+        <div class="crown3">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 70 Q 25 40 35 25 Q 40 35 45 30 Q 50 15 55 30 Q 60 35 65 25 Q 75 40 80 70 Z"
+                  fill="#1a1208" stroke="#1a1208" stroke-width="3" stroke-linejoin="round"/>
+            <rect x="18" y="68" width="64" height="10" rx="2" fill="#1a1208"/>
+          </svg>
+        </div>
+      </div>
+      <div class="nm2">V3 Or Premium</div>
+    </div>
+  </div>
+</div>
+
+<footer>ChrisRoi Agence — Sélection icône app • v6 • Bords arrondis 22.5% (norme iOS)</footer>
+
+</body>
+</html>

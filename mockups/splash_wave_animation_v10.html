@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Splash ChrisRoi V10 - 3 directions centre</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0a09;color:#faf1e8;font-family:"Plus Jakarta Sans",sans-serif}
+header{max-width:1200px;margin:0 auto;padding:26px 20px 8px;text-align:center}
+header h1{font-family:"Cormorant Garamond",serif;font-size:28px;font-weight:500}
+header p{color:#c9a86a;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:6px}
+.stage{max-width:1200px;margin:0 auto;padding:16px 20px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+@media(max-width:1000px){.stage{grid-template-columns:1fr}}
+.card{background:#16100c;border:1px solid rgba(201,168,106,.14);border-radius:20px;padding:16px}
+.card h2{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#c9a86a;text-align:center;margin-bottom:4px}
+.card .sub{font-size:10px;color:#8a7a6a;text-align:center;margin-bottom:12px;line-height:1.5}
+.phone{width:100%;max-width:330px;margin:0 auto;aspect-ratio:390/780;background:#faf1e8;border-radius:36px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.phone svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.controls{max-width:1200px;margin:0 auto;padding:0 20px 6px;display:flex;gap:10px;justify-content:center}
+.btn{background:#c9a86a;color:#0d0a09;border:0;padding:9px 16px;border-radius:999px;font-weight:700;font-size:12px;cursor:pointer}
+.btn.ghost{background:transparent;color:#c9a86a;border:1px solid rgba(201,168,106,.32)}
+.note{max-width:900px;margin:12px auto 36px;padding:0 20px;color:#8a7a6a;font-size:12px;line-height:1.7;text-align:center}
+.note code{color:#c9b8a0;font-size:11px}
+.badge{display:inline-block;margin-top:8px;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#0d0a09;background:linear-gradient(90deg,#c9a86a,#f4d585);padding:4px 12px;border-radius:999px;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+<h1>V10 — 3 directions pour le centre</h1>
+<p>Memes vagues validees partout • seul le centre change • dis-moi A, B ou C</p>
+<div><span class="badge">V10 — comparatif</span></div>
+</header>
+<div class="stage">
+
+<!-- OPTION A : ART DECO GEOMETRIQUE -->
+<div class="card">
+<h2>Option A — Art Deco</h2>
+<div class="sub">Traits fins or + terracotta, symetrique, zero chevauchement</div>
+<div class="phone">
+<svg id="svg-a" viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="terra-a" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient>
+<linearGradient id="gold-a" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#f4d585"/></linearGradient>
+<linearGradient id="shimmer-a" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+<stop offset="0%" stop-color="#3d1e0a"/><stop offset="36%" stop-color="#3d1e0a"/><stop offset="49%" stop-color="#f4d585"/><stop offset="53%" stop-color="#cc6641"/><stop offset="60%" stop-color="#3d1e0a"/><stop offset="100%" stop-color="#3d1e0a"/>
+</linearGradient>
+<radialGradient id="halo-a" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#f4d585" stop-opacity=".85"/><stop offset="45%" stop-color="#f4d585" stop-opacity=".28"/><stop offset="100%" stop-color="#f4d585" stop-opacity="0"/>
+</radialGradient>
+<filter id="soft-a" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2"/></filter>
+</defs>
+<rect width="390" height="780" fill="#faf1e8"/>
+<g id="world-a">
+<path id="a-tlP" d="" fill="url(#terra-a)"/>
+<path id="a-tlE" d="" fill="none" stroke="url(#gold-a)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft-a)"/>
+<path id="a-brP" d="" fill="url(#terra-a)"/>
+<path id="a-brE" d="" fill="none" stroke="url(#gold-a)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft-a)"/>
+<!-- deco : C en arc double trait + A en traits droits, separes -->
+<g id="a-ca" opacity="0" fill="none" stroke-linecap="round">
+<path d="M232 288 A72 72 0 1 0 232 392" stroke="#b4532a" stroke-width="7"/>
+<path d="M232 300 A60 60 0 1 0 232 380" stroke="url(#gold-a)" stroke-width="1.6"/>
+<path d="M196 400 L246 288 L296 400" stroke="#b4532a" stroke-width="7" stroke-linejoin="round"/>
+<path d="M212 368 L280 368" stroke="#b4532a" stroke-width="5"/>
+<path d="M206 400 L246 310 L286 400" stroke="url(#gold-a)" stroke-width="1.4"/>
+</g>
+<g transform="translate(246,442)">
+<g id="a-halo" opacity=".4"><circle r="27" fill="url(#halo-a)"/></g>
+<rect x="-10" y="-10" width="20" height="20" transform="rotate(45)" fill="url(#gold-a)"/>
+</g>
+<g id="a-brand" transform="translate(195,600)" opacity="0">
+<text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="37" letter-spacing=".4" fill="url(#shimmer-a)">Chrisroi Agence</text>
+<text text-anchor="middle" y="30" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE A VOTRE SERVICE</text>
+</g>
+</g>
+</svg>
+</div>
+</div>
+
+<!-- OPTION B : DRAW-ON CALLIGRAPHIQUE -->
+<div class="card">
+<h2>Option B — Trace calligraphique</h2>
+<div class="sub">Le C puis le A se dessinent sous les yeux, le losange s'allume</div>
+<div class="phone">
+<svg id="svg-b" viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="terra-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient>
+<linearGradient id="gold-b" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#f4d585"/></linearGradient>
+<linearGradient id="shimmer-b" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+<stop offset="0%" stop-color="#3d1e0a"/><stop offset="36%" stop-color="#3d1e0a"/><stop offset="49%" stop-color="#f4d585"/><stop offset="53%" stop-color="#cc6641"/><stop offset="60%" stop-color="#3d1e0a"/><stop offset="100%" stop-color="#3d1e0a"/>
+</linearGradient>
+<radialGradient id="halo-b" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#f4d585" stop-opacity=".85"/><stop offset="45%" stop-color="#f4d585" stop-opacity=".28"/><stop offset="100%" stop-color="#f4d585" stop-opacity="0"/>
+</radialGradient>
+<filter id="soft-b" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2"/></filter>
+</defs>
+<rect width="390" height="780" fill="#faf1e8"/>
+<g id="world-b">
+<path id="b-tlP" d="" fill="url(#terra-b)"/>
+<path id="b-tlE" d="" fill="none" stroke="url(#gold-b)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft-b)"/>
+<path id="b-brP" d="" fill="url(#terra-b)"/>
+<path id="b-brE" d="" fill="none" stroke="url(#gold-b)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft-b)"/>
+<!-- calligraphie : 3 traits qui se tracent -->
+<g id="b-ca" fill="none" stroke-linecap="round">
+<path id="b-s1" d="M268 272 C 200 246, 128 286, 124 344 C 120 402, 182 438, 244 420 C 268 414, 288 402, 298 390" stroke="#b4532a" stroke-width="8"/>
+<path id="b-s2" d="M232 420 L178 300 L150 358" stroke="#b4532a" stroke-width="7" stroke-linejoin="round"/>
+<path id="b-s3" d="M178 300 L236 288 L292 420" stroke="#b4532a" stroke-width="7" stroke-linejoin="round"/>
+<path id="b-s4" d="M196 372 L258 372" stroke="#c9a86a" stroke-width="2.4"/>
+</g>
+<g transform="translate(216,452)">
+<g id="b-halo" opacity="0"><circle r="30" fill="url(#halo-b)"/></g>
+<g id="b-dia" opacity="0"><rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="url(#gold-b)"/></g>
+</g>
+<g id="b-brand" transform="translate(195,600)" opacity="0">
+<text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="37" letter-spacing=".4" fill="url(#shimmer-b)">Chrisroi Agence</text>
+<text text-anchor="middle" y="30" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE A VOTRE SERVICE</text>
+</g>
+</g>
+</svg>
+</div>
+</div>
+
+<!-- OPTION C : EMBLEME CIRCULAIRE -->
+<div class="card">
+<h2>Option C — Embleme circulaire</h2>
+<div class="sub">Anneau or double trait, C et A aeres dedans, cachet de cire</div>
+<div class="phone">
+<svg id="svg-c" viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="terra-c" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient>
+<linearGradient id="gold-c" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#f4d585"/></linearGradient>
+<linearGradient id="shimmer-c" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+<stop offset="0%" stop-color="#3d1e0a"/><stop offset="36%" stop-color="#3d1e0a"/><stop offset="49%" stop-color="#f4d585"/><stop offset="53%" stop-color="#cc6641"/><stop offset="60%" stop-color="#3d1e0a"/><stop offset="100%" stop-color="#3d1e0a"/>
+</linearGradient>
+<radialGradient id="halo-c" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#f4d585" stop-opacity=".85"/><stop offset="45%" stop-color="#f4d585" stop-opacity=".28"/><stop offset="100%" stop-color="#f4d585" stop-opacity="0"/>
+</radialGradient>
+<filter id="soft-c" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2"/></filter>
+</defs>
+<rect width="390" height="780" fill="#faf1e8"/>
+<g id="world-c">
+<path id="c-tlP" d="" fill="url(#terra-c)"/>
+<path id="c-tlE" d="" fill="none" stroke="url(#gold-c)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft-c)"/>
+<path id="c-brP" d="" fill="url(#terra-c)"/>
+<path id="c-brE" d="" fill="none" stroke="url(#gold-c)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft-c)"/>
+<!-- embleme : anneau + CA aeres -->
+<g id="c-ca" opacity="0">
+<circle cx="195" cy="348" r="104" fill="none" stroke="url(#gold-c)" stroke-width="2.4"/>
+<circle cx="195" cy="348" r="94" fill="none" stroke="#b4532a" stroke-width="1"/>
+<g text-anchor="middle">
+<text x="162" y="382" font-family="Cormorant Garamond, serif" font-weight="600" font-size="104" fill="#b4532a">C</text>
+<text x="230" y="382" font-family="Cormorant Garamond, serif" font-weight="600" font-size="104" fill="#b4532a">A</text>
+</g>
+</g>
+<g transform="translate(195,478)">
+<g id="c-halo" opacity=".4"><circle r="24" fill="url(#halo-c)"/></g>
+<rect x="-9" y="-9" width="18" height="18" transform="rotate(45)" fill="url(#gold-c)"/>
+</g>
+<g id="c-brand" transform="translate(195,600)" opacity="0">
+<text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="37" letter-spacing=".4" fill="url(#shimmer-c)">Chrisroi Agence</text>
+<text text-anchor="middle" y="30" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE A VOTRE SERVICE</text>
+</g>
+</g>
+</svg>
+</div>
+</div>
+
+</div>
+<div class="controls">
+<button class="btn" id="btnReplay">Rejouer les entrees</button>
+<button class="btn ghost" id="btnPause">Pause</button>
+</div>
+<p class="note">
+V10 : A = traits geometriques fins sans chevauchement. B = 4 traits calligraphiques qui se tracent en draw-on puis restent fixes, losange qui s'allume a la fin. C = anneau or + C et A separes et aeres.<br/>
+Fichier : <code>mockups/splash_wave_animation_v10.html</code> — dis-moi A, B ou C et je pousse cette direction a fond.
+</p>
+<script>
+(function(){
+var $=function(id){return document.getElementById(id);};
+var N=24;
+function TLbase(s){var x=390-s*390;var y=42+s*244-Math.sin(s*Math.PI)*36;return [x,y];}
+function BRbase(s){var x=s*390;var y=738-s*244+Math.sin(s*Math.PI)*36;return [x,y];}
+function wavePts(fn,t,amp,ph){
+var pts=[];
+for(var k=0;k<=N;k++){
+var s=k/N,p=fn(s);
+var env=Math.sin(Math.PI*s);
+var w=Math.sin(s*Math.PI+t+ph)*amp*env;
+pts.push([p[0]+w*.45,p[1]+w]);
+}
+return pts;
+}
+function smooth(pts){
+var d='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+for(var k=0;k<pts.length-1;k++){
+var p0=pts[Math.max(0,k-1)],p1=pts[k],p2=pts[k+1],p3=pts[Math.min(pts.length-1,k+2)];
+var c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6;
+var c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
+d+=' C'+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+}
+return d;
+}
+function closedTL(pts){return smooth(pts)+' L-15 300 L-15 -15 L405 -15 L405 42 Z';}
+function closedBR(pts){return smooth(pts)+' L405 480 L405 795 L-15 795 L-15 738 Z';}
+function edgeD(pts){var q=pts.map(function(p){return [p[0],p[1]+7];});return smooth(q);}
+// draw-on B : longueurs
+var bPaths=['b-s1','b-s2','b-s3','b-s4'].map($);
+var bLens=bPaths.map(function(p){return p.getTotalLength();});
+bPaths.forEach(function(p,i){p.style.strokeDasharray=bLens[i];p.style.strokeDashoffset=bLens[i];});
+function easeOut(x){return 1-Math.pow(1-x,3);}
+var running=true,t0=performance.now(),intro0=performance.now();
+var grads={a:$('shimmer-a'),b:$('shimmer-b'),c:$('shimmer-c')};
+function frame(now){
+if(!running) return;
+var t=(now-t0)/1000;
+var intro=Math.min(1,(now-intro0)/2600);
+var e=easeOut(intro);
+['a','b','c'].forEach(function(p,idx){
+var ph=[0,2.6,1.3][idx];
+var tlA=wavePts(TLbase,t*1.1,8*(0.3+0.7*intro),ph);
+var brA=wavePts(BRbase,t*1.0,8*(0.3+0.7*intro),ph+2.6);
+$(p+'-tlP').setAttribute('d',closedTL(tlA));
+$(p+'-tlE').setAttribute('d',edgeD(tlA));
+$(p+'-brP').setAttribute('d',closedBR(brA));
+$(p+'-brE').setAttribute('d',edgeD(brA));
+var g=grads[p];
+var cyc=(t%3.6)/3.6;
+g.setAttribute('gradientTransform','translate('+(-95+cyc*215).toFixed(1)+' 0)');
+});
+// A et C : fade simple
+$('a-ca').setAttribute('opacity',e.toFixed(3));
+$('c-ca').setAttribute('opacity',e.toFixed(3));
+// B : draw-on sequentiel 0 -> 0.7 puis halo + losange + marque
+var d=Math.min(1,intro/0.7);
+bPaths.forEach(function(p,i){
+var start=i*0.18,local=Math.max(0,Math.min(1,(d-start)/0.22));
+p.style.strokeDashoffset=(bLens[i]*(1-local)).toFixed(1);
+});
+var tail=Math.max(0,Math.min(1,(intro-0.7)/0.3));
+$('b-halo').setAttribute('opacity',(.55*tail).toFixed(3));
+$('b-dia').setAttribute('opacity',tail.toFixed(3));
+[['a',600],['b',600],['c',600]].forEach(function(cfg){
+var p=cfg[0],y=cfg[1];
+$(p+'-brand').setAttribute('opacity',Math.max(0,Math.min(1,(intro-.55)/.45)).toFixed(3));
+$(p+'-brand').setAttribute('transform','translate(195,'+(y+(1-e)*14).toFixed(1)+')');
+});
+// halos A et C respirent
+var pulse=.5+.5*Math.sin(t*2.2);
+$('a-halo').setAttribute('opacity',(.3+.3*pulse*intro).toFixed(3));
+$('c-halo').setAttribute('opacity',(.3+.3*pulse*intro).toFixed(3));
+requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+$('btnReplay').onclick=function(){intro0=performance.now();if(!running){running=true;requestAnimationFrame(frame);}};
+var paused=false;
+$('btnPause').onclick=function(){
+paused=!paused;
+if(paused){running=false;$('btnPause').textContent='Reprendre';}
+else{running=true;t0=performance.now();$('btnPause').textContent='Pause';requestAnimationFrame(frame);}
+};
+})();
+</script>
+</body>
+</html>

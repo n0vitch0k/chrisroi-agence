@@ -14,8 +14,8 @@ import * as ImagePicker from 'expo-image-picker';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import type { RootStackParamList } from '../types/navigation';
 import type { DocumentType, ScanState } from '../types/scan';
-import { getGeminiApiKey } from '../database/service';
-import { extractDocument } from '../services/gemini';
+import { getKilocodeApiKey } from '../database/service';
+import { extractDocument } from '../services/kilocode';
 import AppHeader from '../components/AppHeader';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../theme';
 import SafeButton from '../components/SafeButton';
@@ -97,11 +97,11 @@ export default function ScanScreen({ navigation }: Props) {
 
   const extractAndNavigate = async (documentType: DocumentType, imageUri: string, base64?: string | null) => {
     try {
-      const apiKey = await getGeminiApiKey();
+      const apiKey = await getKilocodeApiKey();
       if (!apiKey) {
         Alert.alert(
           'Clé API manquante',
-          'Configurez d\'abord votre clé API Gemini dans Paramètres > Scanner.'
+          'Configurez d\'abord votre clé API KiloCode dans Paramètres > Scanner.'
         );
         setScanState(prev => ({ ...prev, status: 'pending', error: 'Clé API manquante' }));
         setImagePreview(null);

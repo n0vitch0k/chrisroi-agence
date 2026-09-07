@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Splash Animé — Vagues + Losange + Shimmer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Playfair+Display:wght@400;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#1a1208;
+    color:#faf1e8;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:32px 16px 80px;
+  }
+  h1{text-align:center;font-size:22px;font-weight:600;letter-spacing:.5px}
+  .sub{text-align:center;color:#c9a86a;font-size:13px;margin:8px 0 32px;letter-spacing:1px;text-transform:uppercase}
+  .wrap{
+    display:flex;gap:32px;justify-content:center;flex-wrap:wrap;align-items:flex-start;
+  }
+  /* Phone frame */
+  .phone{
+    width:390px;height:760px;
+    background:#faf1e8;
+    border-radius:40px;
+    overflow:hidden;
+    position:relative;
+    box-shadow:0 20px 60px rgba(0,0,0,.45), 0 0 0 8px #0d0a09, 0 0 0 10px rgba(201,168,106,.2);
+    flex-shrink:0;
+  }
+  .phone-label{
+    text-align:center;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7a6a;margin-top:14px;font-weight:600;
+  }
+  /* Vagues */
+  .wave{
+    position:absolute;pointer-events:none;will-change:transform;
+  }
+  .wave svg{display:block;width:100%;height:100%}
+  .wave-tl{
+    top:-2px;left:-2px;width:220px;height:220px;
+    animation: waveFloatTL 6s ease-in-out infinite;
+    transform-origin: 0 0;
+  }
+  .wave-br{
+    bottom:-2px;right:-2px;width:240px;height:240px;
+    animation: waveFloatBR 7s ease-in-out infinite;
+    transform-origin: 100% 100%;
+  }
+  @keyframes waveFloatTL{
+    0%,100%{transform: translate(0,0) scale(1) rotate(0deg)}
+    25%{transform: translate(6px,-4px) scale(1.03) rotate(.6deg)}
+    50%{transform: translate(-4px,6px) scale(.98) rotate(-.5deg)}
+    75%{transform: translate(4px,3px) scale(1.02) rotate(.3deg)}
+  }
+  @keyframes waveFloatBR{
+    0%,100%{transform: translate(0,0) scale(1) rotate(0deg)}
+    30%{transform: translate(-5px,4px) scale(1.02) rotate(-.4deg)}
+    60%{transform: translate(4px,-6px) scale(.99) rotate(.5deg)}
+  }
+  /* Centre */
+  .center{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 24px;
+    z-index:2;
+  }
+  .ca-wrap{
+    position:relative;width:260px;height:200px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:12px;
+  }
+  .ca-wrap img{
+    width:100%;height:100%;object-fit:contain;filter: drop-shadow(0 2px 8px rgba(60,30,10,.08));
+  }
+  /* Losange pulse - overlay sur le losange de l'image */
+  .diamond-pulse{
+    position:absolute;left:50%;top:68%;width:22px;height:22px;transform:translate(-50%,-50%) rotate(45deg);
+    background: linear-gradient(135deg, #f4d585 0%, #c9a86a 50%, #b8860b 100%);
+    box-shadow: 0 0 0 rgba(201,168,106,0);
+    animation: diamondPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes diamondPulse{
+    0%,100%{transform:translate(-50%,-50%) rotate(45deg) scale(1); box-shadow:0 0 0 0 rgba(201,168,106,0), 0 0 12px rgba(201,168,106,.35)}
+    50%{transform:translate(-50%,-50%) rotate(45deg) scale(1.18); box-shadow:0 0 0 10px rgba(201,168,106,0), 0 0 28px rgba(244,213,133,.9), 0 0 48px rgba(201,168,106,.45)}
+  }
+  /* Texte avec shimmer */
+  .brand{
+    font-family:"Cormorant Garamond", "Playfair Display", serif;
+    font-size:34px;letter-spacing:.5px;color:#3d1e0a;font-weight:400;
+    position:relative;overflow:hidden;
+    background: linear-gradient(100deg, #3d1e0a 30%, #c45a2a 45%, #f4d585 50%, #c45a2a 55%, #3d1e0a 70%);
+    background-size: 200% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3.2s linear infinite;
+  }
+  @keyframes shimmer{
+    0%{background-position: 120% 0}
+    100%{background-position: -80% 0}
+  }
+  .brand-sub{
+    font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#8a7a6a;margin-top:6px;font-weight:600;
+  }
+  /* Variante sans shimmer pour comparer */
+  .brand-static{
+    font-family:"Cormorant Garamond",serif;font-size:34px;color:#3d1e0a;
+  }
+  /* Controls */
+  .controls{
+    max-width:860px;margin:40px auto 0;background:#0d0a09;border:1px solid rgba(201,168,106,.15);border-radius:16px;padding:20px 24px;
+  }
+  .controls h3{font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:#c9a86a;margin-bottom:10px}
+  .controls p{font-size:13px;color:#c9b8a0;line-height:1.6}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px;vertical-align:middle}
+</style>
+</head>
+<body>
+<h1>Splash animé — inspiré de ton image</h1>
+<p class="sub">Vagues ondulantes • Losange or pulsé • Texte qui luise</p>
+
+<div class="wrap">
+
+  <!-- V1 : Animé complet -->
+  <div>
+    <div class="phone" id="phone1">
+      <!-- Vague TL -->
+      <div class="wave wave-tl">
+        <svg viewBox="0 0 220 220" preserveAspectRatio="none">
+          <defs><linearGradient id="gTL" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient></defs>
+          <path d="M0 0 H220 V40 C 160 60, 110 100, 60 140 C 35 165, 15 180, 0 200 Z" fill="url(#gTL)"/>
+          <path d="M0 205 C 15 185, 35 168, 60 143 C 110 103, 160 63, 220 43" fill="none" stroke="#c9a86a" stroke-width="1.2" opacity=".9"/>
+          <path d="M0 212 C 18 192, 38 174, 64 148 C 112 108, 162 68, 220 48" fill="none" stroke="#fff" stroke-width=".6" opacity=".35"/>
+        </svg>
+      </div>
+      <!-- Vague BR -->
+      <div class="wave wave-br">
+        <svg viewBox="0 0 240 240" preserveAspectRatio="none">
+          <defs><linearGradient id="gBR" x1="1" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient></defs>
+          <path d="M240 240 H0 V200 C 60 180, 110 140, 160 100 C 190 72, 215 55, 240 40 Z" fill="url(#gBR)"/>
+          <path d="M240 35 C 215 50, 190 68, 160 97 C 110 137, 60 177, 0 197" fill="none" stroke="#c9a86a" stroke-width="1.2" opacity=".9"/>
+          <path d="M240 28 C 212 43, 186 62, 156 92 C 108 132, 58 172, 0 190" fill="none" stroke="#fff" stroke-width=".6" opacity=".35"/>
+        </svg>
+      </div>
+      <div class="center">
+        <div class="ca-wrap">
+          <img src="monogram_ca_only.png" alt="CA"/>
+          <div class="diamond-pulse"></div>
+        </div>
+        <div class="brand">Chrisroi Agence</div>
+        <div class="brand-sub">L'excellence à votre service</div>
+      </div>
+    </div>
+    <div class="phone-label">V1 — Animé complet (recommandé)</div>
+  </div>
+
+  <!-- V2 : Statique pour comparer -->
+  <div>
+    <div class="phone" style="background:#faf1e8;">
+      <div class="wave wave-tl" style="animation:none">
+        <svg viewBox="0 0 220 220" preserveAspectRatio="none">
+          <path d="M0 0 H220 V40 C 160 60, 110 100, 60 140 C 35 165, 15 180, 0 200 Z" fill="#cc6641"/>
+          <path d="M0 205 C 15 185, 35 168, 60 143 C 110 103, 160 63, 220 43" fill="none" stroke="#c9a86a" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="wave wave-br" style="animation:none">
+        <svg viewBox="0 0 240 240" preserveAspectRatio="none">
+          <path d="M240 240 H0 V200 C 60 180, 110 140, 160 100 C 190 72, 215 55, 240 40 Z" fill="#cc6641"/>
+          <path d="M240 35 C 215 50, 190 68, 160 97 C 110 137, 60 177, 0 197" fill="none" stroke="#c9a86a" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="center">
+        <div class="ca-wrap"><img src="monogram_ca_only.png" alt="CA"/><div class="diamond-pulse" style="animation:none;box-shadow:0 0 12px rgba(201,168,106,.35)"></div></div>
+        <div class="brand-static">Chrisroi Agence</div>
+        <div class="brand-sub">L'excellence à votre service</div>
+      </div>
+    </div>
+    <div class="phone-label">V2 — Statique (référence)</div>
+  </div>
+
+</div>
+
+<div class="controls">
+  <h3>Ce que tu vois — et ce que je propose d'implémenter en React Native</h3>
+  <p>
+    <span class="dot" style="background:#cc6641"></span><b>Vagues :</b> ondulation fluide 6–7s, translate 4–6px + scale 2–3% + légère rotation &lt;1°. Sans morph de path (trop coûteux), juste le conteneur SVG qui flotte — même rendu que dans la maquette, fluide à 60fps avec `transform` + `react-native-reanimated`.<br/>
+    <span class="dot" style="background:#c9a86a"></span><b>Losange or :</b> pulse 2.2s : scale 1→1.18 + glow doré (shadow 12px→28px + 48px). Couleur dégradé #f4d585→#b8860b. C'est l'élément qui attire l'œil au centre.<br/>
+    <span class="dot" style="background:#3d1e0a"></span><b>Texte "Chrisroi Agence" :</b> shimmer linéaire 3.2s qui traverse le nom de gauche à droite (gradient terracotta→or→terracotta) avec `background-clip:text`. Effet "luise tout le long du nom" comme tu voulais — pas un simple fade, une vraie lumière qui glisse.<br/><br/>
+    <b>Implémentation RN :</b> `react-native-reanimated` pour vagues + losange (transform/scale/shadow), `expo-linear-gradient` + `MaskedView` pour le shimmer texte. Aucune dépendance lourde (pas de Skia). Durée splash 1.8–2.2s puis fade vers app.<br/>
+    Ouvre cette maquette sur ton écran : <code>C:\Users\BROU WILLIAMS\Downloads\chrisroi-agence\chrisroi-agence\mockups\splash_wave_animation.html</code>
+  </p>
+</div>
+
+</body>
+</html>

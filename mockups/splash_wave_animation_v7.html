@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Splash ChrisRoi V7 - Coins plaqués, centre 100% vectoriel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0a09;color:#faf1e8;font-family:"Plus Jakarta Sans",sans-serif}
+header{max-width:1100px;margin:0 auto;padding:26px 20px 8px;text-align:center}
+header h1{font-family:"Cormorant Garamond",serif;font-size:28px;font-weight:500}
+header p{color:#c9a86a;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:6px}
+header .hint{color:#8a7a6a;font-size:11px;margin-top:8px}
+.stage{max-width:1100px;margin:0 auto;padding:16px 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:860px){.stage{grid-template-columns:1fr}}
+.card{background:#16100c;border:1px solid rgba(201,168,106,.14);border-radius:20px;padding:16px}
+.card h2{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#c9a86a;text-align:center;margin-bottom:12px}
+.phone{width:100%;max-width:390px;margin:0 auto;aspect-ratio:390/780;background:#faf1e8;border-radius:36px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.phone svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.controls{max-width:1100px;margin:0 auto;padding:0 20px 6px;display:flex;gap:10px;justify-content:center}
+.btn{background:#c9a86a;color:#0d0a09;border:0;padding:9px 16px;border-radius:999px;font-weight:700;font-size:12px;cursor:pointer}
+.btn.ghost{background:transparent;color:#c9a86a;border:1px solid rgba(201,168,106,.32)}
+.note{max-width:880px;margin:12px auto 36px;padding:0 20px;color:#8a7a6a;font-size:12px;line-height:1.7;text-align:center}
+.note code{color:#c9b8a0;font-size:11px}
+.badge{display:inline-block;margin-top:8px;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#0d0a09;background:linear-gradient(90deg,#c9a86a,#f4d585);padding:4px 12px;border-radius:999px;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+<h1>V7 — Coins plaqués + CA redessiné en vectoriel</h1>
+<p>Extremites epinglees aux bordures • zero image PNG • lettres Cormorant nettes a tout zoom</p>
+<div class="hint">Corrections d'apres tes retours V6 : decollement des coins + image centrale floue</div>
+<div><span class="badge">V7 — 100% vectoriel</span></div>
+</header>
+<div class="stage">
+<div class="card">
+<h2>Anime — 60fps</h2>
+<div class="phone">
+<svg id="stageA" viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="terra" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient>
+<linearGradient id="terraSoft" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641" stop-opacity=".38"/><stop offset="100%" stop-color="#b4532a" stop-opacity=".38"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#f4d585"/></linearGradient>
+<linearGradient id="shimmer" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+<stop offset="0%" stop-color="#3d1e0a"/><stop offset="36%" stop-color="#3d1e0a"/><stop offset="49%" stop-color="#f4d585"/><stop offset="53%" stop-color="#cc6641"/><stop offset="60%" stop-color="#3d1e0a"/><stop offset="100%" stop-color="#3d1e0a"/>
+</linearGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#f4d585" stop-opacity=".85"/><stop offset="45%" stop-color="#f4d585" stop-opacity=".28"/><stop offset="100%" stop-color="#f4d585" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="vig" cx="50%" cy="46%" r="75%">
+<stop offset="62%" stop-color="#3d1e0a" stop-opacity="0"/><stop offset="100%" stop-color="#3d1e0a" stop-opacity=".10"/>
+</radialGradient>
+<filter id="soft3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2"/></filter>
+</defs>
+<rect width="390" height="780" fill="#faf1e8"/>
+<g id="world">
+<path id="tlSoftP" d="" fill="url(#terraSoft)"/>
+<path id="tlMainP" d="" fill="url(#terra)"/>
+<path id="tlEdge" d="" fill="none" stroke="url(#gold)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft3)"/>
+<path id="brSoftP" d="" fill="url(#terraSoft)"/>
+<path id="brMainP" d="" fill="url(#terra)"/>
+<path id="brEdge" d="" fill="none" stroke="url(#gold)" stroke-width="1.8" stroke-linecap="round" filter="url(#soft3)"/>
+<g id="dust"></g>
+<!-- CENTRE 100% VECTORIEL : grand C + grand A + petit c + petit a, Cormorant Garamond -->
+<g id="caGroup" opacity="0" text-anchor="middle">
+<text x="182" y="408" font-family="Cormorant Garamond, serif" font-weight="600" font-size="300" fill="#c45a2a" opacity=".92">C</text>
+<text x="212" y="414" font-family="Cormorant Garamond, serif" font-weight="600" font-size="252" fill="#b4532a">A</text>
+<text x="168" y="358" font-family="Cormorant Garamond, serif" font-weight="500" font-size="104" fill="#d4693f">C</text>
+<text x="238" y="402" font-family="Cormorant Garamond, serif" font-weight="500" font-size="96" fill="#d4693f">A</text>
+</g>
+<!-- losange UNIQUE -->
+<g transform="translate(195,446)">
+<g id="halo2" opacity=".22"><circle r="46" fill="url(#halo)"/></g>
+<g id="halo1" opacity=".4"><circle r="27" fill="url(#halo)"/></g>
+<g id="rays" opacity=".28">
+<line x1="0" y1="-32" x2="0" y2="-21" stroke="#f4d585" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="0" y1="21" x2="0" y2="32" stroke="#f4d585" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="-32" y1="0" x2="-21" y2="0" stroke="#f4d585" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="21" y1="0" x2="32" y2="0" stroke="#f4d585" stroke-width="1.4" stroke-linecap="round"/>
+</g>
+<rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="url(#gold)"/>
+<rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="none" stroke="#fff3d6" stroke-width=".8" opacity=".8"/>
+<g id="sparks"></g>
+</g>
+<g id="brand" transform="translate(195,596)" opacity="0">
+<text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="37" letter-spacing=".4" fill="url(#shimmer)">Chrisroi Agence</text>
+<rect id="underline" x="-70" y="12" width="140" height="1.4" fill="url(#gold)" opacity=".9"/>
+<text text-anchor="middle" y="30" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE A VOTRE SERVICE</text>
+</g>
+</g>
+<rect width="390" height="780" fill="url(#vig)"/>
+</svg>
+</div>
+</div>
+<div class="card">
+<h2>Statique — reference</h2>
+<div class="phone">
+<svg viewBox="0 0 390 780" xmlns="http://www.w3.org/2000/svg">
+<rect width="390" height="780" fill="#faf1e8"/>
+<path d="M-15 -15 H405 V42 C 262 64, 148 108, 72 182 C 34 218, 14 248, -15 300 Z" fill="#cc6641"/>
+<path d="M-15 308 C 14 252, 34 222, 72 186 C 148 112, 262 68, 405 46" fill="none" stroke="#c9a86a" stroke-width="1.8"/>
+<path d="M405 795 H-15 V738 C 128 716, 242 672, 318 598 C 356 558, 376 528, 405 480 Z" fill="#cc6641"/>
+<path d="M405 472 C 376 522, 356 552, 318 592 C 242 666, 128 710, -15 746" fill="none" stroke="#c9a86a" stroke-width="1.8"/>
+<g text-anchor="middle">
+<text x="182" y="408" font-family="Cormorant Garamond, serif" font-weight="600" font-size="300" fill="#c45a2a" opacity=".92">C</text>
+<text x="212" y="414" font-family="Cormorant Garamond, serif" font-weight="600" font-size="252" fill="#b4532a">A</text>
+<text x="168" y="358" font-family="Cormorant Garamond, serif" font-weight="500" font-size="104" fill="#d4693f">C</text>
+<text x="238" y="402" font-family="Cormorant Garamond, serif" font-weight="500" font-size="96" fill="#d4693f">A</text>
+</g>
+<g transform="translate(195,446)"><rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="#c9a86a"/></g>
+<g transform="translate(195,596)">
+<text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="37" fill="#3d1e0a">Chrisroi Agence</text>
+<text text-anchor="middle" y="30" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE A VOTRE SERVICE</text>
+</g>
+</svg>
+</div>
+</div>
+</div>
+<div class="controls">
+<button class="btn" id="btnReplay">Rejouer l'entree</button>
+<button class="btn ghost" id="btnPause">Pause</button>
+</div>
+<p class="note">
+V7 : coins epingles — l'ondulation est multipliee par une enveloppe sin(PI*s) nulle aux 2 extremites, donc les points d'attache aux bordures ne bougent jamais, et les fermetures depassent de 15px hors ecran (overscan) pour absorber l'antialiasing. Centre redessine : 4 lettres vectorielles Cormorant, zero PNG.<br/>
+Fichier : <code>mockups/splash_wave_animation_v7.html</code>
+</p>
+<script>
+(function(){
+var NS='http://www.w3.org/2000/svg';
+var $=function(id){return document.getElementById(id);};
+var tlSoftP=$('tlSoftP'),tlMainP=$('tlMainP'),tlEdge=$('tlEdge');
+var brSoftP=$('brSoftP'),brMainP=$('brMainP'),brEdge=$('brEdge');
+var halo1=$('halo1'),halo2=$('halo2'),rays=$('rays'),sparks=$('sparks'),dust=$('dust');
+var caGroup=$('caGroup'),brand=$('brand'),underline=$('underline'),world=$('world');
+var grad=document.getElementById('shimmer');
+var N=26,i;
+var P=[];
+for(i=0;i<18;i++){
+var c=document.createElementNS(NS,'circle');
+c.setAttribute('r',(.8+Math.random()*1.4).toFixed(2));
+c.setAttribute('fill',Math.random()<.5?'#c9a86a':'#f4d585');
+dust.appendChild(c);
+P.push({el:c,x:30+Math.random()*330,y:Math.random()*780,sp:.08+Math.random()*.18,ph:Math.random()*6.28,tw:.5+Math.random()*.9});
+}
+var S=[];
+for(i=0;i<6;i++){
+var s=document.createElementNS(NS,'circle');
+s.setAttribute('r',(.8+Math.random()*1).toFixed(2));
+s.setAttribute('fill','#fff3d6');
+sparks.appendChild(s);
+S.push({el:s,a:Math.random()*6.28,rr:22+Math.random()*12,sp:.3+Math.random()*.5,ph:Math.random()*6.28});
+}
+function TLbase(s){var x=390-s*390;var y=42+s*244-Math.sin(s*Math.PI)*36;return [x,y];}
+function BRbase(s){var x=s*390;var y=738-s*244+Math.sin(s*Math.PI)*36;return [x,y];}
+// enveloppe sin(PI*s) : 0 aux extremites -> attaches immobiles, ventre mobile
+function wavePts(fn,t,amp,ph){
+var pts=[];
+for(var k=0;k<=N;k++){
+var s=k/N,p=fn(s);
+var env=Math.sin(Math.PI*s);
+var w=Math.sin(s*Math.PI+t+ph)*amp*env;
+pts.push([p[0]+w*.45,p[1]+w]);
+}
+return pts;
+}
+function smooth(pts){
+var d='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+for(var k=0;k<pts.length-1;k++){
+var p0=pts[Math.max(0,k-1)],p1=pts[k],p2=pts[k+1],p3=pts[Math.min(pts.length-1,k+2)];
+var c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6;
+var c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
+d+=' C'+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+}
+return d;
+}
+// fermeture en overscan : 15px hors ecran, les bords ne se decolent jamais
+function closedTL(pts){return smooth(pts)+' L-15 300 L-15 -15 L405 -15 L405 42 Z';}
+function closedBR(pts){return smooth(pts)+' L405 480 L405 795 L-15 795 L-15 738 Z';}
+function edgeD(pts){var q=pts.map(function(p){return [p[0],p[1]+7];});return smooth(q);}
+var running=true,t0=performance.now(),intro0=performance.now();
+function easeOut(x){return 1-Math.pow(1-x,3);}
+function frame(now){
+if(!running) return;
+var t=(now-t0)/1000;
+var intro=Math.min(1,(now-intro0)/2200);
+var tlA=wavePts(TLbase,t*1.1,8*(0.3+0.7*intro),0);
+var tlB=wavePts(TLbase,t*1.1+1.4,5,0);
+tlMainP.setAttribute('d',closedTL(tlA));
+tlSoftP.setAttribute('d',closedTL(tlB));
+tlEdge.setAttribute('d',edgeD(tlA));
+var brA=wavePts(BRbase,t*1.0,8*(0.3+0.7*intro),2.6);
+var brB=wavePts(BRbase,t*1.0+1.4,5,2.6);
+brMainP.setAttribute('d',closedBR(brA));
+brSoftP.setAttribute('d',closedBR(brB));
+brEdge.setAttribute('d',edgeD(brA));
+var pulse=.5+.5*Math.sin(t*2.2);
+halo1.setAttribute('opacity',(.32+.32*pulse*intro).toFixed(3));
+halo2.setAttribute('opacity',(.14+.2*(1-pulse)*intro).toFixed(3));
+halo1.setAttribute('transform','scale('+(1+.07*pulse).toFixed(3)+')');
+halo2.setAttribute('transform','scale('+(1.04-.05*pulse).toFixed(3)+')');
+rays.setAttribute('transform','rotate('+(t*6).toFixed(1)+')');
+rays.setAttribute('opacity',(.2+.14*pulse).toFixed(3));
+for(var k=0;k<S.length;k++){var o=S[k];o.a+=.006*o.sp;
+var rr=o.rr+Math.sin(t*1.4+o.ph)*3;
+o.el.setAttribute('cx',(Math.cos(o.a)*rr).toFixed(1));o.el.setAttribute('cy',(Math.sin(o.a)*rr*.8).toFixed(1));
+o.el.setAttribute('opacity',((.2+.6*Math.abs(Math.sin(t*1.2+o.ph)))*intro).toFixed(2));
+}
+for(var j=0;j<P.length;j++){var q=P[j];q.y-=q.sp;if(q.y<-6){q.y=786;q.x=30+Math.random()*330;}
+q.el.setAttribute('cx',q.x.toFixed(1));q.el.setAttribute('cy',q.y.toFixed(1));
+q.el.setAttribute('opacity',((.2+.5*Math.abs(Math.sin(t*q.tw+q.ph)))*intro).toFixed(2));
+}
+var cyc=(t%3.6)/3.6;
+grad.setAttribute('gradientTransform','translate('+(-95+cyc*215).toFixed(1)+' 0)');
+grad.setAttribute('gradientUnits','objectBoundingBox');
+var e=easeOut(intro);
+caGroup.setAttribute('opacity',e.toFixed(3));
+brand.setAttribute('opacity',Math.max(0,Math.min(1,(intro-.35)/.65)).toFixed(3));
+brand.setAttribute('transform','translate(195,'+(596+(1-e)*14).toFixed(1)+')');
+var uw=Math.max(0,Math.min(1,(intro-.55)/.45));
+underline.setAttribute('transform','translate(195,0) scale('+uw.toFixed(3)+',1) translate(-195,0)');
+var br=1+.005*Math.sin(t*.5);
+world.setAttribute('transform','translate(195,390) scale('+br.toFixed(4)+') translate(-195,-390)');
+requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+$('btnReplay').onclick=function(){intro0=performance.now();if(!running){running=true;requestAnimationFrame(frame);}};
+var paused=false;
+$('btnPause').onclick=function(){
+paused=!paused;
+if(paused){running=false;$('btnPause').textContent='Reprendre';}
+else{running=true;t0=performance.now();$('btnPause').textContent='Pause';requestAnimationFrame(frame);}
+};
+})();
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
-import { getAllUsers, createUser, getGeminiApiKey, saveGeminiApiKey } from '../database/service';
+import { getAllUsers, createUser, getGeminiApiKey, saveGeminiApiKey, getKilocodeApiKey, saveKilocodeApiKey } from '../database/service';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../theme';
 import AppHeader from '../components/AppHeader';
 import SafeButton from '../components/SafeButton';
@@ -69,6 +69,9 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'ok' | 'error'>('idle');
   const [geminiKey, setGeminiKey] = useState('');
   const [geminiKeyVisible, setGeminiKeyVisible] = useState(false);
+  const [showKilocodeKey, setShowKilocodeKey] = useState(false);
+  const [kilocodeKey, setKilocodeKey] = useState('');
+  const [kilocodeKeyVisible, setKilocodeKeyVisible] = useState(false);
   const [addingUser, setAddingUser] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
   const [newUser, setNewUser] = useState({
@@ -79,7 +82,7 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
     try { setUsers((await getAllUsers()) || []); } catch (error) { console.error('Error loading users:', error); }
   };
 
-  React.useEffect(() => { loadUsers(); loadGeminiKey(); }, []);
+  React.useEffect(() => { loadUsers(); loadGeminiKey(); loadKilocodeKey(); }, []);
 
   const loadGeminiKey = async () => {
     try {
@@ -94,6 +97,26 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
       await saveGeminiApiKey(geminiKey);
       setShowGeminiKey(false);
       Alert.alert('Succès', 'Clé API Gemini enregistrée.');
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de sauvegarder la clé.');
+    } finally {
+      setSavingKey(false);
+    }
+  };
+
+  const loadKilocodeKey = async () => {
+    try {
+      const key = await getKilocodeApiKey();
+      if (key) setKilocodeKey(key);
+    } catch (e) { /* ignoré */ }
+  };
+
+  const handleSaveKilocodeKey = async () => {
+    setSavingKey(true);
+    try {
+      await saveKilocodeApiKey(kilocodeKey);
+      setShowKilocodeKey(false);
+      Alert.alert('Succès', 'Clé API KiloCode enregistrée.');
     } catch (error) {
       Alert.alert('Erreur', 'Impossible de sauvegarder la clé.');
     } finally {
@@ -237,6 +260,13 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
             title="Scanner"
             subtitle={geminiKey ? 'Clé API configurée ✓' : 'Configurer la clé API Gemini'}
             onPress={() => setShowGeminiKey(true)}
+          />
+          <View style={styles.divider} />
+          <MenuItem
+            icon="camera-document"
+            title="Scanner KiloCode (actif)"
+            subtitle={kilocodeKey ? 'Clé API configurée ✓' : 'Configurer la clé API KiloCode'}
+            onPress={() => setShowKilocodeKey(true)}
           />
           <View style={styles.divider} />
           <MenuItem
@@ -402,6 +432,43 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
                 onPress={handleSaveGeminiKey}
                 style={[styles.dialogBtn, styles.dialogBtnPrimary]}
                 disabled={savingKey || !geminiKey.trim()}
+              >
+                <Text style={[styles.dialogBtnText, styles.dialogBtnTextPrimary]}>
+                  {savingKey ? 'Enregistrement...' : 'Enregistrer'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Dialog clé API KiloCode ── */}
+      <Modal visible={showKilocodeKey} transparent animationType="fade" onRequestClose={() => setShowKilocodeKey(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>Clé API KiloCode</Text>
+            <View style={styles.dialogContent}>
+              <Text style={styles.dialogDesc}>
+                Entrez votre clé API KiloCode. Utilisée pour scanner les documents via le modèle StepFun (relais KiloCode).
+              </Text>
+              <TextInput
+                value={kilocodeKey}
+                onChangeText={setKilocodeKey}
+                style={styles.dialogInput}
+                placeholder="sk-..."
+                placeholderTextColor={M.textDim}
+                secureTextEntry={!kilocodeKeyVisible}
+                autoCapitalize="none"
+              />
+            </View>
+            <View style={styles.dialogActions}>
+              <TouchableOpacity onPress={() => setShowKilocodeKey(false)} style={styles.dialogBtn}>
+                <Text style={styles.dialogBtnText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSaveKilocodeKey}
+                style={[styles.dialogBtn, styles.dialogBtnPrimary]}
+                disabled={savingKey || !kilocodeKey.trim()}
               >
                 <Text style={[styles.dialogBtnText, styles.dialogBtnTextPrimary]}>
                   {savingKey ? 'Enregistrement...' : 'Enregistrer'}

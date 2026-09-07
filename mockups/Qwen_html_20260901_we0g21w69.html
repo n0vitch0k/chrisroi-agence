@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Chrisroi Agence — Splash V4 (validation client)</title>
+
+<!-- Typographies : serif Cormorant Garamond (titre) + sans Plus Jakarta Sans (sous-texte, UI) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Plus+Jakarta+Sans:wght@600&display=swap" rel="stylesheet">
+
+<!-- GSAP 3.12.5 — interpolation des attributs d / opacity / gradientTransform à 60fps -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+<style>
+  :root{
+    --cream:#faf1e8; --terra1:#cc6641; --terra2:#b4532a;
+    --gold1:#c9a86a; --gold2:#f4d585; --ink:#3d1e0a; --sub:#8a7a6a;
+    --page:#0d0a09; --card:#16100c; --card-border:rgba(201,168,106,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--page); color:#e8dccd; min-height:100vh;
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:30px 16px 48px;
+  }
+  header{text-align:center; margin-bottom:8px}
+  header h1{font-family:'Cormorant Garamond',serif; font-weight:500; font-size:30px; letter-spacing:.5px; color:#f3e7d7}
+  header h1 span{color:var(--gold2); font-size:20px; vertical-align:super}
+  header p{margin-top:6px; font-size:11px; letter-spacing:2.8px; text-transform:uppercase; color:#7a6a5c}
+  .controls{display:flex; gap:12px; margin:22px 0 24px}
+  .controls button{
+    font:600 11px/1 'Plus Jakarta Sans',sans-serif; letter-spacing:2.2px; text-transform:uppercase;
+    color:var(--gold2); background:transparent; border:1px solid rgba(201,168,106,.45);
+    border-radius:999px; padding:11px 22px; cursor:pointer; transition:background .25s,color .25s;
+  }
+  .controls button:hover{background:var(--gold1); color:#241105}
+  .stage{display:grid; grid-template-columns:1fr 1fr; gap:28px; width:100%; max-width:920px}
+  @media (max-width:780px){ .stage{grid-template-columns:1fr} }
+  .card{
+    background:var(--card); border:1px solid var(--card-border); border-radius:24px;
+    padding:22px; display:flex; flex-direction:column; align-items:center; gap:16px;
+  }
+  .card h2{font:600 10px/1 'Plus Jakarta Sans',sans-serif; letter-spacing:3.6px; text-transform:uppercase; color:var(--gold1)}
+  /* Phone frame — spec §4 */
+  .phone{
+    width:100%; max-width:390px; aspect-ratio:390/780; border-radius:36px; overflow:hidden;
+    background:var(--cream); box-shadow:0 20px 60px rgba(0,0,0,.55); position:relative;
+  }
+  .phone svg{position:absolute; inset:0; width:100%; height:100%; display:block}
+  footer{margin-top:26px; font-size:10px; letter-spacing:1.4px; color:#6d5f52; text-align:center; line-height:1.9}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Chrisroi Agence <span>V4</span></h1>
+  <p>Animé à gauche · Statique à droite — validation 01/09/2026</p>
+</header>
+
+<div class="controls">
+  <button id="btnPlay">▶&nbsp; Rejouer</button>
+  <button id="btnPause">❚❚&nbsp; Pause</button>
+</div>
+
+<div class="stage">
+  <div class="card"><h2>Animé — V4</h2>        <div class="phone" id="phoneAnim"></div></div>
+  <div class="card"><h2>Statique — source</h2> <div class="phone" id="phoneStatic"></div></div>
+</div>
+
+<footer>
+  mockups/splash_wave_animation_v4.html · SVG vectoriel pur · GSAP 3.12.5 · 60 fps<br>
+  asset monogramme : monogram_ca_only.png (fallback auto : crop source 500,500 → 1500,1300)
+</footer>
+
+<script>
+/* ============ 1. PATHS — spec §2.2 / §3.1 (3 états, structures de commandes identiques pour le morph) ============ */
+const P = {
+  tl:{
+    base  :{fill:"M0 0 H390 V42 C 262 64, 148 108, 72 182 C 34 218, 14 248, 0 286 Z",
+            line:"M0 294 C 14 256, 34 226, 72 190 C 148 116, 262 72, 390 50"},
+    creux :{fill:"M0 0 H390 V28 C 270 46, 156 82, 80 152 C 38 188, 16 218, 0 250 Z",
+            line:"M0 258 C 16 222, 38 192, 80 156 C 156 86, 270 50, 390 32"},
+    gonfle:{fill:"M0 0 H390 V58 C 254 82, 140 132, 64 212 C 30 248, 10 278, 0 322 Z",
+            line:"M0 330 C 10 282, 30 252, 64 216 C 140 136, 254 86, 390 62"}
+  },
+  br:{
+    base  :{fill:"M390 780 H0 V738 C 128 716, 242 672, 318 598 C 356 558, 376 528, 390 494 Z",
+            line:"M390 488 C 376 522, 356 552, 318 592 C 242 666, 128 710, 0 732"},
+    creux :{fill:"M390 780 H0 V752 C 136 732, 250 690, 328 620 C 364 580, 382 548, 390 514 Z",
+            line:"M390 508 C 382 542, 364 574, 328 614 C 250 684, 136 726, 0 746"},
+    gonfle:{fill:"M390 780 H0 V722 C 120 700, 234 652, 310 576 C 350 536, 372 506, 390 472 Z",
+            line:"M390 466 C 372 500, 350 530, 310 570 C 234 646, 120 694, 0 716"}
+  }
+};
+
+/* ============ 2. Scène SVG (instanciée 2× : suffixe a = animé, b = statique) ============ */
+function scene(s, animated){
+  return `
+  <svg viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Splash Chrisroi Agence">
+    <defs>
+      <linearGradient id="terra-${s}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#cc6641"/><stop offset="1" stop-color="#b4532a"/>
+      </linearGradient>
+      <linearGradient id="gold-${s}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#c9a86a"/><stop offset="1" stop-color="#f4d585"/>
+      </linearGradient>
+      <!-- Shimmer 6 stops (§3.3) — userSpaceOnUse calibré sur la largeur 390 pour une traversée complète -->
+      <linearGradient id="shimmer-${s}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="390" y2="0" gradientTransform="translate(-170 0)">
+        <stop offset="0"   stop-color="#3d1e0a"/><stop offset=".38" stop-color="#3d1e0a"/>
+        <stop offset=".5"  stop-color="#f4d585"/><stop offset=".53" stop-color="#cc6641"/>
+        <stop offset=".62" stop-color="#3d1e0a"/><stop offset="1"  stop-color="#3d1e0a"/>
+      </linearGradient>
+      <filter id="glow-${s}" x="-120%" y="-120%" width="340%" height="340%">
+        <feGaussianBlur stdDeviation="9" result="b"/>
+        <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 0.85 0 0 0  0 0 0.52 0 0  0 0 0 1 0"/>
+      </filter>
+    </defs>
+
+    <rect width="390" height="780" fill="#faf1e8"/>
+
+    <!-- Vagues d'angle : fill + liseré or (morph synchronisé) -->
+    <path id="tlFill-${s}" d="${P.tl.base.fill}" fill="url(#terra-${s})"/>
+    <path id="tlLine-${s}" d="${P.tl.base.line}" fill="none" stroke="url(#gold-${s})" stroke-width="1.6" stroke-linecap="round" opacity=".95"/>
+    <path id="brFill-${s}" d="${P.br.base.fill}" fill="url(#terra-${s})"/>
+    <path id="brLine-${s}" d="${P.br.base.line}" fill="none" stroke="url(#gold-${s})" stroke-width="1.6" stroke-linecap="round" opacity=".95"/>
+
+    <!-- Monogramme CA seul (sans texte) — fallback : crop vectoriel de la source -->
+    <image class="mono" href="monogram_ca_only.png" x="45" y="242" width="300" height="240" preserveAspectRatio="xMidYMid meet"/>
+
+    <!-- Losange : glow pulsant DERRIÈRE, losange FIXE devant (§3.2) -->
+    <g id="diamondGlow-${s}" opacity="0.12" transform="translate(195,430)">
+      <rect x="-22" y="-22" width="44" height="44" transform="rotate(45)" fill="#f4d585" filter="url(#glow-${s})"/>
+    </g>
+    <g transform="translate(195,430)">
+      <rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="url(#gold-${s})"/>
+    </g>
+
+    <!-- UN SEUL "Chrisroi Agence" (§3.3) -->
+    <text transform="translate(195,590)" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="500"
+          font-size="36" letter-spacing=".4" fill="${animated ? `url(#shimmer-${s})` : '#3d1e0a'}">Chrisroi Agence</text>
+    <text transform="translate(195,614)" text-anchor="middle" font-family="'Plus Jakarta Sans',sans-serif" font-weight="600"
+          font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE À VOTRE SERVICE</text>
+  </svg>`;
+}
+
+document.getElementById('phoneAnim').innerHTML   = scene('a', true);
+document.getElementById('phoneStatic').innerHTML = scene('b', false);
+
+/* Fallback si monogram_ca_only.png absent : crop exact de la source (§2.3 : 500,500 → 1500,1300) */
+document.querySelectorAll('image.mono').forEach(img=>{
+  img.addEventListener('error', ()=>{
+    const ns='http://www.w3.org/2000/svg';
+    const crop=document.createElementNS(ns,'svg');
+    crop.setAttribute('x',45); crop.setAttribute('y',242);
+    crop.setAttribute('width',300); crop.setAttribute('height',240);
+    crop.setAttribute('viewBox','500 500 1000 800');
+    const im=document.createElementNS(ns,'image');
+    im.setAttribute('href','LOGO_SOURCE_VISUALISER.png');
+    im.setAttribute('width',2000); im.setAttribute('height',2000);
+    crop.appendChild(im);
+    img.replaceWith(crop);
+  });
+});
+
+/* ============ 3. Animations — côté animé uniquement ============ */
+if (window.gsap){
+
+  /* --- Vagues : morph réel des d, 3 états, TL 2.2s / BR 2.4s décalé 0.2s (§3.1) --- */
+  const tl = gsap.timeline({repeat:-1});
+  tl.to('#tlFill-a',{attr:{d:P.tl.creux.fill },duration:2.2,ease:'sine.inOut'},0)
+    .to('#tlLine-a',{attr:{d:P.tl.creux.line },duration:2.2,ease:'sine.inOut'},0)
+    .to('#tlFill-a',{attr:{d:P.tl.gonfle.fill},duration:2.2,ease:'sine.inOut'},2.2)
+    .to('#tlLine-a',{attr:{d:P.tl.gonfle.line},duration:2.2,ease:'sine.inOut'},2.2)
+    .to('#tlFill-a',{attr:{d:P.tl.base.fill  },duration:2.2,ease:'sine.inOut'},4.4)
+    .to('#tlLine-a',{attr:{d:P.tl.base.line  },duration:2.2,ease:'sine.inOut'},4.4);
+
+  const br = gsap.timeline({repeat:-1, delay:0.2});
+  br.to('#brFill-a',{attr:{d:P.br.creux.fill },duration:2.4,ease:'sine.inOut'},0)
+    .to('#brLine-a',{attr:{d:P.br.creux.line },duration:2.4,ease:'sine.inOut'},0)
+    .to('#brFill-a',{attr:{d:P.br.gonfle.fill},duration:2.4,ease:'sine.inOut'},2.4)
+    .to('#brLine-a',{attr:{d:P.br.gonfle.line},duration:2.4,ease:'sine.inOut'},2.4)
+    .to('#brFill-a',{attr:{d:P.br.base.fill  },duration:2.4,ease:'sine.inOut'},4.8)
+    .to('#brLine-a',{attr:{d:P.br.base.line  },duration:2.4,ease:'sine.inOut'},4.8);
+
+  /* --- Losange fixe : seule la lumière pulse, 1.4s yoyo (§3.2) --- */
+  gsap.to('#diamondGlow-a',{duration:1.4, opacity:0.88, ease:'sine.inOut', repeat:-1, yoyo:true});
+
+  /* --- Shimmer traversant G→D : 2.8s linear, pause 0.5s, boucle (§3.3) --- */
+  const grad = document.getElementById('shimmer-a');
+  gsap.set(grad,{attr:{gradientTransform:'translate(-170 0)'}});
+  gsap.to(grad,{duration:2.8, attr:{gradientTransform:'translate(170 0)'}, ease:'none', repeat:-1, repeatDelay:0.5});
+
+  /* --- Boutons (§4) --- */
+  document.getElementById('btnPlay').addEventListener('click', ()=> gsap.globalTimeline.play());
+  document.getElementById('btnPause').addEventListener('click', ()=> gsap.globalTimeline.pause());
+}
+</script>
+</body>
+</html>

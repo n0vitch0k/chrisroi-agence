@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Splash ChrisRoi V4 — Ondulations vives + Lumière seule</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Plus+Jakarta+Sans:wght@600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d0a09;color:#faf1e8;font-family:"Plus Jakarta Sans", sans-serif}
+  header{max-width:1100px;margin:0 auto;padding:28px 20px 10px;text-align:center}
+  header h1{font-family:"Cormorant Garamond",serif;font-size:28px;font-weight:500;letter-spacing:.2px}
+  header p{color:#c9a86a;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:6px}
+  header .hint{color:#8a7a6a;font-size:11px;margin-top:8px;letter-spacing:.2px;text-transform:none}
+  .stage{max-width:1100px;margin:0 auto;padding:18px 20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:860px){.stage{grid-template-columns:1fr}}
+  .card{background:#16100c;border:1px solid rgba(201,168,106,.12);border-radius:20px;padding:16px}
+  .card h2{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#c9a86a;text-align:center;margin-bottom:12px}
+  .phone{width:100%;max-width:390px;margin:0 auto;aspect-ratio:390/780;background:#faf1e8;border-radius:36px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+  .phone svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .controls{max-width:1100px;margin:0 auto;padding:0 20px 10px;display:flex;gap:10px;justify-content:center}
+  .btn{background:#c9a86a;color:#0d0a09;border:0;padding:9px 16px;border-radius:999px;font-weight:700;font-size:12px;cursor:pointer}
+  .btn.ghost{background:transparent;color:#c9a86a;border:1px solid rgba(201,168,106,.32)}
+  .note{max-width:860px;margin:14px auto 36px;padding:0 20px;color:#8a7a6a;font-size:12px;line-height:1.65;text-align:center}
+  .note code{color:#c9b8a0;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <h1>V4 — Refaite de zéro</h1>
+  <p>Ondulations vives • Losange fixe, seule la lumière pulse • "Chrisroi Agence" qui luise — 1 seul texte</p>
+  <div class="hint">100% vectoriel SVG + GSAP — CA seul sans texte dupliqué</div>
+</header>
+
+<div class="stage">
+  <!-- ANIMÉ -->
+  <div class="card">
+    <h2>Animé — 60fps</h2>
+    <div class="phone" id="phoneA">
+      <svg viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="terra" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient>
+          <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#f4d585"/></linearGradient>
+          <filter id="glow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur in="SourceGraphic" stdDeviation="9" result="b"/><feColorMatrix type="matrix" values="1 0 0 0 0  0 .85 0 0 0  0 .52 0 0 0  0 0 0 .9 0"/></filter>
+          <linearGradient id="shimmer" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="#3d1e0a"/><stop offset="38%" stop-color="#3d1e0a"/><stop offset="50%" stop-color="#f4d585"/><stop offset="53%" stop-color="#cc6641"/><stop offset="62%" stop-color="#3d1e0a"/><stop offset="100%" stop-color="#3d1e0a"/>
+          </linearGradient>
+        </defs>
+        <rect width="390" height="780" fill="#faf1e8"/>
+        <!-- Vague TL -->
+        <g id="gTL">
+          <path id="pTL" d="M0 0 H390 V42 C 262 64, 148 108, 72 182 C 34 218, 14 248, 0 286 Z" fill="url(#terra)"/>
+          <path id="lTL" d="M0 294 C 14 252, 34 222, 72 186 C 148 112, 262 68, 390 46" fill="none" stroke="url(#gold)" stroke-width="1.6" stroke-linecap="round"/>
+        </g>
+        <!-- Vague BR -->
+        <g id="gBR">
+          <path id="pBR" d="M390 780 H0 V738 C 128 716, 242 672, 318 598 C 356 558, 376 528, 390 494 Z" fill="url(#terra)"/>
+          <path id="lBR" d="M390 488 C 376 522, 356 552, 318 592 C 242 666, 128 710, 0 732" fill="none" stroke="url(#gold)" stroke-width="1.6" stroke-linecap="round"/>
+        </g>
+        <!-- Centre: CA seul -->
+        <g id="center">
+          <image href="monogram_ca_only.png" x="45" y="242" width="300" height="240" preserveAspectRatio="xMidYMid meet"/>
+          <!-- Lumière derrière (seule elle pulse) -->
+          <g id="diamondGlow" opacity="0.12" transform="translate(195, 430)">
+            <rect x="-22" y="-22" width="44" height="44" transform="rotate(45)" fill="#f4d585" filter="url(#glow)"/>
+          </g>
+          <!-- Losange fixe (ne bouge jamais) -->
+          <g id="diamond" transform="translate(195, 430)">
+            <rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="url(#gold)"/>
+          </g>
+        </g>
+        <!-- Texte unique -->
+        <g id="brand" transform="translate(195, 590)">
+          <text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="36" fill="url(#shimmer)">Chrisroi Agence</text>
+          <text text-anchor="middle" y="24" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE À VOTRE SERVICE</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <!-- STATIQUE -->
+  <div class="card">
+    <h2>Statique — référence</h2>
+    <div class="phone">
+      <svg viewBox="0 0 390 780" xmlns="http://www.w3.org/2000/svg">
+        <rect width="390" height="780" fill="#faf1e8"/>
+        <path d="M0 0 H390 V42 C 262 64, 148 108, 72 182 C 34 218, 14 248, 0 286 Z" fill="#cc6641"/>
+        <path d="M0 294 C 14 252, 34 222, 72 186 C 148 112, 262 68, 390 46" fill="none" stroke="#c9a86a" stroke-width="1.6"/>
+        <path d="M390 780 H0 V738 C 128 716, 242 672, 318 598 C 356 558, 376 528, 390 494 Z" fill="#cc6641"/>
+        <path d="M390 488 C 376 522, 356 552, 318 592 C 242 666, 128 710, 0 732" fill="none" stroke="#c9a86a" stroke-width="1.6"/>
+        <g><image href="monogram_ca_only.png" x="45" y="242" width="300" height="240"/></g>
+        <g transform="translate(195,430)"><rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="#c9a86a"/></g>
+        <g transform="translate(195,590)">
+          <text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="36" fill="#3d1e0a">Chrisroi Agence</text>
+          <text text-anchor="middle" y="24" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE À VOTRE SERVICE</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="gsap.globalTimeline.play()">▶ Rejouer</button>
+  <button class="btn ghost" onclick="gsap.globalTimeline.pause()">⏸ Pause</button>
+</div>
+<p class="note">
+  Ondulations vives: 3 états avec amplitude +16px sur les courbes S (28→42→58) en 2.2s/2.4s sine.inOut — vraie vague qui gonfle/creuse, pas vas-et-viens.<br/>
+  Losange: taille fixe 22px, seule la lumière derrière pulse (opacity 0.12→0.88, blur 9, couleur #f4d585, 1.4s).<br/>
+  Texte: 1 seul "Chrisroi Agence" avec shimmer 2.8s qui traverse le nom.<br/>
+  Fichier: <code>mockups/splash_wave_animation_v4.html</code>
+</p>
+
+<script>
+// Ondulations VIVES — 3 états, boucle continue
+const tlWaves = gsap.timeline({repeat:-1});
+tlWaves
+  // vers état creux (vague rentre)
+  .to('#pTL', {duration:2.2, attr:{d:"M0 0 H390 V28 C 270 46, 156 82, 80 152 C 38 188, 16 218, 0 250 Z"}, ease:"sine.inOut"}, 0)
+  .to('#lTL', {duration:2.2, attr:{d:"M0 258 C 16 222, 38 192, 80 156 C 156 86, 270 50, 390 32"}, ease:"sine.inOut"}, 0)
+  .to('#pBR', {duration:2.4, attr:{d:"M390 780 H0 V752 C 136 732, 250 690, 328 620 C 364 580, 382 548, 390 514 Z"}, ease:"sine.inOut"}, 0)
+  .to('#lBR', {duration:2.4, attr:{d:"M390 508 C 382 542, 364 574, 328 614 C 250 684, 136 726, 0 746"}, ease:"sine.inOut"}, 0)
+  // vers état gonflé (vague sort — plus vive)
+  .to('#pTL', {duration:2.2, attr:{d:"M0 0 H390 V58 C 254 82, 140 132, 64 212 C 30 248, 10 278, 0 322 Z"}, ease:"sine.inOut"}, 2.2)
+  .to('#lTL', {duration:2.2, attr:{d:"M0 330 C 10 282, 30 252, 64 216 C 140 136, 254 86, 390 62"}, ease:"sine.inOut"}, 2.2)
+  .to('#pBR', {duration:2.4, attr:{d:"M390 780 H0 V722 C 120 700, 234 652, 310 576 C 350 536, 372 506, 390 472 Z"}, ease:"sine.inOut"}, 2.4)
+  .to('#lBR', {duration:2.4, attr:{d:"M390 466 C 372 500, 350 530, 310 570 C 234 646, 120 694, 0 716"}, ease:"sine.inOut"}, 2.4)
+  // retour baseline
+  .to('#pTL', {duration:2.2, attr:{d:"M0 0 H390 V42 C 262 64, 148 108, 72 182 C 34 218, 14 248, 0 286 Z"}, ease:"sine.inOut"}, 4.4)
+  .to('#lTL', {duration:2.2, attr:{d:"M0 294 C 14 252, 34 222, 72 186 C 148 112, 262 68, 390 46"}, ease:"sine.inOut"}, 4.4)
+  .to('#pBR', {duration:2.4, attr:{d:"M390 780 H0 V738 C 128 716, 242 672, 318 598 C 356 558, 376 528, 390 494 Z"}, ease:"sine.inOut"}, 4.8)
+  .to('#lBR', {duration:2.4, attr:{d:"M390 488 C 376 522, 356 552, 318 592 C 242 666, 128 710, 0 732"}, ease:"sine.inOut"}, 4.8);
+
+// Lumière seule pulse — le losange reste FIXE
+gsap.to('#diamondGlow', {duration:1.4, opacity:0.88, ease:"sine.inOut", repeat:-1, yoyo:true});
+
+// Shimmer texte
+const grad = document.getElementById('shimmer');
+gsap.set(grad, {attr:{gradientTransform:"translate(-90 0)"}});
+gsap.to(grad, {duration:2.8, attr:{gradientTransform:"translate(120 0)"}, ease:"none", repeat:-1, repeatDelay:0.5});
+</script>
+</body>
+</html>

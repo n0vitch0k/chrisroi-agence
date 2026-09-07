@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Logo v7 — Couronne minimaliste HD</title>
+<style>
+  :root {
+    --sand: #fdf8f3;
+    --ink: #0d0a09;
+    --gold-light: #f4d585;
+    --gold: #d4a853;
+    --gold-deep: #b8860b;
+    --gold-shadow: #8b6914;
+    --terra: #c45a2a;
+    --terra-deep: #8b3a1a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--sand);
+    color: #2a1810;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .sub {
+    text-align: center;
+    color: #7a6a5a;
+    margin-bottom: 48px;
+    font-size: 14px;
+  }
+
+  /* === Variante principale === */
+  .variant {
+    margin: 0 auto 48px;
+    max-width: 1100px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 48px 32px 40px;
+    box-shadow: 0 8px 32px rgba(60, 30, 10, 0.08);
+  }
+  .variant-title {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #2a1810;
+  }
+  .variant-desc {
+    text-align: center;
+    font-size: 13px;
+    color: #8a7a6a;
+    margin-bottom: 40px;
+  }
+
+  .preview-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 56px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .preview-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .preview-label {
+    font-size: 11px;
+    color: #9a8a7a;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* === Carré arrondi === */
+  .icon {
+    border-radius: 22.5%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 12px 40px rgba(60, 30, 10, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* === Fond warm earth gradient === */
+  .bg-warm {
+    background:
+      radial-gradient(ellipse at 30% 25%, rgba(244, 213, 133, 0.35) 0%, transparent 55%),
+      linear-gradient(140deg, #d97a3f 0%, #c45a2a 35%, #b8860b 75%, #8b6914 100%);
+  }
+  /* === Fond nuit deep === */
+  .bg-night {
+    background:
+      radial-gradient(ellipse at 30% 25%, rgba(212, 168, 83, 0.18) 0%, transparent 55%),
+      linear-gradient(160deg, #1a1208 0%, #2a1810 50%, #0d0a09 100%);
+  }
+  /* === Fond sable clair === */
+  .bg-sand {
+    background:
+      radial-gradient(ellipse at 30% 25%, rgba(255, 255, 255, 0.8) 0%, transparent 60%),
+      linear-gradient(140deg, #fdf8f3 0%, #ede0d0 100%);
+  }
+
+  .sz-1024 { width: 240px; height: 240px; }
+  .sz-180  { width: 180px; height: 180px; }
+  .sz-56   { width: 56px;  height: 56px;  }
+  .sz-36   { width: 36px;  height: 36px;  }
+
+  .icon svg {
+    width: 70%;
+    height: 70%;
+  }
+
+  /* === Faux home screen === */
+  .realistic {
+    margin-top: 32px;
+    padding: 28px 20px;
+    background: linear-gradient(180deg, #f7efe6 0%, #ede0d0 100%);
+    border-radius: 18px;
+  }
+  .realistic-title {
+    text-align: center;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #8a7a6a;
+    margin-bottom: 18px;
+    font-weight: 600;
+  }
+  .phone {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 32px;
+    padding: 24px 18px;
+    max-width: 320px;
+    margin: 0 auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .phone-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px 12px;
+  }
+  .phone-app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .phone-app .icon {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+  .phone-app .nm {
+    font-size: 10px;
+    color: #fff;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .ico-msg { background: linear-gradient(135deg, #4ade80, #16a34a); }
+  .ico-cal { background: #fff; }
+  .ico-ff  { background: #f1f5f9; }
+  .ico-mus { background: linear-gradient(135deg, #fb7185, #e11d48); }
+  .ico-set { background: linear-gradient(135deg, #6b7280, #374151); }
+  .ico-map { background: linear-gradient(135deg, #34d399, #059669); }
+  .ico-cam { background: linear-gradient(135deg, #4b5563, #1f2937); }
+
+  /* === Panneau détail SVG zoomé === */
+  .detail-panel {
+    margin: 0 auto 48px;
+    max-width: 1100px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 40px 32px;
+    box-shadow: 0 8px 32px rgba(60, 30, 10, 0.08);
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    align-items: center;
+  }
+  .detail-cell {
+    text-align: center;
+  }
+  .detail-cell .label {
+    margin-top: 14px;
+    font-size: 12px;
+    color: #5a4a3a;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .detail-cell .desc {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #9a8a7a;
+  }
+  .detail-svg-wrap {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* === Tag palette === */
+  .palette {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .swatch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #5a4a3a;
+  }
+  .swatch .dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  footer {
+    text-align: center;
+    color: #9a8a7a;
+    font-size: 12px;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Couronne minimaliste — HD</h1>
+<p class="sub">Forme épurée • 3 pointes + base • dégradé or réaliste • scalable à l'infini</p>
+
+<!-- ========== VARIANTE PRINCIPALE : COURONNE MINIMALISTE WARM EARTH ========== -->
+<div class="variant">
+  <div class="variant-title">Couronne minimaliste — fond Warm Earth</div>
+  <div class="variant-desc">3 pointes fines • diamants aux sommets • base en or • dégradé radial subtil</div>
+
+  <div class="preview-row">
+    <div class="preview-cell">
+      <div class="icon bg-warm sz-1024">
+        <!-- Couronne SVG - viewBox large pour HD -->
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f9e3a0"/>
+              <stop offset="40%" stop-color="#d4a853"/>
+              <stop offset="100%" stop-color="#8b6914"/>
+            </linearGradient>
+            <linearGradient id="goldGradLight" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fde9b0"/>
+              <stop offset="50%" stop-color="#e8c97a"/>
+              <stop offset="100%" stop-color="#b8860b"/>
+            </linearGradient>
+            <linearGradient id="diamondGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fef9e7"/>
+              <stop offset="50%" stop-color="#f4d585"/>
+              <stop offset="100%" stop-color="#c9a355"/>
+            </linearGradient>
+          </defs>
+          <!-- 3 pointes : paths séparés pour finesse HD -->
+          <!-- pointe gauche -->
+          <path d="M 50 130 L 35 50 L 65 90 Z"
+                fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.2" stroke-linejoin="round"/>
+          <!-- pointe centre (plus haute) -->
+          <path d="M 100 130 L 100 25 L 100 130 Z M 85 90 L 100 25 L 115 90 Z"
+                fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.2" stroke-linejoin="round"/>
+          <!-- pointe droite -->
+          <path d="M 150 130 L 165 50 L 135 90 Z"
+                fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.2" stroke-linejoin="round"/>
+          <!-- Base en or -->
+          <rect x="40" y="120" width="120" height="22" rx="3"
+                fill="url(#goldGradLight)" stroke="#7a4f0a" stroke-width="1.2"/>
+          <!-- ligne de séparation base -->
+          <line x1="40" y1="131" x2="160" y2="131" stroke="#7a4f0a" stroke-width="0.6" opacity="0.5"/>
+          <!-- Diamants aux sommets -->
+          <circle cx="35" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="165" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <!-- Diamant central sur la base -->
+          <circle cx="100" cy="131" r="4" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="preview-label">1024 × 1024</div>
+    </div>
+
+    <div class="preview-cell">
+      <div class="icon bg-warm sz-180">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#7a4f0a" stroke-width="1.5"/>
+          <line x1="40" y1="131" x2="160" y2="131" stroke="#7a4f0a" stroke-width="0.8" opacity="0.5"/>
+          <circle cx="35" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="165" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="100" cy="131" r="4" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="preview-label">180 × 180</div>
+    </div>
+
+    <div class="preview-cell">
+      <div class="icon bg-warm sz-56">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="3" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#7a4f0a" stroke-width="3"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)"/>
+        </svg>
+      </div>
+      <div class="preview-label">56 × 56</div>
+    </div>
+
+    <div class="preview-cell">
+      <div class="icon bg-warm sz-36">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="4" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#7a4f0a" stroke-width="4"/>
+        </svg>
+      </div>
+      <div class="preview-label">36 × 36</div>
+    </div>
+  </div>
+
+  <div class="realistic">
+    <div class="realistic-title">Aperçu home screen iOS</div>
+    <div class="phone">
+      <div class="phone-grid">
+        <div class="phone-app"><div class="icon ico-msg sz-56"></div><div class="nm">Messages</div></div>
+        <div class="phone-app"><div class="icon ico-cal sz-56"></div><div class="nm">Calendrier</div></div>
+        <div class="phone-app">
+          <div class="icon bg-warm sz-56">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="3"/>
+              <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="3"/>
+              <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="3"/>
+              <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#7a4f0a" stroke-width="3"/>
+            </svg>
+          </div>
+          <div class="nm">ChrisRoi</div>
+        </div>
+        <div class="phone-app"><div class="icon ico-map sz-56"></div><div class="nm">Plans</div></div>
+        <div class="phone-app"><div class="icon ico-ff sz-56"></div><div class="nm">Firefox</div></div>
+        <div class="phone-app"><div class="icon ico-mus sz-56"></div><div class="nm">Musique</div></div>
+        <div class="phone-app"><div class="icon ico-set sz-56"></div><div class="nm">Réglages</div></div>
+        <div class="phone-app"><div class="icon ico-cam sz-56"></div><div class="nm">Appareil</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="palette">
+    <div class="swatch"><div class="dot" style="background:#d4a853"></div>Or principal</div>
+    <div class="swatch"><div class="dot" style="background:#b8860b"></div>Or profond</div>
+    <div class="swatch"><div class="dot" style="background:#f4d585"></div>Or clair</div>
+    <div class="swatch"><div class="dot" style="background:#c45a2a"></div>Terracotta</div>
+    <div class="swatch"><div class="dot" style="background:#7a4f0a"></div>Contour</div>
+  </div>
+</div>
+
+<!-- ========== VARIANTE NUIT ========== -->
+<div class="variant">
+  <div class="variant-title">Couronne minimaliste — fond Nuit</div>
+  <div class="variant-desc">Or sur fond nuit profond (cohérent avec ton splash screen)</div>
+
+  <div class="preview-row">
+    <div class="preview-cell">
+      <div class="icon bg-night sz-1024">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.2" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#5a3a08" stroke-width="1.2"/>
+          <line x1="40" y1="131" x2="160" y2="131" stroke="#5a3a08" stroke-width="0.6" opacity="0.5"/>
+          <circle cx="35" cy="48" r="3" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+          <circle cx="165" cy="48" r="3" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+          <circle cx="100" cy="131" r="4" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="preview-label">1024 × 1024</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon bg-night sz-180">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.5" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#5a3a08" stroke-width="1.5"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)"/>
+        </svg>
+      </div>
+      <div class="preview-label">180 × 180</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon bg-night sz-56">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="3"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="3"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="3"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#5a3a08" stroke-width="3"/>
+        </svg>
+      </div>
+      <div class="preview-label">56 × 56</div>
+    </div>
+    <div class="preview-cell">
+      <div class="icon bg-night sz-36">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="4"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="4"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="4"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#5a3a08" stroke-width="4"/>
+        </svg>
+      </div>
+      <div class="preview-label">36 × 36</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PANNEAU DÉTAIL : ZOOM SVG HD ========== -->
+<div class="detail-panel">
+  <div class="variant-title">Zoom HD sur le SVG (vue 1:1)</div>
+  <div class="variant-desc">Voir les détails fins : pointes, dégradé or, diamants, base</div>
+  <div class="detail-grid">
+    <div class="detail-cell">
+      <div class="detail-svg-wrap" style="background:linear-gradient(140deg,#d97a3f,#c45a2a 40%,#b8860b 80%); border-radius: 22.5%; padding: 20px;">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#7a4f0a" stroke-width="1.5"/>
+          <line x1="40" y1="131" x2="160" y2="131" stroke="#7a4f0a" stroke-width="0.8" opacity="0.5"/>
+          <circle cx="35" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="165" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="100" cy="131" r="4" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="label">Vue normale</div>
+      <div class="desc">3 pointes + base</div>
+    </div>
+
+    <div class="detail-cell">
+      <div class="detail-svg-wrap" style="background:#0d0a09; border-radius: 22.5%; padding: 20px;">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#5a3a08" stroke-width="1.5" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#5a3a08" stroke-width="1.5"/>
+          <line x1="40" y1="131" x2="160" y2="131" stroke="#5a3a08" stroke-width="0.8" opacity="0.5"/>
+          <circle cx="35" cy="48" r="3" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+          <circle cx="165" cy="48" r="3" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+          <circle cx="100" cy="131" r="4" fill="url(#diamondGrad)" stroke="#5a3a08" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="label">Fond nuit</div>
+      <div class="desc">Or lumineux / noir</div>
+    </div>
+
+    <div class="detail-cell">
+      <div class="detail-svg-wrap" style="background:linear-gradient(140deg,#fdf8f3,#ede0d0); border: 1px solid #d4c5b0; border-radius: 22.5%; padding: 20px;">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+          <path d="M 50 130 L 35 50 L 65 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 85 90 L 100 25 L 115 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M 150 130 L 165 50 L 135 90 Z" fill="url(#goldGrad)" stroke="#7a4f0a" stroke-width="1.5" stroke-linejoin="round"/>
+          <rect x="40" y="120" width="120" height="22" rx="3" fill="url(#goldGradLight)" stroke="#7a4f0a" stroke-width="1.5"/>
+          <line x1="40" y1="131" x2="160" y2="131" stroke="#7a4f0a" stroke-width="0.8" opacity="0.5"/>
+          <circle cx="35" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="100" cy="23" r="3.5" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="165" cy="48" r="3" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+          <circle cx="100" cy="131" r="4" fill="url(#diamondGrad)" stroke="#7a4f0a" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="label">Fond clair</div>
+      <div class="desc">Pour version papier</div>
+    </div>
+  </div>
+</div>
+
+<footer>ChrisRoi Agence — Logo v7 • Couronne minimaliste • SVG vectoriel HD • scalable à l'infini</footer>
+
+</body>
+</html>

@@ -15,7 +15,7 @@ const API_BASE =
   GEMINI_MODEL +
   ":generateContent";
 
-const FICHE_PROMPT = [
+export const FICHE_PROMPT = [
   "Tu es un assistant qui extrait des informations d'un formulaire d'inscription.",
   "Analyse l'image du document et extrait les champs suivants au format JSON.",
   "Champs à extraire :",
@@ -43,7 +43,7 @@ const FICHE_PROMPT = [
   "Réponds UNIQUEMENT avec un JSON valide. Si un champ n'est pas visible, mets une chaîne vide.",
 ].join("\n");
 
-const CONTRAT_PROMPT = [
+export const CONTRAT_PROMPT = [
   "Tu es un assistant qui extrait des informations d'un contrat de travail.",
   "Analyse l'image du document et extrait les champs suivants au format JSON.",
   "",

@@ -1760,6 +1760,22 @@ export const saveGeminiApiKey = async (key: string): Promise<void> => {
   await setSetting(GEMINI_KEY_STORAGE, key);
 };
 
+// ============== PARAMÈTRES APPLI (CLÉ API KILOCODE — RELAIS STEPFUN) ==============
+// Route B : l'app appelle la passerelle KiloCode avec la clé KiloCode de l'appareil.
+// Même mécanisme de stockage local que la clé Gemini.
+
+const KILOCODE_KEY_STORAGE = 'kilocode_api_key';
+
+/** Récupère la clé API KiloCode depuis le stockage local de l'appareil. */
+export const getKilocodeApiKey = async (): Promise<string | null> => {
+  return getSetting(KILOCODE_KEY_STORAGE);
+};
+
+/** Sauvegarde la clé API KiloCode dans le stockage local de l'appareil. */
+export const saveKilocodeApiKey = async (key: string): Promise<void> => {
+  await setSetting(KILOCODE_KEY_STORAGE, key);
+};
+
 // ============== URL SERVEUR ==============
 
 export const getPocketBaseUrlFromService = getPocketBaseUrl;

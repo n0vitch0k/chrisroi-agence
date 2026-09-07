@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Splash ChrisRoi V5 - Animation cinematique procedurale</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0a09;color:#faf1e8;font-family:"Plus Jakarta Sans",sans-serif}
+header{max-width:1100px;margin:0 auto;padding:26px 20px 8px;text-align:center}
+header h1{font-family:"Cormorant Garamond",serif;font-size:28px;font-weight:500}
+header p{color:#c9a86a;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:6px}
+header .hint{color:#8a7a6a;font-size:11px;margin-top:8px}
+.stage{max-width:1100px;margin:0 auto;padding:16px 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:860px){.stage{grid-template-columns:1fr}}
+.card{background:#16100c;border:1px solid rgba(201,168,106,.14);border-radius:20px;padding:16px}
+.card h2{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#c9a86a;text-align:center;margin-bottom:12px}
+.phone{width:100%;max-width:390px;margin:0 auto;aspect-ratio:390/780;background:#faf1e8;border-radius:36px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.phone svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.controls{max-width:1100px;margin:0 auto;padding:0 20px 6px;display:flex;gap:10px;justify-content:center}
+.btn{background:#c9a86a;color:#0d0a09;border:0;padding:9px 16px;border-radius:999px;font-weight:700;font-size:12px;cursor:pointer}
+.btn.ghost{background:transparent;color:#c9a86a;border:1px solid rgba(201,168,106,.32)}
+.note{max-width:880px;margin:12px auto 36px;padding:0 20px;color:#8a7a6a;font-size:12px;line-height:1.7;text-align:center}
+.note code{color:#c9b8a0;font-size:11px}
+.badge{display:inline-block;margin-top:8px;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#0d0a09;background:linear-gradient(90deg,#c9a86a,#f4d585);padding:4px 12px;border-radius:999px;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+<h1>V5 — Cinematique procedurale 60fps</h1>
+<p>Vagues fluides multi-couches + lumiere volumetrique + poussieres d'or + choregraphie d'entree</p>
+<div class="hint">100% recalcule a chaque frame (requestAnimationFrame) — aucun morph 3-etats, aucun translate en boucle</div>
+<div><span class="badge">Nouveau moteur — pas un repeat V4</span></div>
+</header>
+<div class="stage">
+<div class="card">
+<h2>Anime — moteur temps reel</h2>
+<div class="phone">
+<svg id="stageA" viewBox="0 0 390 780" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="terra" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#cc6641"/><stop offset="100%" stop-color="#b4532a"/></linearGradient>
+<linearGradient id="terraDeep" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#b4532a" stop-opacity=".55"/><stop offset="100%" stop-color="#8f3d1e" stop-opacity=".55"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#f4d585"/></linearGradient>
+<linearGradient id="shimmer" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+<stop offset="0%" stop-color="#3d1e0a"/><stop offset="36%" stop-color="#3d1e0a"/><stop offset="49%" stop-color="#f4d585"/><stop offset="53%" stop-color="#cc6641"/><stop offset="60%" stop-color="#3d1e0a"/><stop offset="100%" stop-color="#3d1e0a"/>
+</linearGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#f4d585" stop-opacity=".9"/><stop offset="45%" stop-color="#f4d585" stop-opacity=".32"/><stop offset="100%" stop-color="#f4d585" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="vig" cx="50%" cy="46%" r="75%">
+<stop offset="62%" stop-color="#3d1e0a" stop-opacity="0"/><stop offset="100%" stop-color="#3d1e0a" stop-opacity=".10"/>
+</radialGradient>
+<filter id="soft9" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="9"/></filter>
+<filter id="soft3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+<filter id="liquid" x="-20%" y="-20%" width="140%" height="140%">
+<feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012 0.028" numOctaves="2" seed="7" result="n"/>
+<feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G"/>
+</filter>
+</defs>
+<rect width="390" height="780" fill="#faf1e8"/>
+<g id="world">
+<!-- VAGUES TL : 3 couches parallax -->
+<g id="tlBack" opacity=".45"><path id="tlBackP" d="" fill="url(#terraDeep)" filter="url(#liquid)"/></g>
+<g id="tlMid" opacity=".85"><path id="tlMidP" d="" fill="url(#terra)" filter="url(#liquid)"/></g>
+<path id="tlEdge" d="" fill="none" stroke="url(#gold)" stroke-width="2" stroke-linecap="round" filter="url(#soft3)"/>
+<path id="tlSpark" d="" fill="none" stroke="#fff8ea" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 14" opacity=".7"/>
+<!-- VAGUES BR : 3 couches -->
+<g id="brBack" opacity=".45"><path id="brBackP" d="" fill="url(#terraDeep)" filter="url(#liquid)"/></g>
+<g id="brMid" opacity=".85"><path id="brMidP" d="" fill="url(#terra)" filter="url(#liquid)"/></g>
+<path id="brEdge" d="" fill="none" stroke="url(#gold)" stroke-width="2" stroke-linecap="round" filter="url(#soft3)"/>
+<path id="brSpark" d="" fill="none" stroke="#fff8ea" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 14" opacity=".7"/>
+<!-- poussières d'or derrière le monogramme -->
+<g id="dust"></g>
+<!-- centre -->
+<g id="caGroup" opacity="0">
+<image href="monogram_ca_only.png" x="45" y="242" width="300" height="240" preserveAspectRatio="xMidYMid meet"/>
+</g>
+<!-- losange : halos + rayons + losange fixe + étincelles -->
+<g transform="translate(195,430)">
+<g id="halo2" opacity=".3"><circle r="52" fill="url(#halo)"/></g>
+<g id="halo1" opacity=".5"><circle r="30" fill="url(#halo)"/></g>
+<g id="rays" opacity=".35">
+<line x1="0" y1="-34" x2="0" y2="-22" stroke="#f4d585" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="0" y1="22" x2="0" y2="34" stroke="#f4d585" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="-34" y1="0" x2="-22" y2="0" stroke="#f4d585" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="22" y1="0" x2="34" y2="0" stroke="#f4d585" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="-20" y1="-20" x2="-12" y2="-12" stroke="#c9a86a" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="12" y1="-12" x2="20" y2="-20" stroke="#c9a86a" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="-20" y1="20" x2="-12" y2="12" stroke="#c9a86a" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="20" y2="20" stroke="#c9a86a" stroke-width="1.2" stroke-linecap="round"/>
+</g>
+<rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="url(#gold)"/>
+<rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="none" stroke="#fff3d6" stroke-width=".8" opacity=".8"/>
+<g id="sparks"></g>
+</g>
+<!-- marque -->
+<g id="brand" transform="translate(195,590)" opacity="0">
+<text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="37" letter-spacing=".4" fill="url(#shimmer)">Chrisroi Agence</text>
+<rect id="underline" x="-70" y="12" width="140" height="1.4" fill="url(#gold)" opacity=".9"/>
+<text text-anchor="middle" y="30" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE A VOTRE SERVICE</text>
+</g>
+</g>
+<rect width="390" height="780" fill="url(#vig)"/>
+</svg>
+</div>
+</div>
+<div class="card">
+<h2>Statique — reference</h2>
+<div class="phone">
+<svg viewBox="0 0 390 780" xmlns="http://www.w3.org/2000/svg">
+<rect width="390" height="780" fill="#faf1e8"/>
+<path d="M0 0 H390 V42 C 262 64, 148 108, 72 182 C 34 218, 14 248, 0 286 Z" fill="#cc6641"/>
+<path d="M0 294 C 14 252, 34 222, 72 186 C 148 112, 262 68, 390 46" fill="none" stroke="#c9a86a" stroke-width="1.6"/>
+<path d="M390 780 H0 V738 C 128 716, 242 672, 318 598 C 356 558, 376 528, 390 494 Z" fill="#cc6641"/>
+<path d="M390 488 C 376 522, 356 552, 318 592 C 242 666, 128 710, 0 732" fill="none" stroke="#c9a86a" stroke-width="1.6"/>
+<g><image href="monogram_ca_only.png" x="45" y="242" width="300" height="240"/></g>
+<g transform="translate(195,430)"><rect x="-11" y="-11" width="22" height="22" transform="rotate(45)" fill="#c9a86a"/></g>
+<g transform="translate(195,590)">
+<text text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="37" fill="#3d1e0a">Chrisroi Agence</text>
+<text text-anchor="middle" y="30" font-family="Plus Jakarta Sans, sans-serif" font-size="9" letter-spacing="3.6" fill="#8a7a6a">L'EXCELLENCE A VOTRE SERVICE</text>
+</g>
+</svg>
+</div>
+</div>
+</div>
+<div class="controls">
+<button class="btn" id="btnReplay">Rejouer l'entree</button>
+<button class="btn ghost" id="btnPause">Pause</button>
+</div>
+<p class="note">
+Moteur V5 : chaque frame recalcule les vagues point par point (48 points, 2 sinus + turbulence animee), 3 couches parallax par coin, lisere or + filet lumineux qui coule en dash, halos volumetriques qui respirent, 8 rayons qui tournent lentement, etincelles qui naissent autour du losange, 26 poussieres d'or qui montent et scintillent, respiration camera 1.008, entree choregraphiee 2.2s puis boucle ambiante.<br/>
+Fichier : <code>mockups/splash_wave_animation_v5.html</code> — ouvre-le, dis-moi ce que tu veux doser autrement.
+</p>
+<script>
+(function(){
+var NS='http://www.w3.org/2000/svg';
+var $=function(id){return document.getElementById(id);};
+var tlBackP=$('tlBackP'),tlMidP=$('tlMidP'),tlEdge=$('tlEdge'),tlSpark=$('tlSpark');
+var brBackP=$('brBackP'),brMidP=$('brMidP'),brEdge=$('brEdge'),brSpark=$('brSpark');
+var halo1=$('halo1'),halo2=$('halo2'),rays=$('rays'),sparks=$('sparks'),dust=$('dust');
+var caGroup=$('caGroup'),brand=$('brand'),underline=$('underline'),world=$('world');
+var grad=document.getElementById('shimmer'),turb=document.getElementById('turb');
+var N=48,i;
+// poussières d'or
+var P=[];
+for(i=0;i<26;i++){
+var c=document.createElementNS(NS,'circle');
+var px=20+Math.random()*350,py=Math.random()*780,r=.8+Math.random()*1.8;
+c.setAttribute('r',r.toFixed(2));
+c.setAttribute('fill',Math.random()<.5?'#c9a86a':'#f4d585');
+dust.appendChild(c);
+P.push({el:c,x:px,y:py,r:r,sp:.12+Math.random()*.3,ph:Math.random()*6.28,tw:.6+Math.random()*1.4});
+}
+// étincelles losange
+var S=[];
+for(i=0;i<10;i++){
+var s=document.createElementNS(NS,'circle');
+s.setAttribute('r',(.9+Math.random()*1.3).toFixed(2));
+s.setAttribute('fill','#fff3d6');
+sparks.appendChild(s);
+S.push({el:s,a:Math.random()*6.28,rr:20+Math.random()*16,sp:.4+Math.random()*.8,ph:Math.random()*6.28});
+}
+function TL(s){ // s 0..1 : de x=390 vers x=0
+var x=390-s*390;
+var y=42+s*244 - Math.sin(s*Math.PI)*36;
+return [x,y];
+}
+function BR(s){
+var x=s*390;
+var y=738-s*244 + Math.sin(s*Math.PI)*36;
+return [x,y];
+}
+function wavePath(fn,t,amp,f1,f2,ph,depth){
+var d='',pts=[];
+for(var k=0;k<=N;k++){
+var s=k/N,p=fn(s);
+var w=Math.sin(s*6.0+t*f1+ph)*amp+Math.sin(s*11.0-t*f2+ph*1.7)*amp*.45;
+var x=p[0],y=p[1];
+// decalage perpendiculaire approx : diagonale -> on pousse en y et x
+x+=w*.55; y+=w;
+pts.push([x,y]);
+if(k===0) d+='M'+x.toFixed(1)+' '+y.toFixed(1);
+else d+=' L'+x.toFixed(1)+' '+y.toFixed(1);
+}
+// ferme vers le coin
+if(fn===TL){ d+=' L0 0 L390 0 Z'; }
+else{ d+=' L390 780 L0 780 Z'; }
+return {d:d,pts:pts};
+}
+function edgePath(pts){var d='';for(var k=0;k<pts.length;k++){d+=(k===0?'M':' L')+pts[k][0].toFixed(1)+' '+(pts[k][1]+7).toFixed(1);}return d;}
+var running=true,t0=performance.now(),intro0=performance.now();
+function easeOut(x){return 1-Math.pow(1-x,3);}
+function frame(now){
+if(!running) return;
+var t=(now-t0)/1000;
+var intro=Math.min(1,(now-intro0)/2200);
+// turbulence liquide animee
+if(turb) turb.setAttribute('baseFrequency','0.012 '+(0.026+0.008*Math.sin(t*.7)).toFixed(4));
+// vagues : 3 couches decalees en phase/amplitude
+var a1=wavePath(TL,t,9+5*intro,1.15,.8,0,0);
+var a2=wavePath(TL,t,13,1.5,1.0,1.9,0);
+var a3=wavePath(TL,t,6,.9,.6,4.0,0);
+tlBackP.setAttribute('d',a3.d); tlMidP.setAttribute('d',a2.d);
+tlEdge.setAttribute('d',edgePath(a1.pts)); tlSpark.setAttribute('d',edgePath(a1.pts));
+tlSpark.style.strokeDashoffset=(-t*26)+'px';
+var b1=wavePath(BR,t,9+5*intro,1.0,.75,2.6,0);
+var b2=wavePath(BR,t,13,1.35,.95,0.7,0);
+var b3=wavePath(BR,t,6,.8,.55,5.1,0);
+brBackP.setAttribute('d',b3.d); brMidP.setAttribute('d',b2.d);
+brEdge.setAttribute('d',edgePath(b1.pts)); brSpark.setAttribute('d',edgePath(b1.pts));
+brSpark.style.strokeDashoffset=(t*26)+'px';
+// losange : halos qui respirent, rayons rotation lente, losange fixe
+var pulse=.5+.5*Math.sin(t*4.4);
+halo1.setAttribute('opacity',(.34+.4*pulse*intro).toFixed(3));
+halo2.setAttribute('opacity',(.16+.26*(1-pulse)*intro).toFixed(3));
+halo1.setAttribute('transform','scale('+(1+.10*pulse).toFixed(3)+')');
+halo2.setAttribute('transform','scale('+(1.06-.08*pulse).toFixed(3)+')');
+rays.setAttribute('transform','rotate('+(t*10).toFixed(1)+')');
+rays.setAttribute('opacity',(.22+.2*pulse).toFixed(3));
+// étincelles
+for(var k=0;k<S.length;k++){var o=S[k];o.a+=.008*o.sp;
+var rr=o.rr+Math.sin(t*2+o.ph)*4;
+var ex=Math.cos(o.a)*rr,ey=Math.sin(o.a)*rr*.8;
+o.el.setAttribute('cx',ex.toFixed(1));o.el.setAttribute('cy',ey.toFixed(1));
+o.el.setAttribute('opacity',((.25+.75*Math.abs(Math.sin(t*1.8+o.ph)))*intro).toFixed(2));
+}
+// poussières
+for(var j=0;j<P.length;j++){var q=P[j];q.y-=q.sp;if(q.y<-6){q.y=786;q.x=20+Math.random()*350;}
+q.el.setAttribute('cx',q.x.toFixed(1));q.el.setAttribute('cy',q.y.toFixed(1));
+q.el.setAttribute('opacity',((.25+.6*Math.abs(Math.sin(t*q.tw+q.ph)))*intro).toFixed(2));
+}
+// shimmer texte : balayage continu
+var cyc=(t%3.3)/3.3;
+grad.setAttribute('gradientTransform','translate('+(-95+cyc*215).toFixed(1)+' 0)');
+grad.setAttribute('gradientUnits','objectBoundingBox');
+// entree choregraphiee
+var e=easeOut(intro);
+caGroup.setAttribute('opacity',e.toFixed(3));
+caGroup.setAttribute('transform','translate(195,362) scale('+(0.92+0.08*e).toFixed(4)+') translate(-195,-362)');
+brand.setAttribute('opacity',Math.max(0,Math.min(1,(intro-.35)/.65)).toFixed(3));
+brand.setAttribute('transform','translate(195,'+(590+(1-e)*16).toFixed(1)+')');
+var uw=Math.max(0,Math.min(1,(intro-.55)/.45));
+underline.setAttribute('transform','translate(195,0) scale('+uw.toFixed(3)+',1) translate(-195,0)');
+// respiration camera
+var br=1+.008*Math.sin(t*.55);
+world.setAttribute('transform','translate(195,390) scale('+br.toFixed(4)+') translate(-195,-390)');
+requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+$('btnReplay').onclick=function(){intro0=performance.now();if(!running){running=true;t0=performance.now()-(t0||0);requestAnimationFrame(frame);}};
+var paused=false;
+$('btnPause').onclick=function(){
+paused=!paused;
+if(paused){running=false;$('btnPause').textContent='Reprendre';}
+else{running=true;t0=performance.now()-((performance.now()-t0)||0);$('btnPause').textContent='Pause';requestAnimationFrame(frame);}
+};
+})();
+</script>
+</body>
+</html>
