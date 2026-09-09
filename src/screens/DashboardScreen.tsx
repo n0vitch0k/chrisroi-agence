@@ -17,8 +17,14 @@ import {
   getAllEmployes,
   getAllEmployeurs,
   getAllContrats,
+  createFinContratAlertes,
+  createCommissionDueAlertes,
 } from '../database/service';
 import { Colors, Shadows } from '../theme';
+
+// Génération auto des alertes une seule fois par session (au premier passage
+// sur le Dashboard, donc à chaque ouverture de l'app).
+let alertesAutoGenerees = false;
 
 // ─── Thème unique (Warm Earth V5) ─────────────────────────────────
 const M = { ...Colors, shadow: Shadows.card.shadowColor } as const;
@@ -125,7 +131,20 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    if (!alertesAutoGenerees) {
+      alertesAutoGenerees = true;
+      (async () => {
+        try {
+          await createFinContratAlertes();
+          await createCommissionDueAlertes();
+        } catch (e) {
+          console.warn('[alertes-auto] génération impossible:', e);
+        }
+      })();
+    }
+  }, [loadData]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); loadData(); }, [loadData]);
 

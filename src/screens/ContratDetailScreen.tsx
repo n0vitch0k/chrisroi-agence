@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import type { EmployeDetailNavigationProp } from '../types/navigation';
+import React, { useState, useCallback } from 'react';
+import type { ContratDetailNavigationProp } from '../types/navigation';
 
 import {
   View,
@@ -8,50 +8,47 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Platform,
-  ViewStyle,
   Image,
   Modal,
+  Platform,
+  ViewStyle,
 } from 'react-native';;
-import { Card, Chip, Divider, Menu } from 'react-native-paper';
+import { Card, Chip } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
 import { backFromDetail } from '../utils/detailBack';
 import {
+  getContratById,
   getEmployeById,
-  deleteEmploye,
-  getContratsByEmploye,
-  getEmployePhotoUrl,
-  getDocumentsByEmploye,
-  uploadDocument,
+  getEmployeurById,
+  getDocumentsByContrat,
+  getScans,
+  uploadContratDocument,
   deleteDocument,
   getDocumentTypeLabel,
   getDocumentTypeIcon,
   DOCUMENT_TYPES,
-  getDocumentImageUrl,
   getEntityHistory,
 } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { printToFileAsync } from 'expo-print';
-import { buildFichePapierHtml, FichePapierData, fileUriToDataUri } from '../utils/fichePrint';
-import { shareBase64File } from '../utils/shareFile';
 import SafeButton from '../components/SafeButton';
 import {
   formatDate,
   formatDateOr,
-  calculateAge,
+  formatMoney,
   getStatutColor,
   getStatutLabel,
-  getCategorieLabel,
-  getNiveauEtudeLabel,
-  getSituationMatrimonialeLabel,
+  daysRemaining,
 } from '../utils/constants';
 import { Colors, Spacing, Radius, Shadows } from '../theme';
 import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
+import { printToFileAsync } from 'expo-print';
+import { buildContratHtml } from '../utils/contratPrint';
+import { shareBase64File } from '../utils/shareFile';
 
 const InfoRow = ({ icon, label, value, style }: { icon: string; label: string; value: string; style?: ViewStyle }) => (
   <View style={[styles.infoRow, style]}>
@@ -61,53 +58,15 @@ const InfoRow = ({ icon, label, value, style }: { icon: string; label: string; v
   </View>
 );
 
-// ─── Avatar : photo si dispo, sinon initiales colorées ───
-function EmployeAvatar({
-  photoUri,
-  initials,
-  statusColor,
-  size = 80,
-}: {
-  photoUri?: string | null;
-  initials: string;
-  statusColor: string;
-  size?: number;
-}) {
-  const [imgError, setImgError] = useState(false);
-  const showPhoto = photoUri && !imgError;
-  return (
-    <View
-      style={[
-        styles.avatar,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: statusColor + '18' },
-      ]}
-    >
-      {showPhoto ? (
-        <Image
-          source={{ uri: photoUri! }}
-          style={{ width: size, height: size, borderRadius: size / 2 }}
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <Text style={[styles.avatarText, { color: statusColor, fontSize: size * 0.35 }]}>
-          {initials || '?'}
-        </Text>
-      )}
-    </View>
-  );
-}
-
-export default function EmployeDetailScreen() {
-  const navigation = useNavigation<EmployeDetailNavigationProp>();
+export default function ContratDetailScreen() {
+  const navigation = useNavigation<ContratDetailNavigationProp>();
   const route = useRoute<any>();
   const rootNavigation = navigation.getParent()?.getParent();
-  const employeId = route.params?.id;
-  // Origine externe éventuelle (Journal/Alertes/Suivi) → back déterministe.
+  const contratId = route.params?.id;
   const origin = route.params?.origin;
-  const [employe, setEmploye] = useState<any>(null);
-  const [contrats, setContrats] = useState<any[]>([]);
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [contrat, setContrat] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [scanPages, setScanPages] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
@@ -141,94 +100,72 @@ export default function EmployeDetailScreen() {
     }
   };
 
-  const loadEmploye = async () => {
+  const handlePrintContrat = async () => {
+    if (!contrat) return;
     try {
-      const data = await getEmployeById(employeId);
-      setEmploye(data);
-      if (data?.prenom && data?.nom) {
-        // useAppHeader va afficher le nom dans la header, mais on peut
-        // aussi le mettre dans le titre de la route (fallback).
-        navigation.setOptions({ title: `${data.prenom} ${data.nom}` });
+      const [employe, employeur] = await Promise.all([
+        contrat.employe_id ? getEmployeById(contrat.employe_id).catch(() => null) : Promise.resolve(null),
+        contrat.employeur_id ? getEmployeurById(contrat.employeur_id).catch(() => null) : Promise.resolve(null),
+      ]);
+      const html = buildContratHtml({ contrat, employe: employe || undefined, employeur: employeur || undefined });
+      if (Platform.OS === 'web') {
+        const w = window.open('', '_blank');
+        if (w) { w.document.write(html); w.document.close(); w.print(); }
+        return;
       }
-      const contratsData = await getContratsByEmploye(employeId);
-      setContrats(contratsData || []);
-      const docsData = await getDocumentsByEmploye(employeId);
+      const { base64 } = await printToFileAsync({ html, base64: true });
+      const numero = String(contrat.numero_dossier || contratId || Date.now()).replace(/[^a-zA-Z0-9._-]/g, '_');
+      await shareBase64File(base64 || '', `contrat_${numero}.pdf`, 'Contrat de prestation', 'application/pdf');
+    } catch (e: any) {
+      Alert.alert('Téléchargement', e?.message || 'Impossible de générer le PDF.');
+    }
+  };
+
+  const openScanViewer = (page: any, idx: number) => {
+    const uri = page?.imageUrl;
+    if (!uri) return;
+    docViewer.open({ uri, label: `Contrat signé — page ${idx + 1}`, fileName: null, mimeType: null });
+  };
+
+  const handleDownloadScan = async (page: any, idx: number) => {
+    const uri = page?.imageUrl;
+    if (!uri) { Alert.alert('Document', 'Aucun fichier à télécharger.'); return; }
+    try {
+      let localUri = uri;
+      if (/^https?:\/\//i.test(uri)) {
+        const tmp = (FileSystem as any).cacheDirectory + `contrat_signe_p${idx + 1}.jpg`;
+        const dl = await (FileSystem as any).downloadAsync(uri, tmp);
+        localUri = dl.uri;
+      }
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) await Sharing.shareAsync(localUri, { dialogTitle: `Contrat signé — page ${idx + 1}` });
+      else Alert.alert('Document', localUri);
+    } catch (e: any) {
+      Alert.alert('Téléchargement', e?.message || 'Impossible de télécharger.');
+    }
+  };
+
+  const loadContrat = async () => {
+    try {
+      const data = await getContratById(contratId);
+      setContrat(data);
+      if (data?.numero_dossier) {
+        navigation.setOptions({ title: data.numero_dossier });
+      }
+      const docsData = await getDocumentsByContrat(contratId);
       setDocuments(docsData || []);
 
-      const hist = await getEntityHistory('employe', employeId);
+      const pages = await getScans('contrat', contratId).catch(() => []);
+      setScanPages(pages || []);
+
+      const hist = await getEntityHistory('contrat', contratId);
       setHistory(hist || []);
     } catch (error) {
-      console.error('Error loading employe:', error);
+      console.error('Error loading contrat:', error);
     }
   };
 
-  // ── Génération + partage de la FICHE PAPIER (depuis l'écran Détail) ──
-  const [generatingFiche, setGeneratingFiche] = useState(false);
-  const handleDownloadFiche = async () => {
-    if (!employe) return;
-    setGeneratingFiche(true);
-    try {
-      // Photo : on l'embarque en data-URI base64 pour qu'elle s'imprime TOUJOURS
-      const photoUrl = getEmployePhotoUrl(employeId, employe.photo);
-      const photoDataUri = photoUrl ? await fileUriToDataUri(photoUrl) : null;
-
-      const urgence = (employe.personnes_urgence || [])
-        .slice(0, 2)
-        .map((p: any) => ({
-          nom: p.nom,
-          prenom: p.prenom,
-          telephone: p.telephone,
-          lieu: p.lieu || p.lieu_residence,
-        }));
-
-      const data: FichePapierData = {
-        date: employe.date_inscription
-          ? (employe.date_inscription as string).slice(0, 10)
-          : new Date().toISOString().slice(0, 10),
-        nom: employe.nom,
-        prenom: employe.prenom,
-        date_naissance: employe.date_naissance,
-        lieu_naissance: employe.lieu_naissance,
-        telephone: employe.telephone,
-        lieu_residence: employe.lieu_residence,
-        nationalite: employe.nationalite,
-        sexe: employe.sexe,
-        situation_matrimoniale: employe.situation_matrimoniale,
-        religion: employe.religion,
-        ethnie: employe.ethnie,
-        categorie_emploi: employe.categorie_emploi,
-        niveau_etude: employe.niveau_etude,
-        deja_travaille: employe.a_deja_travaille,
-        experience_details: employe.experience_details,
-        allergie_sante: employe.allergie_sante,
-        intervention_chirurgicale: employe.intervention_chirurgicale,
-        photo: photoUrl,
-        photoDataUri,
-        urgence,
-      };
-
-      const html = buildFichePapierHtml(data);
-
-      if (Platform.OS === 'web') return; // sur web, aperçu navigateur
-
-      // Même pattern que contrats : base64 → écriture dans NOTRE cache
-      // (le cache/Print d'expo-print est illisible au partage Android).
-      const { base64 } = await printToFileAsync({ html, base64: true });
-      await shareBase64File(
-        base64 || '',
-        `fiche_inscription_${Date.now()}.pdf`,
-        "Fiche d'inscription (papier)",
-        'application/pdf',
-      );
-    } catch (error) {
-      console.error('Erreur génération fiche papier:', error);
-      Alert.alert('Erreur', "Impossible de générer la fiche d'inscription.");
-    } finally {
-      setGeneratingFiche(false);
-    }
-  };
-
-  useFocusEffect(useCallback(() => { loadEmploye(); }, [employeId]));
+  useFocusEffect(useCallback(() => { loadContrat(); }, [contratId]));
 
   // ── Documents associés ─────────────────────────────────
   const pickDocType = (type: string) => {
@@ -238,19 +175,19 @@ export default function EmployeDetailScreen() {
   };
 
   const uploadPendingDocument = async (imageUri: string, fileName?: string, mimeType?: string) => {
-    if (!employeId || !docTypePending) return;
+    if (!contratId || !docTypePending) return;
     const captured = docTypePending;
     setDocsLoading(true);
     try {
-      const docId = await uploadDocument(employeId, captured, imageUri, fileName, mimeType);
+      const docId = await uploadContratDocument(contratId, captured, imageUri, fileName, mimeType);
       if (docId) {
-        const docs = await getDocumentsByEmploye(employeId);
+        const docs = await getDocumentsByContrat(contratId);
         setDocuments(docs || []);
       } else {
         Alert.alert('Erreur', "Échec de l'ajout du document.");
       }
     } catch (e) {
-      console.warn('uploadDocument error:', e);
+      console.warn('uploadContratDocument error:', e);
       Alert.alert('Erreur', "Échec de l'ajout du document.");
     } finally {
       setDocTypePending(null);
@@ -266,35 +203,14 @@ export default function EmployeDetailScreen() {
         style: 'destructive',
         onPress: async () => {
           await deleteDocument(docId);
-          const docs = await getDocumentsByEmploye(employeId);
+          const docs = await getDocumentsByContrat(contratId);
           setDocuments(docs || []);
         },
       },
     ]);
   };
 
-  // Header custom sans "Go back" moche — titre dynamique selon l'employé chargé.
-  const headerTitle = employe ? `${employe.prenom || ''} ${employe.nom || ''}`.trim() || 'Employé' : 'Employé';
-
-  const handleDelete = () => {
-    Alert.alert('Confirmer la suppression', 'Êtes-vous sûr de vouloir supprimer cet employé ? Cette action est irréversible.', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Supprimer', style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteEmploye(employeId);
-            navigation.goBack();
-          } catch (error) {
-            console.error('Error deleting employe:', error);
-            Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression');
-          }
-        },
-      },
-    ]);
-  };
-
-  if (!employe) {
+  if (!contrat) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={{ color: Colors.textSecondary }}>Chargement...</Text>
@@ -302,9 +218,10 @@ export default function EmployeDetailScreen() {
     );
   }
 
-  const age = calculateAge(employe.date_naissance);
-  const statusColor = getStatutColor(employe.statut);
-  const initials = `${employe.prenom?.charAt(0) || ''}${employe.nom?.charAt(0) || ''}`;
+  const headerTitle = contrat.numero_dossier || 'Contrat';
+  const remaining = daysRemaining(contrat.date_fin);
+  const employeName = `${contrat.employe_prenom || ''} ${contrat.employe_nom || ''}`.trim() || '-';
+  const statusColor = getStatutColor(contrat.statut);
 
   return (
     <>
@@ -313,121 +230,137 @@ export default function EmployeDetailScreen() {
       <AppHeader title={headerTitle} showBack onBack={() => backFromDetail(navigation, origin)} />
       {/* ── Entête ─────────────────────────────────────── */}
       <View style={header}>
-        <EmployeAvatar
-          photoUri={getEmployePhotoUrl(employeId, employe.photo)}
-          initials={initials}
-          statusColor={statusColor}
-          size={88}
-        />
-        <Text style={styles.name}>{employe.prenom} {employe.nom}</Text>
+        <View style={styles.avatar}>
+          <Text style={{ fontSize: 38 }}>📄</Text>
+        </View>
+        <Text style={styles.name}>{contrat.numero_dossier || `Contrat ${contrat.id}`}</Text>
         <View style={styles.chipsRow}>
           <Chip mode="outlined" style={[styles.chip, { borderColor: statusColor }]} textStyle={[styles.chipText, { color: statusColor }]}>
-            {getStatutLabel(employe.statut)}
+            {getStatutLabel(contrat.statut)}
           </Chip>
-          <Chip mode="outlined" style={[styles.chip, { borderColor: Colors.primaryFaded }]} textStyle={[styles.chipText, { color: Colors.primaryDark }]}>
-            {getCategorieLabel(employe.categorie_emploi)}
-          </Chip>
+          {contrat.type_contrat ? (
+            <Chip mode="outlined" style={[styles.chip, { borderColor: Colors.primaryFaded }]} textStyle={[styles.chipText, { color: Colors.primaryDark }]}>
+              {contrat.type_contrat}
+            </Chip>
+          ) : null}
+          {remaining !== null && contrat.statut === 'en_cours' ? (
+            <Chip mode="outlined" style={[styles.chip, { borderColor: Colors.primaryFaded }]} textStyle={[styles.chipText, { color: Colors.primaryDark }]}>
+              {remaining >= 0 ? `Fin dans ${remaining}j` : `Terminé depuis ${-remaining}j`}
+            </Chip>
+          ) : null}
         </View>
         <View style={styles.actionsRow}>
-          <SafeButton mode="contained" onPress={() => rootNavigation?.navigate('FicheInscriptionModal', { id: employeId })}
+          <SafeButton mode="contained" onPress={() => rootNavigation?.navigate('ContratDocumentModal', { id: contratId })}
             style={styles.editBtn}>
             Modifier
           </SafeButton>
-          <SafeButton mode="outlined" onPress={handleDownloadFiche} loading={generatingFiche}
-            style={styles.editBtn}>
-            Fiche papier
+          <SafeButton mode="outlined" onPress={handlePrintContrat} style={styles.editBtn}>
+            <Icon name="file-pdf-box" size={18} color={Colors.primary} />
+            <Text style={{ color: Colors.primary, fontWeight: '600', marginLeft: 6 }}>PDF</Text>
           </SafeButton>
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuVisible(true)}>
-                <Icon name="dots-vertical" size={22} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            }
-          >
-            <Menu.Item onPress={() => { setMenuVisible(false); rootNavigation?.navigate('ContratDocumentModal', { employe_id: employeId } as any); }}
-              title="Créer un contrat" leadingIcon="file-plus-outline" />
-            <Divider />
-            <Menu.Item onPress={() => { setMenuVisible(false); handleDelete(); }}
-              title="Supprimer" leadingIcon="delete" titleStyle={{ color: Colors.danger }} />
-          </Menu>
         </View>
       </View>
 
-      {/* ── Infos personnelles ─────────────────────────── */}
+      {/* ── Dossier ────────────────────────────────────── */}
       <Card style={card}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
-          <Text style={styles.cardTitle}>Informations personnelles</Text>
-          <InfoRow icon="calendar" label="Date de naissance" value={`${formatDate(employe.date_naissance)}${age ? ` (${age} ans)` : ''}`} />
-          <InfoRow icon="map-marker" label="Lieu de naissance" value={employe.lieu_naissance} />
-          <InfoRow icon="phone" label="Téléphone" value={employe.telephone} />
-          <InfoRow icon="home" label="Résidence" value={employe.lieu_residence} />
-          <InfoRow icon="flag" label="Nationalité" value={employe.nationalite} />
-          <InfoRow icon="heart" label="Situation matrimoniale" value={getSituationMatrimonialeLabel(employe.situation_matrimoniale)} />
-          <InfoRow icon="cross" label="Religion" value={employe.religion} />
-          <InfoRow icon="school" label="Niveau d'étude" value={getNiveauEtudeLabel(employe.niveau_etude)} />
-          <InfoRow icon="calendar-plus" label="Date d'inscription" value={formatDate(employe.date_inscription)} style={{ borderBottomWidth: 0 }} />
+          <Text style={styles.cardTitle}>Dossier</Text>
+          <InfoRow icon="file-document" label="N° dossier" value={contrat.numero_dossier} />
+          <InfoRow icon="tag" label="Statut" value={getStatutLabel(contrat.statut)} />
+          {contrat.type_contrat ? (
+            <InfoRow icon="briefcase" label="Type de contrat" value={contrat.type_contrat} />
+          ) : null}
+          {contrat.poste ? (
+            <InfoRow icon="account-tie" label="Poste" value={contrat.poste} />
+          ) : null}
+          <InfoRow icon="calendar" label="Date du contrat" value={formatDate(contrat.date_contrat)} />
+          <InfoRow icon="calendar-start" label="Début" value={formatDate(contrat.date_debut)} />
+          <InfoRow icon="calendar-end" label="Fin" value={formatDateOr(contrat.date_fin, 'En cours')} />
+          {contrat.salaire > 0 ? (
+            <InfoRow icon="cash" label="Salaire" value={formatMoney(contrat.salaire)} />
+          ) : null}
+          {contrat.commission_agence > 0 ? (
+            <InfoRow icon="percent" label="Commission agence" value={formatMoney(contrat.commission_agence)} style={{ borderBottomWidth: 0 }} />
+          ) : null}
         </Card.Content>
       </Card>
 
-      {/* ── Parents ────────────────────────────────────── */}
-      {employe.parents && employe.parents.length > 0 && (
-        <Card style={card}>
-          <View style={styles.accent} />
-          <Card.Content style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Parents</Text>
-            {employe.parents.map((parent: any, index: number) => (
-              <View key={index} style={styles.subSection}>
-                <Text style={styles.subTitle}>{parent.type === 'pere' ? 'Père' : 'Mère'}</Text>
-                <Text style={styles.subValue}>{parent.prenom} {parent.nom}</Text>
-                {parent.telephone && <View style={styles.contactRow}><Icon name="phone" size={14} color={Colors.iconLight} /><Text style={styles.contactText}>{parent.telephone}</Text></View>}
-                {parent.domicile && <View style={styles.contactRow}><Icon name="map-marker" size={14} color={Colors.iconLight} /><Text style={styles.contactText}>{parent.domicile}</Text></View>}
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
-      )}
-
-      {/* ── Urgences ───────────────────────────────────── */}
-      {employe.personnes_urgence && employe.personnes_urgence.length > 0 && (
-        <Card style={card}>
-          <View style={styles.accent} />
-          <Card.Content style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Personnes à contacter en cas d'urgence</Text>
-            {employe.personnes_urgence.map((personne: any, index: number) => (
-              <View key={index} style={styles.subSection}>
-                <View style={styles.urgenceHeader}>
-                  <Text style={styles.subTitle}>{personne.prenom} {personne.nom}</Text>
-                  <Text style={styles.urgenceOrder}>#{index + 1}</Text>
-                </View>
-                <View style={styles.contactRow}><Icon name="phone" size={14} color={Colors.iconLight} /><Text style={styles.contactText}>{personne.telephone}</Text></View>
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
-      )}
-
-      {/* ── Expérience ─────────────────────────────────── */}
+      {/* ── Version signée (scan lié à la fiche numérique) ── */}
       <Card style={card}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
-          <Text style={styles.cardTitle}>Expérience professionnelle</Text>
-          <View style={styles.boolRow}>
-            <Text style={styles.boolLabel}>A déjà travaillé :</Text>
-            <Icon name={employe.a_deja_travaille ? 'check-circle' : 'close-circle'} size={18}
-              color={employe.a_deja_travaille ? Colors.success : Colors.danger} />
-          </View>
-          {employe.experiences && employe.experiences.length > 0 && employe.experiences.map((exp: any, i: number) => (
-            <View key={i} style={styles.expItem}>
-              <Text style={styles.expCompany}>{exp.entreprise}</Text>
-              <Text style={styles.expDetail}>{exp.lieu}{exp.contact ? ` - ${exp.contact}` : ''}</Text>
+          <Text style={styles.cardTitle}>Contrat signé</Text>
+          {scanPages.length === 0 ? (
+            <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>
+              Pas encore de version signée. Imprimez le PDF (bouton PDF ci-dessus), faites signer, puis scannez depuis Modifier &gt; onglet Scanné.
+            </Text>
+          ) : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {scanPages.map((page: any, idx: number) => (
+                <View key={page.id || idx} style={{ width: 96 }}>
+                  <TouchableOpacity onPress={() => openScanViewer(page, idx)}>
+                    {page.imageUrl ? (
+                      <Image source={{ uri: page.imageUrl }} style={{ width: 96, height: 128, borderRadius: 8, backgroundColor: Colors.borderLight }} resizeMode="cover" />
+                    ) : (
+                      <View style={{ width: 96, height: 128, borderRadius: 8, backgroundColor: Colors.borderLight, alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name="file-image-outline" size={28} color={Colors.textSecondary} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                    <Text style={{ fontSize: 11, color: Colors.textSecondary }}>Page {idx + 1}</Text>
+                    <TouchableOpacity onPress={() => handleDownloadScan(page, idx)} hitSlop={8}>
+                      <Icon name="download-outline" size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
             </View>
-          ))}
-          {employe.stages_effectues && <View style={styles.textBlock}><Text style={styles.blockLabel}>Stages effectués :</Text><Text style={styles.blockText}>{employe.stages_effectues}</Text></View>}
-          {employe.formations && <View style={styles.textBlock}><Text style={styles.blockLabel}>Formations / Diplômes :</Text><Text style={styles.blockText}>{employe.formations}</Text></View>}
-          {employe.motivation && <View style={styles.textBlock}><Text style={styles.blockLabel}>Motivation :</Text><Text style={styles.blockText}>{employe.motivation}</Text></View>}
+          )}
+        </Card.Content>
+      </Card>
+
+      {/* ── Employé ────────────────────────────────────── */}
+      <Card style={card}>
+        <View style={styles.accent} />
+        <Card.Content style={styles.cardContent}>
+          <Text style={styles.cardTitle}>Employé</Text>
+          <TouchableOpacity
+            onPress={() => contrat.employe_id && (navigation as any).navigate('EmployeDetail', { id: contrat.employe_id, ...(origin ? { origin } : {}) })}
+            disabled={!contrat.employe_id}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.linkName, !contrat.employe_id && { color: Colors.textSecondary, textDecorationLine: 'none' }]}>
+              {employeName}
+            </Text>
+          </TouchableOpacity>
+          {contrat.employe_telephone ? (
+            <View style={styles.contactRow}><Icon name="phone" size={14} color={Colors.iconLight} /><Text style={styles.contactText}>{contrat.employe_telephone}</Text></View>
+          ) : null}
+        </Card.Content>
+      </Card>
+
+      {/* ── Employeur ──────────────────────────────────── */}
+      <Card style={card}>
+        <View style={styles.accent} />
+        <Card.Content style={styles.cardContent}>
+          <Text style={styles.cardTitle}>Employeur</Text>
+          <TouchableOpacity
+            onPress={() => contrat.employeur_id && (navigation as any).navigate('EmployeurDetail', { id: contrat.employeur_id, ...(origin ? { origin } : {}) })}
+            disabled={!contrat.employeur_id}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.linkName, !contrat.employeur_id && { color: Colors.textSecondary, textDecorationLine: 'none' }]}>
+              {contrat.nom_complet || '-'}
+            </Text>
+          </TouchableOpacity>
+          {contrat.employeur_adresse ? (
+            <View style={styles.contactRow}><Icon name="map-marker" size={14} color={Colors.iconLight} /><Text style={styles.contactText}>{contrat.employeur_adresse}</Text></View>
+          ) : null}
+          {contrat.employeur_telephone ? (
+            <View style={styles.contactRow}><Icon name="phone" size={14} color={Colors.iconLight} /><Text style={styles.contactText}>{contrat.employeur_telephone}</Text></View>
+          ) : null}
         </Card.Content>
       </Card>
 
@@ -448,7 +381,7 @@ export default function EmployeDetailScreen() {
           </View>
           {documents.length === 0 ? (
             <Text style={styles.docEmpty}>
-              {docsLoading ? 'Chargement…' : "Aucun document associé à cette fiche."}
+              {docsLoading ? 'Chargement…' : "Aucun document associé à ce contrat."}
             </Text>
           ) : (
             <View style={styles.docGrid}>
@@ -492,36 +425,6 @@ export default function EmployeDetailScreen() {
           )}
         </Card.Content>
       </Card>
-
-      {/* ── Contrats ────────────────────────────────────── */}
-      {contrats.length > 0 && (
-        <Card style={card}>
-          <View style={styles.accent} />
-          <Card.Content style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Historique des contrats ({contrats.length})</Text>
-            {contrats.map((contrat: any) => (
-              <TouchableOpacity key={contrat.id}
-                onPress={() => (navigation as any).navigate('ContratDetail', { id: contrat.id, ...(origin ? { origin } : {}) })}
-                style={styles.contratItem}>
-                <View style={styles.contratHeader}>
-                  <Text style={styles.contratNumero}>{contrat.numero_dossier}</Text>
-                  <Chip mode="outlined" style={[styles.miniChip, { borderColor: getStatutColor(contrat.statut) }]}
-                    textStyle={{ fontSize: 10, color: getStatutColor(contrat.statut) }}>
-                    {getStatutLabel(contrat.statut)}
-                  </Chip>
-                </View>
-                <TouchableOpacity onPress={() => (navigation as any).navigate('EmployeurDetail', {
-                  id: contrat.employeur_id || contrat.expand?.employeur_id?.id,
-                  ...(origin ? { origin } : {}),
-                })}>
-                  <Text style={styles.contratCompany}>{contrat.nom_complet}</Text>
-                </TouchableOpacity>
-                <Text style={styles.contratDates}>{formatDate(contrat.date_debut) || '-'} → {formatDateOr(contrat.date_fin, 'En cours')}</Text>
-              </TouchableOpacity>
-            ))}
-          </Card.Content>
-        </Card>
-      )}
 
       {/* ── Historique des actions ── */}
       {history.length > 0 && (
@@ -693,16 +596,13 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: Spacing.xxl },
   // ── Entête ────────────────────────────────────────────
   header: header,
-  avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
-  avatarText: { fontSize: 28, fontWeight: '700' },
-  name: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
+  avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md, backgroundColor: Colors.primaryDim },
+  name: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md, textAlign: 'center' },
   chipsRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg, flexWrap: 'wrap', justifyContent: 'center' },
   chip: { height: 28 },
   chipText: { fontSize: 12, fontWeight: '600' },
   actionsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, width: '100%' },
   editBtn: { flex: 1, borderRadius: Radius.sm },
-  editBtnContent: { height: 40 },
-  moreBtn: { padding: Spacing.sm },
   // ── Cartes ────────────────────────────────────────────
   card: card,
   accent: { height: 3, backgroundColor: Colors.primary },
@@ -712,29 +612,9 @@ const styles = StyleSheet.create({
   infoIcon: { width: 24, textAlign: 'center' },
   infoLabel: { flex: 1, fontSize: 13, color: Colors.textSecondary },
   infoValue: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, textAlign: 'right', maxWidth: '50%' },
-  // ── Sous-sections ─────────────────────────────────────
-  subSection: { marginBottom: Spacing.md },
-  subTitle: { fontSize: 14, fontWeight: '600', color: Colors.primary, marginBottom: 2 },
-  subValue: { fontSize: 14, color: Colors.textPrimary },
+  linkName: { fontSize: 16, fontWeight: '600', color: Colors.primary, textDecorationLine: 'underline' },
   contactRow: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.xs, gap: Spacing.sm },
   contactText: { fontSize: 13, color: Colors.textSecondary },
-  urgenceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs },
-  urgenceOrder: { fontSize: 12, color: Colors.textTertiary },
-  boolRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md },
-  boolLabel: { fontSize: 14, color: Colors.textSecondary },
-  expItem: { paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  expCompany: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  expDetail: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  textBlock: { marginTop: Spacing.md },
-  blockLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4 },
-  blockText: { fontSize: 14, color: Colors.textPrimary, lineHeight: 20 },
-  // ── Contrats ──────────────────────────────────────────
-  contratItem: { paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  contratHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  contratNumero: { fontSize: 14, fontWeight: '600', color: Colors.primary },
-  miniChip: { height: 22 },
-  contratCompany: { fontSize: 13, color: Colors.primary, marginTop: 2, textDecorationLine: 'underline' },
-  contratDates: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   // ── Historique ───────────────────────────────────────
   historyItem: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
   historyIcon: { width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },

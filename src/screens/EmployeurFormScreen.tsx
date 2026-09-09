@@ -3,6 +3,7 @@ import type { EmployeurFormNavigationProp } from '../types/navigation';
 
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,7 +24,10 @@ import {
   DOCUMENT_TYPES, getDocumentTypeLabel, getDocumentTypeIcon,
 } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
 import { Colors, Spacing, Radius, Shadows, Typography } from '../theme';
 import FormField from '../components/FormField';
 import SafeButton from '../components/SafeButton';
@@ -141,6 +145,33 @@ export default function EmployeurFormScreen() {
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
   const [docsLoading, setDocsLoading] = useState(false);
+  const docViewer = useDocumentViewer();
+
+  const openViewerFor = (d: any, fallbackUri?: string | null) => {
+    const uri = d?.imageUrl || fallbackUri;
+    if (!uri) return;
+    docViewer.open({ uri, label: getDocumentTypeLabel(d.type), fileName: d?.nomFichier || d?.file || d?.name || null, mimeType: d?.mimeType || null });
+  };
+
+  const handleDownloadDoc = async (d: any) => {
+    const uri = d?.imageUrl;
+    if (!uri) { Alert.alert('Document', 'Aucun fichier à télécharger.'); return; }
+    try {
+      const name = d?.nomFichier || d?.file || `document_${d.id || Date.now()}`;
+      let localUri = uri;
+      if (/^https?:\/\//i.test(uri)) {
+        const safe = String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+        const tmp = FileSystem.cacheDirectory + safe;
+        const dl = await FileSystem.downloadAsync(uri, tmp);
+        localUri = dl.uri;
+      }
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) await Sharing.shareAsync(localUri, { dialogTitle: getDocumentTypeLabel(d.type) });
+      else Alert.alert('Document', localUri);
+    } catch (e: any) {
+      Alert.alert('Téléchargement', e?.message || 'Impossible de télécharger.');
+    }
+  };
 
   // C1 verrouillage : en édition, tous les champs sont locked par défaut ;
   // l'utilisateur clique 🔓 pour déverrouiller, modifie, puis ✅ pour valider.
@@ -299,20 +330,25 @@ export default function EmployeurFormScreen() {
     setShowDocSourcePicker(true);
   };
 
-  const uploadPendingDocument = async (imageUri: string) => {
+  const uploadPendingDocument = async (imageUri: string, fileName?: string, mimeType?: string) => {
     if (!docTypePending) return;
     setDocsLoading(true);
     try {
       if (employeurId) {
-        // Édition : upload direct
-        await uploadEmployeurDocument(employeurId, docTypePending, imageUri);
-        const docs = await getDocumentsByEmployeur(employeurId);
-        setDocuments(docs || []);
+        // Édition : upload direct, avec retour explicite (comme en création)
+        const docId = await uploadEmployeurDocument(employeurId, docTypePending, imageUri, fileName, mimeType);
+        if (docId) {
+          const docs = await getDocumentsByEmployeur(employeurId);
+          setDocuments(docs || []);
+          Alert.alert('Document ajouté', 'Le document a bien été enregistré.');
+        } else {
+          Alert.alert('Erreur', "Échec de l'ajout du document.");
+        }
       } else {
         // Création : ajout en attente, sera uploadé après save
         setPendingDocuments((prev) => [
           ...prev,
-          { type: docTypePending, uri: imageUri },
+          { type: docTypePending, uri: imageUri, name: fileName, mimeType },
         ]);
       }
       setDocTypePending(null);
@@ -543,23 +579,51 @@ export default function EmployeurFormScreen() {
           </View>
 
           {isEditing ? (
-            // Édition : on affiche les documents déjà uploadés
+            // Édition : grille comme EmployeDetail (vignettes + visionneuse + téléchargement)
             documents.length === 0 ? (
-              <Text style={styles.emptyHint}>Aucun document joint.</Text>
+              <Text style={styles.emptyHint}>{docsLoading ? 'Chargement…' : 'Aucun document joint.'}</Text>
             ) : (
-              documents.map((doc) => (
-                <View key={doc.id} style={styles.docItem}>
-                  <Text style={styles.docLabel}>
-                    {getDocumentTypeIcon(doc.type)} {getDocumentTypeLabel(doc.type)}
-                  </Text>
-                  <TouchableOpacity onPress={() => removeDocument(doc.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={{ color: Colors.danger, fontSize: 12 }}>Supprimer</Text>
+              <View style={styles.docGrid}>
+                {documents.map((doc) => (
+                  <TouchableOpacity key={doc.id} style={styles.docTile} onPress={() => openViewerFor(doc)} activeOpacity={0.78} disabled={!doc.imageUrl}>
+                    {doc.imageUrl ? (
+                      /\.(pdf|doc|docx)$/i.test(doc.nomFichier || doc.file || '') ? (
+                        <View style={styles.docThumbPlaceholder}>
+                          <Icon name={/\.pdf$/i.test(doc.nomFichier || doc.file || '') ? 'file-pdf-box' : 'file-word-outline'} size={30} color={Colors.primary} />
+                        </View>
+                      ) : (
+                        <Image source={{ uri: doc.imageUrl }} style={styles.docThumb} resizeMode="cover" />
+                      )
+                    ) : (
+                      <View style={styles.docThumbPlaceholder}>
+                        <Text style={{ fontSize: 26 }}>{getDocumentTypeIcon(doc.type)}</Text>
+                      </View>
+                    )}
+                    <Text style={styles.docTileLabel} numberOfLines={1}>
+                      {getDocumentTypeLabel(doc.type)}
+                    </Text>
+                    {doc.imageUrl ? (
+                      <TouchableOpacity
+                        style={styles.docTileDownload}
+                        onPress={() => handleDownloadDoc(doc)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Icon name="download-outline" size={13} color={Colors.primary} />
+                      </TouchableOpacity>
+                    ) : null}
+                    <TouchableOpacity
+                      style={styles.docTileRemove}
+                      onPress={() => removeDocument(doc.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Icon name="close" size={14} color="#b85454" />
+                    </TouchableOpacity>
                   </TouchableOpacity>
-                </View>
-              ))
+                ))}
+              </View>
             )
           ) : (
-            // Création : on affiche les documents en attente (seront uploadés après save)
+            // Création : vignettes des documents en attente (URIs locales visualisables)
             pendingDocuments.length === 0 ? (
               <Text style={styles.emptyHint}>
                 Aucun document. Ils seront ajoutés à l'employeur lors de l'enregistrement.
@@ -569,16 +633,29 @@ export default function EmployeurFormScreen() {
                 <Text style={styles.pendingHint}>
                   {pendingDocuments.length} document(s) en attente — ajoutés à l'enregistrement.
                 </Text>
-                {pendingDocuments.map((p, idx) => (
-                  <View key={idx} style={styles.docItem}>
-                    <Text style={styles.docLabel}>
-                      {getDocumentTypeIcon(p.type)} {getDocumentTypeLabel(p.type)}
-                    </Text>
-                    <TouchableOpacity onPress={() => removePendingDocument(idx)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Text style={{ color: Colors.danger, fontSize: 12 }}>Retirer</Text>
+                <View style={styles.docGrid}>
+                  {pendingDocuments.map((p, idx) => (
+                    <TouchableOpacity key={idx} style={styles.docTile} onPress={() => { if (typeof p.uri === 'string') openViewerFor(p, p.uri); }} activeOpacity={0.78} disabled={typeof p.uri !== 'string'}>
+                      {typeof p.uri === 'string' && !/\.pdf$/i.test(p.name || p.uri) ? (
+                        <Image source={{ uri: p.uri }} style={styles.docThumb} resizeMode="cover" />
+                      ) : (
+                        <View style={styles.docThumbPlaceholder}>
+                          <Text style={{ fontSize: 26 }}>{getDocumentTypeIcon(p.type)}</Text>
+                        </View>
+                      )}
+                      <Text style={styles.docTileLabel} numberOfLines={1}>
+                        {getDocumentTypeLabel(p.type)}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.docTileRemove}
+                        onPress={() => removePendingDocument(idx)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Icon name="close" size={14} color="#b85454" />
+                      </TouchableOpacity>
                     </TouchableOpacity>
-                  </View>
-                ))}
+                  ))}
+                </View>
               </>
             )
           )}
@@ -665,7 +742,7 @@ export default function EmployeurFormScreen() {
                 if (!(await requestLibraryPermission())) return;
                 try {
                   const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85 });
-                  if (!result.canceled && result.assets[0]) uploadPendingDocument(result.assets[0].uri);
+                  if (!result.canceled && result.assets[0]) uploadPendingDocument(result.assets[0].uri, (result.assets[0] as any).fileName, (result.assets[0] as any).mimeType);
                   else setDocTypePending(null);
                 } catch (e: any) {
                   Alert.alert('Erreur', e?.message || "Impossible d'ouvrir la galerie.");
@@ -683,7 +760,7 @@ export default function EmployeurFormScreen() {
                 if (status !== 'granted') { Alert.alert('Permission refusée', "Autorisez l'accès à l'appareil photo."); setDocTypePending(null); return; }
                 try {
                   const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.85 });
-                  if (!result.canceled && result.assets[0]) uploadPendingDocument(result.assets[0].uri);
+                  if (!result.canceled && result.assets[0]) uploadPendingDocument(result.assets[0].uri, (result.assets[0] as any).fileName, (result.assets[0] as any).mimeType);
                   else setDocTypePending(null);
                 } catch (e: any) {
                   Alert.alert('Erreur', e?.message || "Impossible d'ouvrir l'appareil photo.");
@@ -704,6 +781,7 @@ export default function EmployeurFormScreen() {
       {Platform.OS === 'web' && showDocSourcePicker ? (
         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleDocWeb} />
       ) : null}
+      <DocumentViewerOverlay viewerDoc={docViewer.doc} onClose={docViewer.close} onDownload={docViewer.download} downloading={docViewer.downloading} />
     </KeyboardAvoidingView>
   );
 }
@@ -812,6 +890,14 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: Spacing.xs,
   },
+  /* ─── Grille documents (parité EmployeDetail) ─── */
+  docGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
+  docTile: { width: '30%', alignItems: 'center', marginBottom: Spacing.md },
+  docThumb: { width: '100%', aspectRatio: 0.75, borderRadius: Radius.sm, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.borderLight },
+  docThumbPlaceholder: { width: '100%', aspectRatio: 0.75, borderRadius: Radius.sm, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.borderLight, alignItems: 'center', justifyContent: 'center' },
+  docTileLabel: { fontSize: 11, color: Colors.textSecondary, marginTop: 4, textAlign: 'center' },
+  docTileRemove: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#FDECEC', alignItems: 'center', justifyContent: 'center' },
+  docTileDownload: { position: 'absolute', top: 4, left: 4, width: 22, height: 22, borderRadius: 11, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: Colors.primary + '30', alignItems: 'center', justifyContent: 'center' },
 
   /* ─── Submit Button ─── */
   submitButton: {

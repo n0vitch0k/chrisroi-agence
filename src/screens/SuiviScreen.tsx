@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -36,12 +36,20 @@ export default function SuiviScreen() {
   const [loading, setLoading] = useState(true);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [contratsFinProche, setContratsFinProche] = useState<any[]>([]);
+  // Mois affiché par le calendrier : le rechargement au focus doit reprendre
+  // CE mois, pas toujours le mois courant (sinon les pastilles du mois
+  // consulté disparaissent au retour sur l'écran).
+  const calMonthRef = useRef<{ y: number; m: number } | null>(null);
+  if (calMonthRef.current === null) {
+    const n = new Date();
+    calMonthRef.current = { y: n.getFullYear(), m: n.getMonth() };
+  }
   const load = async () => {
     try {
-      const now = new Date();
+      const { y, m } = calMonthRef.current as { y: number; m: number };
       const [comms, monthEvents, contratsData] = await Promise.all([
         getCommissionsAPercevoir(),
-        getCalendarEvents(now.getFullYear(), now.getMonth()),
+        getCalendarEvents(y, m),
         getContratsFinProche(),
       ]);
       setCommissions(comms || []);
@@ -223,6 +231,7 @@ const aRelancer = commissions.filter((c: any) => now >= dueTime(c));
   }, [calendarEvents, contratsFinProche]);
 
   const onMonthChange = useCallback((year: number, month: number) => {
+    calMonthRef.current = { y: year, m: month };
     setLoading(true);
     getCalendarEvents(year, month)
       .then((events) => setCalendarEvents(events || []))
@@ -237,7 +246,7 @@ const aRelancer = commissions.filter((c: any) => now >= dueTime(c));
       }
     } else if (evt.type === 'inscription') {
       if (evt.employe_id) {
-        navigation.navigate('EmployesStack', { screen: 'EmployeDetail', params: { id: evt.employe_id } });
+        navigation.navigate('DetailModal' as any, { screen: 'EmployeDetail', params: { id: evt.employe_id } });
       }
     }
   }, [rootNavigation, navigation]);

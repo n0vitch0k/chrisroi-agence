@@ -50,7 +50,9 @@ export async function extractDocument(
   apiKey: string,
   imageUri: string,
   documentType: DocumentType,
-  base64Override?: string
+  base64Override?: string,
+  /** Pages suivantes (contrat multi-pages) : base64 déjà prêts, dans l'ordre */
+  extraBase64Images: string[] = []
 ): Promise<ExtractedData> {
   if (!apiKey || apiKey.trim() === '') {
     throw new Error('Clé API KiloCode non configurée. Allez dans Paramètres > Scanner.');
@@ -60,6 +62,20 @@ export async function extractDocument(
   const base64Image = base64Override && base64Override.length > 0
     ? base64Override
     : await imageUriToBase64(imageUri);
+
+  const allImages = [base64Image, ...extraBase64Images.filter((b) => b && b.length > 0)];
+  const contentParts: any[] = [
+    {
+      type: 'text',
+      text: allImages.length > 1
+        ? prompt + `\nCe document comporte ${allImages.length} pages (images dans l'ordre) : analyse-les TOUTES et fusionne les informations.`
+        : prompt,
+    },
+    ...allImages.map((b64) => ({
+      type: 'image_url',
+      image_url: { url: 'data:image/jpeg;base64,' + b64 },
+    })),
+  ];
 
   const response = await fetch(KILO_BASE + KILO_CHAT_PATH, {
     method: 'POST',
@@ -72,13 +88,7 @@ export async function extractDocument(
       messages: [
         {
           role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            {
-              type: 'image_url',
-              image_url: { url: 'data:image/jpeg;base64,' + base64Image },
-            },
-          ],
+          content: contentParts,
         },
       ],
       temperature: 0.1,

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alertes auto — maquette v1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #e8e0d5; display: flex; justify-content: center; padding: 16px; }
+  .phone { width: 390px; max-width: 100%; background: #fdf8f3; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+  .header { background: #c45a2a; color: #fff; padding: 18px 20px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 19px; }
+  .badge { background: #b3261e; border-radius: 12px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
+  .card { background: #fff; margin: 10px 16px 0; border-radius: 14px; padding: 12px 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); display: flex; gap: 12px; align-items: flex-start; border-left: 4px solid transparent; }
+  .card.unread { border-color: #c45a2a22; }
+  .icon { width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+  .i-pink { background: #fce4ec; } .i-red { background: #fdecea; } .i-orange { background: #fff3e0; }
+  .txt { flex: 1; }
+  .title { font-size: 14px; font-weight: 700; color: #3d3530; }
+  .msg { font-size: 13px; color: #5c6675; margin-top: 2px; line-height: 1.4; }
+  .date { font-size: 11px; color: #a89c8d; margin-top: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 5px; background: #c45a2a; margin-top: 6px; flex-shrink: 0; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 8px; margin-bottom: 4px; }
+  .tag-new { background: #e6f4ea; color: #2e7d32; }
+  .legend { margin: 14px 16px 20px; font-size: 12px; color: #6b5f52; background: #fff8; border: 1px dashed #c45a2a; border-radius: 10px; padding: 10px 12px; line-height: 1.6; }
+  .legend b { color: #3d3530; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="header"><h1>Alertes</h1><span class="badge">3</span></div>
+
+  <div class="card unread">
+    <div class="icon i-pink">💰</div>
+    <div class="txt">
+      <span class="tag tag-new">Nouveau — auto</span>
+      <div class="title">Commission à prélever</div>
+      <div class="msg">Awa K. (Ménage) chez Yao S. — échéance 1 mois atteinte le 09/09. Montant : 25 000 FCFA.</div>
+      <div class="date">Aujourd'hui · tap = ouvrir le contrat</div>
+    </div>
+    <div class="dot"></div>
+  </div>
+
+  <div class="card unread">
+    <div class="icon i-red">📅</div>
+    <div class="txt">
+      <span class="tag tag-new">Nouveau — auto</span>
+      <div class="title">Fin de contrat dans 7 jours</div>
+      <div class="msg">Koffi M. (Gardiennage) chez Yao S. — fin le 16/09.</div>
+      <div class="date">Aujourd'hui · tap = ouvrir le contrat</div>
+    </div>
+    <div class="dot"></div>
+  </div>
+
+  <div class="card">
+    <div class="icon i-orange">📅</div>
+    <div class="txt">
+      <div class="title">Fin de contrat dans 3 jours</div>
+      <div class="msg">Aya T. (Cuisine) chez Koné A. — fin le 12/09.</div>
+      <div class="date">09/09 · lue · tap = ouvrir le contrat</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Règles proposées (génération à chaque ouverture de l'app) :</b><br>
+    1. Contrat impayé dont l'échéance d'1 mois est atteinte → 1 alerte "Commission à prélever" (jamais de doublon).<br>
+    2. Contrat se terminant dans 7 jours puis 3 jours → alertes existantes réactivées.<br>
+    3. Tap sur une alerte = la marquer lue + ouvrir le contrat.<br>
+    4. Pas de notification push : pastille sur l'icône Alertes uniquement.
+  </div>
+</div>
+</body>
+</html>

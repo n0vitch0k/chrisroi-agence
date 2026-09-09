@@ -17,10 +17,9 @@ let _customUrl: string | null = null; // surcharge mémoire (Settings / scan)
 let _pb: PocketBase | null = null;
 
 // ─── URL PRODUCTION (APK) ──────────────────────────────────
-// Quand l'app est compilée en production (APK/iOS), elle doit pointer
-// vers le serveur cloud, pas vers le PC local du développeur.
+// Forcer l'URL du VPS même en mode dev pour éviter le scan LAN
 const PRODUCTION_PB_URL = 'https://pb2.chrisroiagence.com';
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = true; // Forcé à true pour utiliser le VPS partout
 
 // ─── IP FIXE (réservation DHCP recommandée) ───────────────
 // Configure une réservation DHCP dans ta box pour que le PC garde
@@ -99,14 +98,17 @@ export const hydratePocketBaseUrl = async (): Promise<void> => {
     try { await setSetting('pocketbase_url', cleanUrl); } catch {}
     return;
   }
-  // 1) Scan auto (priorité absolue en mode normal)
+  // 1) Scan auto (désactivé pour prioriser le VPS)
+  /*
   const discovered = await discoverPocketBaseUrl();
   if (discovered) {
     _customUrl = discovered;
     try { await setSetting('pocketbase_url', discovered); } catch {}
     return;
   }
-  // 2) IP fixe (réservation DHCP)
+  */
+  // 2) IP fixe (désactivé pour prioriser le VPS)
+  /*
   if (FIXED_LAN_IP) {
     const fixed = `http://${FIXED_LAN_IP}:${PB_PORT}`;
     if (await pingHealth(FIXED_LAN_IP)) {
@@ -116,6 +118,7 @@ export const hydratePocketBaseUrl = async (): Promise<void> => {
       return;
     }
   }
+  */
   // 3) Dernière IP persistée (sqlite natif / localStorage web)
   try {
     const stored = await getSetting('pocketbase_url');

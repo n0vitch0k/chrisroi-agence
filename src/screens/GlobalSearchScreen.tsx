@@ -24,7 +24,6 @@ import {
   daysRemaining,
   formatMoney,
 } from '../utils/constants';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../components/AppHeader';
 import { Colors, Spacing, Radius, Shadows } from '../theme';
 import SafeButton from '../components/SafeButton';
@@ -84,7 +83,6 @@ const TYPE_FILTERS: Array<{ label: string; value: DossierSection }> = [
 export default function GlobalSearchScreen() {
   const navigation = useNavigation<GlobalNavigationProp>();
   const route = useRoute<RouteProp<any, any>>();
-  const insets = useSafeAreaInsets();
 
   // Section demandée par la navbar. Lue au mount et à chaque focus
   // (pour qu'un clic sur l'onglet "Employeurs" puis "Dossiers" soit pris
@@ -162,8 +160,8 @@ export default function GlobalSearchScreen() {
           ],
           icon: item.type_besoin === 'particulier' ? '🏠' : '🏢',
           avatarStyle: 'purple',
-          // Ouvre directement la fiche employeur en édition (via le stack EmployesStack).
-          onPress: () => navigation.navigate('EmployesStack' as any, { screen: 'EmployeurForm', params: { id: item.id } }),
+          // Ouvre la fiche détail employeur (lecture), comme EmployeDetail côté employé.
+          onPress: () => navigation.navigate('EmployesStack' as any, { screen: 'EmployeurDetail', params: { id: item.id } }),
         });
       });
 
@@ -184,7 +182,7 @@ export default function GlobalSearchScreen() {
           ].filter(Boolean),
           icon: '📄',
           avatarStyle: 'orange',
-          onPress: () => navigation.navigate('ContratDocumentModal', { id: item.id, origin: { label: 'Recherche' } }),
+          onPress: () => navigation.navigate('EmployesStack' as any, { screen: 'ContratDetail', params: { id: item.id } }),
         });
       });
 
@@ -343,7 +341,8 @@ export default function GlobalSearchScreen() {
 
   return (
     <View style={styles.container}>
-      <AppHeader title="Dossiers" showBack onBack={() => navigation.goBack()} />
+      {/* Racine d'onglet : jamais de back (AppHeader masque la flèche quand il n'y a rien à dépiler). */}
+      <AppHeader title="Dossiers" showBack />
 
       {/* ─── Filtres collés sous le header ── */}
       <View style={styles.toolbar}>
@@ -455,22 +454,13 @@ export default function GlobalSearchScreen() {
             <Text style={styles.emptyIcon}>🔍</Text>
             <Text style={styles.emptyTitle}>Aucun résultat</Text>
             <Text style={styles.emptyText}>
-              {query ? 'Essayez de modifier votre recherche' : 'Appuyez sur + pour inscrire un candidat'}
+              {query ? 'Essayez de modifier votre recherche' : 'Recherchez un employé, un employeur ou un contrat'}
             </Text>
           </View>
         )}
 
         <View style={{ height: 80 }} />
       </ScrollView>
-
-      {/* ─── FAB ── */}
-      <TouchableOpacity
-        style={[styles.fab, { bottom: 24 + insets.bottom }]}
-        onPress={() => navigation.navigate('FicheInscriptionModal' as any)}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -756,23 +746,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // FAB
-  fab: {
-    position: 'absolute',
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: M.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: M.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  fabText: { fontSize: 28, fontWeight: '300', color: '#fff', marginTop: -2 },
 });
 
 const typeStyles: Record<ResultType, any> = {

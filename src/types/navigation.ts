@@ -22,8 +22,13 @@ export type RootStackParamList = {
   FicheInscriptionModal: { id?: string; origin?: OriginInfo } | undefined;
   JournalModal: undefined;
   Scan: undefined;
+  /** Détail ouvert depuis une modale/onglet externe : pile dédiée, back = retour à l'appelant. */
+  DetailModal: NavigatorScreenParams<EmployesStackParamList>;
   ScanResult: {
     imageUri: string;  documentType: 'fiche_inscription' | 'contrat';
+    /** Toutes les pages (page 1 = imageUri). Absent en mono-page. */
+    imageUris?: string[];
+    base64s?: (string | null)[];
     extracted: any;
   };
 };
@@ -57,10 +62,23 @@ export type DashboardStackParamList = {
 // qui détermine la section à afficher dans l'écran principal.
 export type EmployesStackParamList = {
   EmployesList: { section?: 'all' | 'employe' | 'employeur' | 'contrat' } | undefined;
-  EmployeDetail: { id: string };
+  EmployeDetail: { id: string; origin?: DetailOrigin };
+  EmployeurDetail: { id: string; origin?: DetailOrigin };
+  ContratDetail: { id: string; origin?: DetailOrigin };
   FicheInscription: { id?: string } | undefined;
   EmployeurForm: { id?: string } | undefined;
   ContratDocument: { id?: string; employe_id?: string } | undefined;
+};
+
+// ─── Origine d'un détail (contrat de navigation "back déterministe") ───
+// Un détail ouvert depuis l'extérieur de la pile Dossiers (Journal, Alertes,
+// Suivi…) mémorise son origine ; son back y retourne au lieu de dépiler vers
+// un écran inconnu. Sans origin → pile locale (Dossiers → détail → …).
+export type DetailOrigin = {
+  /** Onglet de retour (ex: 'SuiviStack'). */
+  tab?: string;
+  /** Modale Root à rouvrir (ex: 'JournalModal', 'AlertesModal'). */
+  modal?: string;
 };
 
 // ─── Suivi (Commissions) ─────────────────────────────────
@@ -118,6 +136,17 @@ export type EmployeDetailNavigationProp = CompositeNavigationProp<
 
 export type FicheInscriptionNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<EmployesStackParamList, 'FicheInscription'>,
+  BottomTabNavigationProp<TabParamList>
+>;
+
+// EmployeurDetail / ContratDetail (écrans lecture, stack EmployesStack)
+export type EmployeurDetailNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<EmployesStackParamList, 'EmployeurDetail'>,
+  BottomTabNavigationProp<TabParamList>
+>;
+
+export type ContratDetailNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<EmployesStackParamList, 'ContratDetail'>,
   BottomTabNavigationProp<TabParamList>
 >;
 

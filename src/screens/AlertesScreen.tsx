@@ -7,6 +7,7 @@ import {
   StyleSheet,
   FlatList,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { Card } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
@@ -24,7 +25,8 @@ import { Colors, Spacing, Radius, Shadows } from '../theme';
 const getAlertIcon = (type: string) => {
   switch (type) {
     case 'fin_contrat': return 'calendar-clock';
-    case 'commission': return 'cash';
+    case 'commission':
+    case 'commission_due': return 'cash';
     default: return 'bell';
   }
 };
@@ -32,7 +34,8 @@ const getAlertIcon = (type: string) => {
 const getAlertColor = (type: string) => {
   switch (type) {
     case 'fin_contrat': return Colors.danger;
-    case 'commission': return '#C2185B';
+    case 'commission':
+    case 'commission_due': return '#C2185B';
     default: return Colors.warning;
   }
 };
@@ -63,8 +66,14 @@ export default function AlertesScreen() {
   const handlePress = (alerte: any) => {
     if (!alerte.lu) handleMarquerLue(alerte.id);
     if (alerte.contrat_id) navigation.navigate('ContratDocumentModal', { id: alerte.contrat_id, origin: { label: 'Alertes' } });
-    else if (alerte.employe_id) navigation.navigate('EmployesStack', { screen: 'EmployeDetail', params: { id: alerte.employe_id } });
-    else if (alerte.employeur_id) navigation.navigate('EmployesStack', { screen: 'EmployeurForm', params: { id: alerte.employeur_id } });
+    // Détail dans le DetailModal (back = retour aux alertes, pile Dossiers intacte).
+    else if (alerte.employe_id) {
+      (navigation as any).navigate('DetailModal', { screen: 'EmployeDetail', params: { id: alerte.employe_id } });
+    }
+    else if (alerte.employeur_id) {
+      (navigation as any).navigate('Tabs', { screen: 'EmployesStack', params: { screen: 'EmployeurForm', params: { id: alerte.employeur_id } } });
+      navigation.goBack();
+    }
   };
 
   const alertesNonLues = alertes.filter((a) => !a.lu);
@@ -72,7 +81,7 @@ export default function AlertesScreen() {
   const renderItem = ({ item }: { item: any }) => {
     const color = getAlertColor(item.type);
     return (
-      <SafeButton style={styles.cardButton} onPress={() => handlePress(item)}>
+      <TouchableOpacity activeOpacity={0.7} onPress={() => handlePress(item)}>
         <Card style={[card, !item.lu && styles.cardUnread]}>
           <Card.Content style={styles.cardPad}>
             <View style={styles.cardRow}>
@@ -88,7 +97,7 @@ export default function AlertesScreen() {
             </View>
           </Card.Content>
         </Card>
-      </SafeButton>
+      </TouchableOpacity>
     );
   };
 
@@ -127,7 +136,6 @@ const styles = StyleSheet.create({
   headerText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
   list: { padding: Spacing.lg },
   card: card,
-  cardButton: { padding: 0, borderRadius: Radius.md, minHeight: 0 },
   cardUnread: { borderLeftWidth: 3, borderLeftColor: Colors.warning },
   cardPad: { paddingVertical: 4 },
   cardRow: { flexDirection: 'row', alignItems: 'flex-start' },

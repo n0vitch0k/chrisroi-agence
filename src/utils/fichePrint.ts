@@ -60,7 +60,8 @@ const escapeHtml = (s: any): string => {
 const photoHtml = (photo: string | null | undefined, photoDataUri?: string | null): string => {
   const src = photoDataUri || photo;
   if (!src) return '<span style="color:#bbb;font-size:13px;">Photo</span>';
-  return `<img src="${escapeHtml(src)}" alt="Photo" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
+  // Dimensions exactes photo d'identité : 3,5 cm × 4,5 cm (unités physiques).
+  return `<img src="${escapeHtml(src)}" alt="Photo" style="width:3.5cm;height:4.5cm;object-fit:cover;display:block;" />`;
 };
 
 // Convertit une URI (file:// local OU URL distante http(s)) en data-URI base64,
@@ -139,16 +140,16 @@ export function buildFichePapierHtml(data: FichePapierData): string {
 <meta charset="utf-8">
 <title>Fiche d'inscription — CHRISROI AGENCE</title>
 <style>
-  @page { size: A4; margin: 10mm; }
+  @page { size: A4; margin: 8mm 2.5mm 8mm 2.5mm; }
   * { box-sizing: border-box; }
   body { margin: 0; background: #eef1f5; color: #10151c; font-family: Arial, Helvetica, sans-serif; line-height: 1.35; font-size: 13px; }
   .sheet { width: 100%; background: #fff; border: 1px solid #cfd6e2; }
   .header { background: #0c1f3f; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px; }
   .header h1 { margin: 0; font-size: 22px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.04em; }
   .header p { margin: 0; text-align: right; font-size: 12px; line-height: 1.4; opacity: 0.92; }
-  .layout { display: grid; grid-template-columns: 1fr 120px; gap: 14px; padding: 14px 18px; align-items: start; }
-  .photo-frame { margin: 0; border: 2px solid #0c1f3f; padding: 3px; background: #fff; width: 120px; }
-  .photo-frame img { display: block; width: 100%; height: 132px; object-fit: cover; background: #e8edf5; }
+  .layout { display: grid; grid-template-columns: 1fr auto; gap: 14px; padding: 14px 18px; align-items: start; }
+  .photo-frame { margin: 0; border: 2px solid #0c1f3f; padding: 3px; background: #fff; }
+  .photo-frame img { display: block; width: 3.5cm; height: 4.5cm; object-fit: cover; background: #e8edf5; }
   .section { padding: 0 18px 14px; }
   .section-title { margin: 0 0 8px; background: #0c1f3f; color: #fff; padding: 6px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
   .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 0; }

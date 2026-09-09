@@ -60,15 +60,23 @@ export type ExtractedData = FicheInscriptionExtracted | ContratExtracted;
 /** Résultat complet d'un scan */
 export interface ScanResult {
   imageUri: string;
+  /** Toutes les pages (page 1 = imageUri). Mono-page = tableau à 1 élément. */
+  imageUris: string[];
   documentType: DocumentType;
   extracted: ExtractedData;
 }
+
+/** Nombre de pages d'un contrat papier */
+export const CONTRAT_PAGE_COUNT = 3;
 
 /** État du processus de scan */
 export interface ScanState {
   status: ScanStatus;
   documentType: DocumentType | null;
   imageUri: string | null;
+  /** Pages capturées (contrat multi-pages) + base64 associées */
+  imageUris: string[];
+  base64s: (string | null)[];
   extracted: ExtractedData | null;
   error: string | null;
 }

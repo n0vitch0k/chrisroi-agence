@@ -1,7 +1,7 @@
 // Générateur HTML/PDF — CONTRAT DE PRESTATION DE SERVICE DE PLACEMENT
 // Remplace définitivement l'ancien "Contrat de travail".
 // Verbatim 10 articles du docx "Papier entête CHRISROI ..." (5 pages WPS, 1268 mots).
-// Calé sur 3 pages A4 à l'impression : @page 10mm, 10pt, header/footer compacts.
+// Calé sur 3 pages A4 à l'impression : @page 15mm haut/bas, 3.5mm côtés, 10pt, header/footer compacts.
 // Header/Footer répétés visuellement sur chaque page (fixed via @page equiv.).
 // Cross-platform : window.print (web) + expo-print printToFileAsync (natif).
 
@@ -119,7 +119,7 @@ export function buildContratHtml(ctx: PrintContratContext): string {
 <meta charset="utf-8">
 <title>Contrat ${numero}</title>
 <style>
-  @page { size: A4; margin: 12mm 14mm 12mm 14mm; }
+  @page { size: A4; margin: 15mm 3.5mm 15mm 3.5mm; }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: #eef1f5; color: #111827;
@@ -162,6 +162,7 @@ export function buildContratHtml(ctx: PrintContratContext): string {
     font-family: Arial, Helvetica, sans-serif; font-size: 10pt; font-weight: 800;
     color: #fff; background: #0c1f3f; padding: 6px 10px; border-radius: 4px;
     margin: 14px 0 8px; letter-spacing: .03em; text-transform: uppercase;
+    break-after: avoid; break-inside: avoid;
   }
   h3.sub { font-family: Arial, sans-serif; font-size: 8.5pt; font-weight: 800; color: #0c1f3f; margin: 8px 0 3px; }
   p { margin: 0 0 7px; text-align: justify; hyphens: auto; }
@@ -173,11 +174,11 @@ export function buildContratHtml(ctx: PrintContratContext): string {
   .field.full { min-width: 300px; }
   .parties { border: 1px solid #c8d0dc; border-radius: 6px; padding: 10px 12px; background: #f8fafc; margin-bottom: 10px; }
   .parties p { margin-bottom: 4px; }
-  .sign-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
-  .sig { border: 1px solid #98a2b3; border-radius: 6px; min-height: 110px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; }
-  .sig p { margin: 0; font-family: Arial, sans-serif; font-size: 7.5pt; color: #5c6675; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
-  .sig small { font-family: Arial, sans-serif; color: #0c1f3f; font-weight: 800; font-size: 8.5pt; }
-  .sig-line { border-top: 1px solid #98a2b3; margin-top: 24px; padding-top: 4px; font-family: Arial, sans-serif; font-size: 7pt; color: #5c6675; text-align: center; }
+  .sign-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .sig { border: 2px solid #0c1f3f; border-radius: 6px; min-height: 165px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; }
+  .sig p { margin: 0; font-family: Arial, sans-serif; font-size: 8pt; color: #0c1f3f; text-transform: uppercase; letter-spacing: .04em; font-weight: 800; }
+  .sig small { font-family: Arial, sans-serif; color: #0c1f3f; font-weight: 800; font-size: 9pt; }
+  .sig-line { border-top: 2px solid #0c1f3f; margin-top: 32px; padding-top: 6px; font-family: Arial, sans-serif; font-size: 8pt; color: #0c1f3f; font-weight: 700; text-align: center; }
   .footer {
     margin-top: 12px; border-top: 1px solid #e5e7eb; padding: 8px 18px 12px;
     font-family: Arial, sans-serif; font-size: 6.8pt; color: #5c6675; text-align: center; line-height: 1.4; background: #f8fafc;

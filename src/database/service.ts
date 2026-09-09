@@ -4,6 +4,98 @@
 
 import { getPocketBase, getPocketBaseUrl, hydratePocketBaseUrl } from './pocketbase';
 import { getSetting, setSetting } from './localSettings';
+import { cacheDirectory, copyAsync, getInfoAsync, uploadAsync, FileSystemUploadType } from 'expo-file-system/legacy';
+
+/** Copie un fichier local vers un nom sûr du cache (sans %, espaces, accents).
+ *  Le dossier cache d'Expo Go contient des segments doublement encodés (%25…)
+ *  qui font échouer l'upload multipart RN (erreur réseau status 0).
+ *  Retourne l'URI d'origine en cas d'échec (comportement inchangé). */
+export const safeLocalUri = async (uri: string, fileName?: string): Promise<string> => {
+  try {
+    if (!/^file:\/\//i.test(uri)) return uri;
+    if (!/[% ]/.test(uri)) return uri;
+    console.log('[UPLOAD-DIAG] sanitize: cacheDirectory =', cacheDirectory);
+    if (!cacheDirectory) {
+      console.log('[UPLOAD-DIAG] sanitize IMPOSSIBLE: pas de cacheDirectory');
+      return uri;
+    }
+    const rawExt = (fileName || uri).split('.').pop()?.toLowerCase().split('?')[0] || 'jpg';
+    const cleanExt = /^[a-z0-9]{1,5}$/.test(rawExt) ? rawExt : 'jpg';
+    const dest = `${cacheDirectory}upload_${Date.now()}_${Math.floor(Math.random() * 1e6)}.${cleanExt}`;
+    await copyAsync({ from: uri, to: dest });
+    const info = await getInfoAsync(dest);
+    if (!info?.exists) {
+      console.log('[UPLOAD-DIAG] sanitize ÉCHEC: copie absente');
+      return uri;
+    }
+    console.log('[UPLOAD-DIAG] uri assaini →', dest.slice(-60));
+    return dest;
+  } catch (e: any) {
+    console.log('[UPLOAD-DIAG] sanitize EXCEPTION:', e?.message || e);
+    return uri;
+  }
+};
+
+/** Upload natif d'un fichier (multipart) via le module natif Expo.
+ *  Contourne le fetch RN qui échoue en status 0 depuis Expo Go.
+ *  Renvoie le record créé (parsé) ou null. */
+async function nativeUploadRecord(
+  collection: string,
+  fileUri: string,
+  fieldName: string,
+  mimeType: string,
+  params: Record<string, string>,
+): Promise<any | null> {
+  try {
+    const pb = getPb();
+    const token = (pb.authStore as any)?.token;
+    if (!token) {
+      console.log('[UPLOAD-DIAG] natif IMPOSSIBLE: pas de token');
+      return null;
+    }
+    const url = `${getPocketBaseUrl()}/api/collections/${collection}/records`;
+    console.log('[UPLOAD-DIAG] natif →', url, '| field =', fieldName, '| mime =', mimeType);
+    const res = await uploadAsync(url, fileUri, {
+      httpMethod: 'POST',
+      uploadType: FileSystemUploadType.MULTIPART,
+      fieldName,
+      mimeType,
+      headers: { Authorization: token },
+      parameters: params,
+    });
+    console.log('[UPLOAD-DIAG] natif status =', res.status);
+    if (res.status < 200 || res.status >= 300) {
+      console.log('[UPLOAD-DIAG] natif ÉCHEC body =', String(res.body).slice(0, 300));
+      return null;
+    }
+    const parsed = JSON.parse(res.body);
+    console.log('[UPLOAD-DIAG] natif SUCCÈS record.id =', parsed?.id);
+    return parsed;
+  } catch (e: any) {
+    console.log('[UPLOAD-DIAG] natif EXCEPTION:', e?.message || e);
+    return null;
+  }
+}
+
+/** Upload natif d'un document (avec assainissement + mime), repli SDK ensuite.
+ *  Renvoie l'id du record ou null si le natif échoue (le SDK tente après). */
+async function nativeUploadDoc(
+  fileUri: string,
+  fileName: string | undefined,
+  mimeType: string | undefined,
+  docType: string,
+  linkField: string,
+  linkId: string,
+): Promise<string | null> {
+  const safe = await safeLocalUri(fileUri, fileName);
+  const ext = (fileName || safe).split('.').pop()?.toLowerCase() || 'jpg';
+  const fileType = resolveDocumentMime(ext, mimeType);
+  const rec = await nativeUploadRecord('documents', safe, 'file', fileType, {
+    [linkField]: linkId,
+    type: docType,
+  });
+  return rec?.id || null;
+}
 
 // ─── Gestion d'erreurs centralisée ─────────────────────────
 // Les erreurs PB sont nombreuses (400, 403, 404, 0=réseau). On les traduit
@@ -95,8 +187,38 @@ export const initDatabase = async (): Promise<{
     await withTimeout(pb.health.check(), 8000);
     console.log('[chrisroi] PocketBase connecté:', getPocketBaseUrl());
 
-    // Auth superuser pour pouvoir lire/écrire (PB v0.23+)
-    const authData = await pb.collection('_superusers').authWithPassword('admin@chrisroi.com', 'chrisroi2024');
+    // 1) Cas normal (pb2) : l'admin users existe déjà → auth directe,
+    // sans passer par le superuser (qui a d'autres identifiants sur le VPS).
+    try {
+      const directAuth = await pb.collection('users').authWithPassword('admin@chrisroi.com', 'chrisroi2024');
+      const d = directAuth.record;
+      let dNom = d.nom || '';
+      let dPrenom = d.prenom || '';
+      if (!dNom && !dPrenom && d.name) {
+        const parts = String(d.name).trim().split(' ');
+        dPrenom = parts[0] || '';
+        dNom = parts.slice(1).join(' ') || '';
+      }
+      console.log('[chrisroi] Admin user authentifié (direct), session active');
+      return {
+        id: d.id,
+        email: d.email,
+        nom: dNom || 'Admin',
+        prenom: dPrenom || '',
+        role: d.role || 'admin',
+      };
+    } catch {
+      console.log('[chrisroi] info: auth directe users impossible, tentative seed via superuser…');
+    }
+
+    // 2) Seed (PB local / premier lancement) — superuser optionnel, non-bloquant.
+    // Sur pb2 le superuser est admin@chrisroi.local (≠ identifiants users),
+    // donc cet auth peut échouer : on continue quand même vers l'auth users.
+    try {
+      await pb.collection('_superusers').authWithPassword('admin@chrisroi.com', 'chrisroi2024');
+    } catch {
+      console.log('[chrisroi] info: auth superuser ignorée (attendue sur pb2)');
+    }
 
     // Vérifier si l'admin par défaut existe déjà dans users
     const existing = await pb.collection('users').getList(1, 1, {
@@ -260,8 +382,15 @@ export const getJournalActions = async (filters: {
     
     // Récupérer les records via getList (compatible avec PB v0.39)
     // getFullList utilise un format incompatible (400) — on contourne
+    // Filtre date poussé côté serveur (filtre seul, sans tri = 200 sur pb2) :
+    // indispensable pour consulter une date ancienne au-delà des 500 derniers.
     console.log('[journal] Récupération des records...');
-    const result = await pb.collection('journal_actions').getList(1, 500);
+    const pbFilterParts: string[] = [];
+    if (filters.dateDebut) pbFilterParts.push(`created >= "${filters.dateDebut}"`);
+    if (filters.dateFin) pbFilterParts.push(`created <= "${filters.dateFin}"`);
+    const result = pbFilterParts.length > 0
+      ? await pb.collection('journal_actions').getList(1, 500, { filter: pbFilterParts.join(' && ') })
+      : await pb.collection('journal_actions').getList(1, 500);
     let records = result.items;
     console.log(`[journal] ${records.length} records récupérés (total: ${result.totalItems})`);
     
@@ -375,13 +504,21 @@ export const authenticateUser = async (email: string, password: string): Promise
       }
     }
 
-    return {
+    const userInfo = {
       id: user.id,
       nom: nom || 'Admin',
       prenom: prenom || '',
       email: user.email as string,
       role: (user.role as string) || 'admin',
     };
+    // Log action (journal des connexions — logAction ne throw jamais)
+    await logAction({
+      actionType: 'connexion',
+      entiteType: 'user',
+      entiteId: userInfo.id,
+      description: `${userInfo.prenom} ${userInfo.nom} s'est connecté(e)`,
+    });
+    return userInfo;
   } catch (error: any) {
     console.error('[auth] Erreur authentification:', error?.message || error);
     return null;
@@ -526,18 +663,11 @@ export const createEmploye = async (employe: any): Promise<string> => {
     await Promise.all(relationsToCreate);
   } catch (err) {
     // Cleanup : supprimer d'abord les éventuelles relations déjà créées,
-    // puis l'employé lui-même. La suppression par filtre (filter=...) est
-    // la seule API PB pour effacer en masse sans connaître les IDs.
+    // puis l'employé lui-même (suppression réelle par id, pas par filtre).
     const cleanupSteps: Promise<any>[] = [
-      pb.collection('parents').delete(undefined as any, {
-        filter: `employe_id = "${createdEmployeId}"`,
-      } as any).catch(() => null),
-      pb.collection('personnes_urgence').delete(undefined as any, {
-        filter: `employe_id = "${createdEmployeId}"`,
-      } as any).catch(() => null),
-      pb.collection('experiences_pro').delete(undefined as any, {
-        filter: `employe_id = "${createdEmployeId}"`,
-      } as any).catch(() => null),
+      deleteRelationsByEmploye('parents', createdEmployeId),
+      deleteRelationsByEmploye('personnes_urgence', createdEmployeId),
+      deleteRelationsByEmploye('experiences_pro', createdEmployeId),
     ];
     await Promise.all(cleanupSteps);
     try {
@@ -607,10 +737,27 @@ export const searchEmployes = async (query: string, categorie?: string, statut?:
 
   const filter = conditions.length > 0 ? conditions.join(' && ') : undefined;
 
-  return await pb.collection('employes').getFullList({
-    sort: '-created',
-    filter,
-  });
+  // Tri serveur '-created' + filtre = 400 sur pb2 → tri client (plus récent d'abord)
+  const found = await pb.collection('employes').getFullList({ filter });
+  return found.sort((a: any, b: any) => +new Date(b.created) - +new Date(a.created));
+};
+
+/** Compare ancien record vs données d'update → [{field, oldValue, newValue}].
+ * Best effort pour le journal : ne throw jamais, valeurs JSON-clonables. */
+const diffRecordChanges = (
+  existing: any,
+  updateData: any,
+): Array<{ field: string; oldValue: any; newValue: any }> => {
+  const out: Array<{ field: string; oldValue: any; newValue: any }> = [];
+  try {
+    for (const key of Object.keys(updateData || {})) {
+      const oldV = existing?.[key];
+      const newV = (updateData as any)[key];
+      const same = JSON.stringify(oldV ?? null) === JSON.stringify(newV ?? null);
+      if (!same) out.push({ field: key, oldValue: oldV ?? null, newValue: newV ?? null });
+    }
+  } catch { /* best effort */ }
+  return out;
 };
 
 export const updateEmploye = async (id: string, data: any): Promise<void> => {
@@ -622,7 +769,21 @@ export const updateEmploye = async (id: string, data: any): Promise<void> => {
   delete updateData.experiences;
   delete updateData.photo_uri;
 
+  // Avant → après (best effort, le log ne doit jamais bloquer l'update)
+  let changes: Array<{ field: string; oldValue: any; newValue: any }> = [];
+  try {
+    const existing = await pb.collection('employes').getOne(id);
+    changes = diffRecordChanges(existing, updateData).slice(0, 10);
+  } catch { /* best effort */ }
+
   await pb.collection('employes').update(id, updateData);
+  await logAction({
+    actionType: 'modification_fiche',
+    entiteType: 'employe',
+    entiteId: id,
+    description: `Fiche employé modifiée`,
+    details: changes.length ? { changes } : undefined,
+  });
 };
 
 /** Sauvegarde partielle d'UN SEUL champ (verrouillage C1). */
@@ -632,12 +793,19 @@ export const patchEmployeField = async (
   value: any,
 ): Promise<void> => {
   const pb = getPb();
+  // Ancienne valeur avant l'update (best effort pour l'avant → après du journal)
+  let oldValue: any = null;
+  try {
+    const existing = await pb.collection('employes').getOne(id);
+    oldValue = (existing as any)?.[field] ?? null;
+  } catch { /* best effort */ }
   await pb.collection('employes').update(id, { [field]: value });
   await logAction({
     actionType: 'modification_champ',
     entiteType: 'employe',
     entiteId: id,
     description: `Champ « ${field} » modifié`,
+    details: { field, oldValue, newValue: value ?? null },
   });
 };
 
@@ -647,12 +815,18 @@ export const patchContratField = async (
   value: any,
 ): Promise<void> => {
   const pb = getPb();
+  let oldValue: any = null;
+  try {
+    const existing = await pb.collection('contrats').getOne(id);
+    oldValue = (existing as any)?.[field] ?? null;
+  } catch { /* best effort */ }
   await pb.collection('contrats').update(id, { [field]: value });
   await logAction({
     actionType: 'modification_champ',
     entiteType: 'contrat',
     entiteId: id,
     description: `Champ contrat « ${field} » modifié`,
+    details: { field, oldValue, newValue: value ?? null },
   });
 };
 
@@ -687,10 +861,10 @@ export const getContratsByEmploye = async (employeId: string): Promise<any[]> =>
 
 export const getContratsByEmployeur = async (employeurId: string): Promise<any[]> => {
   const pb = getPb();
-  const records = await pb.collection('contrats').getFullList({
+  // Tri serveur '-created' + filtre = 400 sur pb2 → tri client (plus récent d'abord)
+  const records = (await pb.collection('contrats').getFullList({
     filter: `employeur_id = "${employeurId}"`,
-    sort: '-created',
-  });
+  })).sort((a: any, b: any) => +new Date(b.created) - +new Date(a.created));
   return records.map((r: any) => ({
     id: r.id,
     numero_dossier: r.numero_dossier,
@@ -709,10 +883,10 @@ export const getContratsByEmployeur = async (employeurId: string): Promise<any[]
 
 export const getEmployesByStatut = async (statut: string): Promise<any[]> => {
   const pb = getPb();
-  return await pb.collection('employes').getFullList({
+  // Tri serveur '-created' + filtre = 400 sur pb2 → tri client (plus récent d'abord)
+  return (await pb.collection('employes').getFullList({
     filter: `statut = "${statut}"`,
-    sort: '-created',
-  });
+  })).sort((a: any, b: any) => +new Date(b.created) - +new Date(a.created));
 };
 
 // Parents
@@ -737,9 +911,36 @@ export const addPersonneUrgence = async (employeId: string, personne: any): Prom
     nom: personne.nom || '',
     prenom: personne.prenom || '',
     telephone: personne.telephone || '',
+    lieu: personne.lieu || '',
     ordre: personne.ordre || 1,
   });
   return record.id;
+};
+
+/** Supprime TOUS les records d'une collection liés à un employé.
+ * (PB n'a pas de delete par filtre : on liste puis on supprime par id.
+ * L'ancien pattern `delete(undefined, {filter})` renvoyait 404 avalé et
+ * n'effaçait jamais rien → doublons à chaque sauvegarde.) */
+export const deleteRelationsByEmploye = async (collection: string, employeId: string): Promise<void> => {
+  const pb = getPb();
+  try {
+    const existing = await pb.collection(collection).getFullList({
+      filter: `employe_id = "${employeId}"`,
+    });
+    await Promise.all(existing.map((r: any) => pb.collection(collection).delete(r.id).catch(() => null)));
+  } catch { /* best effort */ }
+};
+
+/** Resynchronise les contacts d'urgence (mode édition) : remplace la liste. Ne fait rien si la nouvelle liste est entièrement vide alors qu'il en existe déjà (garde-fou contre l'écrasement sur chargement raté). */
+export const syncEmployeUrgence = async (employeId: string, personnes: any[]): Promise<void> => {
+  const pb = getPb();
+  const existing = await pb.collection('personnes_urgence').getFullList({
+    filter: `employe_id = "${employeId}"`,
+  }).catch(() => []);
+  const entries = (personnes || []).filter((p: any) => p && (p.nom || p.prenom || p.telephone || p.lieu));
+  if (entries.length === 0 && existing.length > 0) return;
+  await deleteRelationsByEmploye('personnes_urgence', employeId);
+  await Promise.all(entries.map((p: any, i: number) => addPersonneUrgence(employeId, { ...p, ordre: i + 1 })));
 };
 
 // Expériences
@@ -779,6 +980,17 @@ export const createEmployeur = async (employeur: any): Promise<string> => {
   if (email) payload.email = email;
 
   const record = await pb.collection('employeurs').create(payload);
+
+  // Log action (historique employeur + journal)
+  const currentUser = getCurrentUser();
+  if (currentUser) {
+    await logAction({
+      actionType: 'creation_employeur',
+      entiteType: 'employeur',
+      entiteId: record.id,
+      description: `${currentUser.prenom} ${currentUser.nom} a enregistré l'employeur ${payload.nom_complet}`,
+    });
+  }
   return record.id;
 };
 
@@ -800,12 +1012,40 @@ export const getAllEmployeurs = async (): Promise<any[]> => {
 
 export const updateEmployeur = async (id: string, data: any): Promise<void> => {
   const pb = getPb();
+  let changes: Array<{ field: string; oldValue: any; newValue: any }> = [];
+  try {
+    const existing = await pb.collection('employeurs').getOne(id);
+    changes = diffRecordChanges(existing, data).slice(0, 10);
+  } catch { /* best effort */ }
   await pb.collection('employeurs').update(id, data);
+  await logAction({
+    actionType: 'modification_employeur',
+    entiteType: 'employeur',
+    entiteId: id,
+    description: `Fiche employeur modifiée`,
+    details: changes.length ? { changes } : undefined,
+  });
 };
 
 export const deleteEmployeur = async (id: string): Promise<void> => {
   const pb = getPb();
+  let nomComplet = '';
+  try {
+    const existing = await pb.collection('employeurs').getOne(id);
+    nomComplet = (existing as any)?.nom_complet || '';
+  } catch { /* best effort */ }
   await pb.collection('employeurs').delete(id);
+
+  // Log action (historique + journal)
+  const user = getCurrentUser();
+  if (user) {
+    await logAction({
+      actionType: 'suppression_employeur',
+      entiteType: 'employeur',
+      entiteId: id,
+      description: `${user.prenom} ${user.nom} a supprimé l'employeur${nomComplet ? ` ${nomComplet}` : ''}`,
+    });
+  }
 };
 
 /**
@@ -820,13 +1060,26 @@ export const patchEmployeurField = async (
 ): Promise<void> => {
   const pb = getPb();
   const trimmedValue = typeof value === 'string' ? value.trim() : value;
+  const newStored = key === 'email' && !trimmedValue ? null : trimmedValue;
+  let oldValue: any = null;
+  try {
+    const existing = await pb.collection('employeurs').getOne(employeurId);
+    oldValue = (existing as any)?.[key] ?? null;
+  } catch { /* best effort */ }
   // Cohérent avec createEmployeur : on omet la clé email si vide après trim,
   // pour éviter le 400 validation_is_email côté PocketBase.
   if (key === 'email' && !trimmedValue) {
     await pb.collection('employeurs').update(employeurId, { email: null });
-    return;
+  } else {
+    await pb.collection('employeurs').update(employeurId, { [key]: trimmedValue });
   }
-  await pb.collection('employeurs').update(employeurId, { [key]: trimmedValue });
+  await logAction({
+    actionType: 'modification_champ',
+    entiteType: 'employeur',
+    entiteId: employeurId,
+    description: `Champ employeur « ${key} » modifié`,
+    details: { field: key, oldValue, newValue: newStored ?? null },
+  });
 };
 // ============== GESTION DES CONTRATS ==============
 
@@ -917,6 +1170,17 @@ export const createContrat = async (contrat: any): Promise<string> => {
       await pb.collection('employes').update(contrat.employe_id, { statut: 'disponible' });
     } catch { /* best effort */ }
     throw err;
+  }
+
+  // Log action (historique contrat + journal)
+  const contratUser = getCurrentUser();
+  if (contratUser) {
+    await logAction({
+      actionType: 'creation_contrat',
+      entiteType: 'contrat',
+      entiteId: createdContratId,
+      description: `${contratUser.prenom} ${contratUser.nom} a créé le contrat ${numeroDossier}`,
+    });
   }
 
   return createdContratId;
@@ -1019,7 +1283,28 @@ export const updateContrat = async (id: string, data: any): Promise<void> => {
   delete updateData.nom_complet;
   delete updateData.expand;
 
+  // La commission (tiers du salaire) est calculée à la création : si le
+  // salaire est renseigné/modifié après, on la recalcule (sinon elle reste
+  // à 0 et le Suivi/alertes/calendrier ignorent le contrat).
+  if (updateData.salaire !== undefined && updateData.salaire !== null && updateData.salaire !== '') {
+    const sal = Number(updateData.salaire);
+    if (!isNaN(sal) && sal > 0) updateData.commission_agence = Math.round(sal / 3);
+  }
+
+  let changes: Array<{ field: string; oldValue: any; newValue: any }> = [];
+  try {
+    const existing = await pb.collection('contrats').getOne(id);
+    changes = diffRecordChanges(existing, updateData).slice(0, 10);
+  } catch { /* best effort */ }
+
   await pb.collection('contrats').update(id, updateData);
+  await logAction({
+    actionType: 'modification_contrat',
+    entiteType: 'contrat',
+    entiteId: id,
+    description: `Contrat modifié`,
+    details: changes.length ? { changes } : undefined,
+  });
 };
 
 export const terminerContrat = async (id: string): Promise<void> => {
@@ -1029,6 +1314,12 @@ export const terminerContrat = async (id: string): Promise<void> => {
 
   await pb.collection('contrats').update(id, { statut: 'termine' });
   await pb.collection('employes').update(contrat.employe_id, { statut: 'disponible' });
+  await logAction({
+    actionType: 'contrat_termine',
+    entiteType: 'contrat',
+    entiteId: id,
+    description: `Contrat ${contrat.numero_dossier || ''} terminé`,
+  });
 };
 
 export const marquerCommissionPayee = async (id: string, datePrelevement?: string): Promise<void> => {
@@ -1051,6 +1342,12 @@ export const marquerCommissionPayee = async (id: string, datePrelevement?: strin
       alertes.map((a: any) => pb.collection('alertes').update(a.id, { lu: true })),
     );
   }
+  await logAction({
+    actionType: 'commission_payee',
+    entiteType: 'contrat',
+    entiteId: id,
+    description: `Commission encaissée pour le contrat`,
+  });
 };
 
 // ============== GESTION DES ALERTES ==============
@@ -1072,10 +1369,10 @@ export const createAlerte = async (alerte: any): Promise<string> => {
 
 export const getAlertesNonLues = async (): Promise<any[]> => {
   const pb = getPb();
-  return await pb.collection('alertes').getFullList({
+  // Tri serveur '-created' + filtre = 400 sur pb2 → tri client (plus récent d'abord)
+  return (await pb.collection('alertes').getFullList({
     filter: 'lu = false',
-    sort: '-created',
-  });
+  })).sort((a: any, b: any) => +new Date(b.created) - +new Date(a.created));
 };
 
 export const getAllAlertes = async (): Promise<any[]> => {
@@ -1144,6 +1441,43 @@ export const createFinContratAlertes = async (): Promise<number> => {
       });
       created++;
     }
+  }
+  return created;
+};
+
+// ─── Créer alertes commission à prélever (échéance 1 mois atteinte) ───
+// À appeler au chargement Dashboard (comme createFinContratAlertes).
+// Une seule alerte par contrat (jamais de doublon), best effort : un échec
+// ne doit jamais bloquer l'app.
+export const createCommissionDueAlertes = async (): Promise<number> => {
+  const pb = getPb();
+  const contrats = await pb.collection('contrats').getFullList({
+    filter: 'commission_agence > 0 && commission_payee = false',
+    expand: 'employe_id,employeur_id',
+  });
+  let created = 0;
+  for (const contrat of contrats) {
+    const dueStr = getCommissionDueDate(contrat);
+    if (!dueStr) continue;
+    // Échéance atteinte (même règle que le Suivi : relance dès le lendemain)
+    if (Date.now() < new Date(dueStr + 'T23:59:59').getTime()) continue;
+    const existing = await pb.collection('alertes').getFullList({
+      filter: `contrat_id = "${contrat.id}" && type = "commission_due"`,
+    });
+    if (existing.length > 0) continue;
+    const employe = `${contrat.expand?.employe_id?.prenom || ''} ${contrat.expand?.employe_id?.nom || ''}`.trim() || 'Employé';
+    const employeur = contrat.expand?.employeur_id?.nom_complet || '';
+    const montant = `${Number(contrat.commission_agence || 0).toLocaleString('fr-FR')} FCFA`;
+    const dueFr = new Date(dueStr + 'T12:00:00').toLocaleDateString('fr-FR');
+    await createAlerte({
+      type: 'commission_due',
+      titre: 'Commission à prélever',
+      message: `${employe}${contrat.poste ? ` (${contrat.poste})` : ''}${employeur ? ` chez ${employeur}` : ''} — échéance atteinte le ${dueFr} — ${montant}`,
+      contrat_id: contrat.id,
+      employe_id: contrat.employe_id,
+      employeur_id: contrat.employeur_id,
+    });
+    created++;
   }
   return created;
 };
@@ -1394,18 +1728,28 @@ export const uploadScan = async (
   documentType: 'fiche_inscription' | 'contrat',
   documentId: string,
   imageUri: string | File,
+  replace = true,
 ): Promise<string> => {
   const pb = getPb();
 
-  // Supprimer l'ancien scan s'il existe (on remplace)
-  const existing = await getScan(documentType, documentId);
-  if (existing) {
-    try { await pb.collection('scans').delete(existing.id); } catch {}
+  // Supprimer l'ancien scan s'il existe (on remplace), sauf en mode ajout (multi-pages)
+  if (replace) {
+    const existing = await getScan(documentType, documentId);
+    if (existing) {
+      try { await pb.collection('scans').delete(existing.id); } catch {}
+    }
   }
 
   let imageField: any;
   if (typeof imageUri === 'string') {
-    // React Native — URI locale (ex: expo-image-picker)
+    // React Native — URI locale (ex: expo-image-picker), assainie (% → copie cache)
+    imageUri = await safeLocalUri(imageUri);
+    // Tentative native (multipart natif, contourne le fetch RN défaillant)
+    const safeNative = await nativeUploadRecord('scans', imageUri, 'image', 'image/jpeg', {
+      document_type: documentType,
+      document_id: documentId,
+    });
+    if (safeNative?.id) return safeNative.id;
     imageField = {
       uri: imageUri,
       type: 'image/jpeg',
@@ -1433,8 +1777,8 @@ export const getScan = async (
   const pbUrl = getPocketBaseUrl();
   try {
     const records = await pb.collection('scans').getList(1, 1, {
+      // Pas de tri serveur : '-created' + filtre = 400 sur pb2 (un seul item de toute façon)
       filter: `document_type="${documentType}" && document_id="${documentId}"`,
-      sort: '-created',
     });
     if (records.items.length === 0) return null;
     const item = records.items[0];
@@ -1445,6 +1789,50 @@ export const getScan = async (
     return { ...item, imageUrl };
   } catch {
     return null;
+  }
+};
+
+/** Stocke les N pages d'un scan multi-pages (ex: contrat 3 pages).
+ *  Remplace les anciens scans du document, puis crée un record `scans`
+ *  par page, dans l'ordre (page 1 = la plus ancienne = premier item de getScans). */
+export const uploadScanPages = async (
+  documentType: 'fiche_inscription' | 'contrat',
+  documentId: string,
+  imageUris: (string | File)[],
+): Promise<string[]> => {
+  const pb = getPb();
+  try {
+    const existing = await pb.collection('scans').getFullList({
+      filter: `document_type="${documentType}" && document_id="${documentId}"`,
+    });
+    await Promise.all(existing.map((s: any) => pb.collection('scans').delete(s.id).catch(() => null)));
+  } catch { /* best effort */ }
+  const ids: string[] = [];
+  for (const uri of imageUris) {
+    ids.push(await uploadScan(documentType, documentId, uri, false));
+  }
+  return ids;
+};
+
+/** Récupère TOUTES les pages scannées d'un document, dans l'ordre (page 1 d'abord). */
+export const getScans = async (
+  documentType: 'fiche_inscription' | 'contrat',
+  documentId: string,
+): Promise<any[]> => {
+  const pb = getPb();
+  const pbUrl = getPocketBaseUrl();
+  try {
+    const records = await pb.collection('scans').getFullList({
+      // Pas de tri serveur : filtre + tri = 400 sur pb2 → tri client ci-dessous
+      filter: `document_type="${documentType}" && document_id="${documentId}"`,
+    });
+    const ordered = [...records].sort((a: any, b: any) => +new Date(a.created) - +new Date(b.created));
+    return ordered.map((item: any) => ({
+      ...item,
+      imageUrl: item.image ? `${pbUrl}/api/files/scans/${item.id}/${item.image}` : null,
+    }));
+  } catch {
+    return [];
   }
 };
 
@@ -1538,6 +1926,7 @@ export const uploadDocument = async (
   try {
     let imageField: any;
     if (typeof imageUri === 'string') {
+      imageUri = await safeLocalUri(imageUri, fileName);
       const ext = (fileName || imageUri).split('.').pop()?.toLowerCase() || 'jpg';
       const fileType = resolveDocumentMime(ext, mimeType);
       imageField = {
@@ -1549,6 +1938,11 @@ export const uploadDocument = async (
       imageField = imageUri;
     }
     console.log('[UPLOAD-DIAG] imageField =', JSON.stringify(imageField).slice(0, 160));
+    if (typeof imageUri === 'string') {
+      const nativeId = await nativeUploadDoc(imageUri, fileName, mimeType, type, 'employe_id', employeId);
+      if (nativeId) return nativeId;
+      console.log('[UPLOAD-DIAG] natif indisponible, repli SDK…');
+    }
     const record = await pb.collection('documents').create({
       // Compat VPS (champ `image`) + local (champ `file`) — on envoie les deux pour éviter le 400
       file: imageField,
@@ -1576,6 +1970,18 @@ export const deleteDocument = async (docId: string): Promise<boolean> => {
   }
 };
 
+/** Supprime une page de scan (collection `scans`). */
+export const deleteScan = async (scanId: string): Promise<boolean> => {
+  const pb = getPb();
+  try {
+    await pb.collection('scans').delete(scanId);
+    return true;
+  } catch (e) {
+    console.error('deleteScan error:', e);
+    return false;
+  }
+};
+
 // ============== DOCUMENTS ASSOCIÉS À UN EMPLOYEUR ==============
 // Même collection `documents` que les employés, mais liés via employeur_id.
 
@@ -1584,11 +1990,14 @@ export const getDocumentsByEmployeur = async (employeurId: string): Promise<any[
   const pb = getPb();
   try {
     const records = await pb.collection('documents').getList(1, 50, {
-      filter: `employeur_id=\"${employeurId}\"`,
-      sort: '-created',
+      // Pas de tri serveur : '-created' + filtre = 400 sur pb2 (tri client ci-dessous)
+      filter: `employeur_id="${employeurId}"`,
     });
+    console.log('[UPLOAD-DIAG] getDocumentsByEmployeur OK, items =', records.items.length);
     const pbUrl = getPocketBaseUrl();
-    return records.items.map((item: any) => {
+    // Tri serveur '-created' + filtre = 400 sur pb2 → tri client (plus récent d'abord)
+    const ordered = [...records.items].sort((a: any, b: any) => +new Date(b.created) - +new Date(a.created));
+    return ordered.map((item: any) => {
       const fname = item.file || item.image || null;
       return {
         ...item,
@@ -1596,7 +2005,8 @@ export const getDocumentsByEmployeur = async (employeurId: string): Promise<any[
         nomFichier: fname,
       };
     });
-  } catch {
+  } catch (e: any) {
+    console.error('[UPLOAD-DIAG] getDocumentsByEmployeur ÉCHEC status=', e?.status, '| msg=', e?.message);
     return [];
   }
 };
@@ -1613,9 +2023,14 @@ export const uploadEmployeurDocument = async (
   mimeType?: string,
 ): Promise<string | null> => {
   const pb = getPb();
+  // ── DIAGNOSTIC TEMPORAIRE (à retirer après debug upload) ──
+  console.log('[UPLOAD-DIAG] employeur upload | authValid =', pb.authStore.isValid);
+  console.log('[UPLOAD-DIAG] employeur upload | baseUrl =', (pb as any).baseUrl);
+  console.log('[UPLOAD-DIAG] employeur upload | employeurId =', employeurId, '| type =', type);
   try {
     let imageField: any;
     if (typeof imageUri === 'string') {
+      imageUri = await safeLocalUri(imageUri, fileName);
       const ext = (fileName || imageUri).split('.').pop()?.toLowerCase() || 'jpg';
       const fileType = resolveDocumentMime(ext, mimeType);
       imageField = {
@@ -1626,6 +2041,12 @@ export const uploadEmployeurDocument = async (
     } else {
       imageField = imageUri;
     }
+    console.log('[UPLOAD-DIAG] employeur upload | imageField =', JSON.stringify(imageField).slice(0, 200));
+    if (typeof imageUri === 'string') {
+      const nativeId = await nativeUploadDoc(imageUri, fileName, mimeType, type, 'employeur_id', employeurId);
+      if (nativeId) return nativeId;
+      console.log('[UPLOAD-DIAG] natif indisponible, repli SDK…');
+    }
     const record = await pb.collection('documents').create({
       // Compat VPS `image` + local `file`
       file: imageField,
@@ -1633,9 +2054,10 @@ export const uploadEmployeurDocument = async (
       employeur_id: employeurId,
       type,
     } as any);
+    console.log('[UPLOAD-DIAG] employeur upload SUCCÈS record.id =', record.id);
     return record.id;
   } catch (e: any) {
-    console.error('uploadEmployeurDocument error:', e?.status, e?.message, e?.data);
+    console.error('[UPLOAD-DIAG] employeur upload ÉCHEC status=', e?.status, '| msg=', e?.message, '| data=', JSON.stringify(e?.data));
     return null;
   }
 };
@@ -1648,11 +2070,13 @@ export const getDocumentsByContrat = async (contratId: string): Promise<any[]> =
   const pb = getPb();
   try {
     const records = await pb.collection('documents').getList(1, 50, {
+      // Pas de tri serveur : '-created' + filtre = 400 sur pb2 → tri client ci-dessous
       filter: `contrat_id="${contratId}"`,
-      sort: '-created',
     });
     const pbUrl = getPocketBaseUrl();
-    return records.items.map((item: any) => {
+    // Tri client (plus récent d'abord)
+    const orderedContrat = [...records.items].sort((a: any, b: any) => +new Date(b.created) - +new Date(a.created));
+    return orderedContrat.map((item: any) => {
       const fname = item.file || item.image || null;
       return {
         ...item,
@@ -1679,6 +2103,7 @@ export const uploadContratDocument = async (
   try {
     let imageField: any;
     if (typeof imageUri === 'string') {
+      imageUri = await safeLocalUri(imageUri, fileName);
       const ext = (fileName || imageUri).split('.').pop()?.toLowerCase() || 'jpg';
       const fileType = resolveDocumentMime(ext, mimeType);
       imageField = {
@@ -1688,6 +2113,11 @@ export const uploadContratDocument = async (
       };
     } else {
       imageField = imageUri;
+    }
+    if (typeof imageUri === 'string') {
+      const nativeId = await nativeUploadDoc(imageUri, fileName, mimeType, type, 'contrat_id', contratId);
+      if (nativeId) return nativeId;
+      console.log('[UPLOAD-DIAG] uploadContratDocument: natif indisponible, repli SDK…');
     }
     const record = await pb.collection('documents').create({
       // Compat VPS `image` + local `file`, + contrat_id (absent sur VPS mais ignoré si strict false)

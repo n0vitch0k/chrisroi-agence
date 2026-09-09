@@ -45,7 +45,8 @@ export const FICHE_PROMPT = [
 
 export const CONTRAT_PROMPT = [
   "Tu es un assistant qui extrait des informations d'un contrat de travail.",
-  "Analyse l'image du document et extrait les champs suivants au format JSON.",
+  "Le contrat comporte 3 pages : tu reçois plusieurs images, analyse-les TOUTES dans l'ordre (page 1, 2, 3) et fusionne les informations.",
+  "Analyse les images du document et extrait les champs suivants au format JSON.",
   "",
   "Champs employé :",
   "- employe_nom (string) : nom de l'employé",

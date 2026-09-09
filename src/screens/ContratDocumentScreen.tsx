@@ -19,13 +19,14 @@ import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { printToFileAsync } from 'expo-print';
 import A4Document from '../components/A4Document';
 import AppHeader from '../components/AppHeader';
 import FormField from '../components/FormField';
 import SafeButton from '../components/SafeButton';
 import { buildContratHtml } from '../utils/contratPrint';
+import { shareBase64File } from '../utils/shareFile';
 import {
   createContrat,
   updateContrat,
@@ -35,7 +36,8 @@ import {
   getAllEmployes,
   getAllEmployeurs,
   uploadScan,
-  getScan,
+  getScans,
+  deleteScan,
   getEmployePhotoUrl,
   patchContratField,
   getDocumentsByContrat,
@@ -215,8 +217,14 @@ export default function ContratDocumentScreen() {
   const [selectedEmployeur, setSelectedEmployeur] = useState<any>(null);
 
   const [activeTab, setActiveTab] = useState<'numerique' | 'scanne'>('numerique');
-  const [scanData, setScanData] = useState<any>(null);
+  const [scanPages, setScanPages] = useState<any[]>([]);
   const [scanLoading, setScanLoading] = useState(false);
+
+  const reloadScanPages = async (id?: string | null) => {
+    const cid = id ?? contratId;
+    if (!cid) { setScanPages([]); return; }
+    try { setScanPages((await getScans('contrat', cid)) || []); } catch { setScanPages([]); }
+  };
 
   // C1 verrouillage
   const [unlockedFields, setUnlockedFields] = useState<Set<string>>(new Set());
@@ -462,10 +470,8 @@ export default function ContratDocumentScreen() {
         if (w) { w.document.write(html); w.document.close(); w.print(); }
         return;
       }
-      const { uri } = await printToFileAsync({ html, base64: false });
-      const can = await Sharing.isAvailableAsync();
-      if (can) await Sharing.shareAsync(uri, { dialogTitle: 'Contrat de prestation' });
-      else Alert.alert('PDF prêt', uri);
+      const { base64 } = await printToFileAsync({ html, base64: true });
+      await shareBase64File(base64 || '', `contrat_${Date.now()}.pdf`, 'Contrat de prestation', 'application/pdf');
     } catch (e: any) { Alert.alert('Erreur', e?.message || 'Impression impossible'); }
   };
 
@@ -481,18 +487,18 @@ export default function ContratDocumentScreen() {
         if (libRes.canceled || !libRes.assets[0]) { setScanLoading(false); return; }
         const docId = isEditing ? contratId : null;
         if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); setScanLoading(false); return; }
-        await uploadScan('contrat', docId, libRes.assets[0].uri);
-        setScanData(await getScan('contrat', docId));
-        Alert.alert('Scan ajouté', 'Document scanné enregistré.');
+        await uploadScan('contrat', docId, libRes.assets[0].uri, false);
+        await reloadScanPages(docId);
+        Alert.alert('Scan ajouté', 'Page enregistrée.');
         setScanLoading(false); return;
       }
       const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.85, allowsEditing: false });
       if (result.canceled || !result.assets[0]) { setScanLoading(false); return; }
       const docId = isEditing ? contratId : null;
       if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); setScanLoading(false); return; }
-      await uploadScan('contrat', docId, result.assets[0].uri);
-      setScanData(await getScan('contrat', docId));
-      Alert.alert('Scan ajouté', 'Document scanné enregistré.');
+      await uploadScan('contrat', docId, result.assets[0].uri, false);
+      await reloadScanPages(docId);
+      Alert.alert('Scan ajouté', 'Page enregistrée.');
       setScanLoading(false);
     } catch (e: any) { console.warn('[scan-contrat]', e?.message); Alert.alert('Scan', e?.message || 'Le scan a échoué.'); setScanLoading(false); }
   };
@@ -500,9 +506,19 @@ export default function ContratDocumentScreen() {
     const file = e.target.files?.[0]; if (!file) return; (e.target as HTMLInputElement).value = '';
     const docId = isEditing ? contratId : null;
     if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); return; }
-    try { setScanLoading(true); await uploadScan('contrat', docId, file); setScanData(await getScan('contrat', docId)); Alert.alert('Scan ajouté', 'Document scanné enregistré.'); } catch (err: any) { Alert.alert('Erreur', err?.message || "Échec de l'upload"); } finally { setScanLoading(false); }
+    try { setScanLoading(true); await uploadScan('contrat', docId, file, false); await reloadScanPages(docId); Alert.alert('Scan ajouté', 'Page enregistrée.'); } catch (err: any) { Alert.alert('Erreur', err?.message || "Échec de l'upload"); } finally { setScanLoading(false); }
   };
-  useEffect(() => { if (contratId) getScan('contrat', contratId).then(setScanData).catch(()=>{}); }, [contratId]);
+  const handleDeleteScanPage = (scanId: string) => {
+    Alert.alert('Supprimer cette page ?', 'La page scannée sera définitivement supprimée.', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Supprimer', style: 'destructive', onPress: async () => {
+        const ok = await deleteScan(scanId);
+        if (!ok) { Alert.alert('Erreur', 'Suppression impossible.'); return; }
+        await reloadScanPages();
+      } },
+    ]);
+  };
+  useEffect(() => { reloadScanPages(); }, [contratId]);
 
   const handleSelectPicker = (isEmploye: boolean, item: any, onDismiss: () => void) => {
     if (isEmploye) handleSelectEmploye(item); else handleSelectEmployeur(item);
@@ -579,45 +595,69 @@ export default function ContratDocumentScreen() {
   );
 
   const renderScanTab = () => {
-    const hasScan = scanData?.imageUrl;
+    const downloadPage = async (page: any, idx: number) => {
+      try {
+        const isRemote = /^https?:\/\//i.test(page.imageUrl);
+        let localUri = page.imageUrl;
+        if (isRemote) {
+          const tmp = (FileSystem as any).cacheDirectory + `scan_contrat_${contratId}_p${idx + 1}.jpg`;
+          const dl = await (FileSystem as any).downloadAsync(page.imageUrl, tmp);
+          localUri = dl.uri;
+        }
+        const can = await Sharing.isAvailableAsync();
+        if (can) await (Sharing as any).shareAsync(localUri, { dialogTitle: `Scan contrat signé — page ${idx + 1}` });
+      } catch (e: any) { Alert.alert('Scan', e?.message || 'Téléchargement impossible.'); }
+    };
     return (
       <View style={{ flex: 1, padding: 0 }}>
-        {scanLoading ? (
+        {scanLoading && scanPages.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}><Text style={{ color: Colors.textSecondary }}>Chargement...</Text></View>
-        ) : hasScan ? (
-          <View style={{ flex: 1 }}>
-            <TouchableOpacity onPress={() => docViewer.open({ uri: scanData.imageUrl, label: 'Scan contrat signé', fileName: null, mimeType: 'image/jpeg' })} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0f', minHeight: 380 }}>
-              <Image source={{ uri: scanData.imageUrl }} style={{ width: '100%', height: 420 }} resizeMode="contain" />
-            </TouchableOpacity>
-            <View style={{ flexDirection: 'row', gap: 10, padding: 14 }}>
-              <SafeButton onPress={handleScanDocument} mode="outlined" style={{ flex: 1 }}>Remplacer</SafeButton>
-              <SafeButton onPress={async () => {
-                try {
-                  const isRemote = /^https?:\/\//i.test(scanData.imageUrl);
-                  let localUri = scanData.imageUrl;
-                  if (isRemote) {
-                    const tmp = (FileSystem as any).cacheDirectory + `scan_contrat_${contratId}.jpg`;
-                    const dl = await (FileSystem as any).downloadAsync(scanData.imageUrl, tmp);
-                    localUri = dl.uri;
-                  }
-                  const can = await Sharing.isAvailableAsync();
-                  if (can) await (Sharing as any).shareAsync(localUri, { dialogTitle: 'Scan contrat signé' });
-                } catch (e: any) { Alert.alert('Scan', e?.message || 'Téléchargement impossible.'); }
-              }} mode="contained" style={{ flex: 1 }}><Icon name="download-outline" size={16} color="#fff" /><Text style={{ color: "#fff", fontWeight: "600", marginLeft: 6 }}>Télécharger</Text></SafeButton>
-            </View>
-          </View>
         ) : (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 }}>
-            <Icon name="file-image-outline" size={48} color={Colors.textTertiary} />
-            <Text style={{ color: Colors.textSecondary, textAlign: 'center' }}>Aucun scan. Enregistrez d'abord le contrat puis scannez le document signé.</Text>
-            <SafeButton onPress={handleScanDocument} mode="contained"><Icon name="camera" size={18} color="#fff" /><Text style={{ color: "#fff", fontWeight: "600", marginLeft: 6 }}>Scanner le document signé</Text></SafeButton>
+          <ScrollView contentContainerStyle={{ padding: 14, gap: 12 }}>
+            <Text style={{ color: Colors.textSecondary, textAlign: 'center' }}>
+              {scanPages.length === 0
+                ? "Aucun scan. Enregistrez d'abord le contrat puis scannez chaque page du document signé."
+                : `${scanPages.length} page(s) scannée(s), liée(s) à ce contrat.`}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+              {scanPages.map((page: any, idx: number) => (
+                <View key={page.id || idx} style={{ width: 150 }}>
+                  <TouchableOpacity onPress={() => page.imageUrl && docViewer.open({ uri: page.imageUrl, label: `Scan contrat signé — page ${idx + 1}`, fileName: null, mimeType: 'image/jpeg' })}>
+                    {page.imageUrl ? (
+                      <Image source={{ uri: page.imageUrl }} style={{ width: 150, height: 200, borderRadius: 8, backgroundColor: '#0a0a0f' }} resizeMode="cover" />
+                    ) : (
+                      <View style={{ width: 150, height: 200, borderRadius: 8, backgroundColor: '#0a0a0f', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name="file-image-outline" size={32} color={Colors.textTertiary} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Page {idx + 1}</Text>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <TouchableOpacity onPress={() => downloadPage(page, idx)} hitSlop={8}>
+                        <Icon name="download-outline" size={18} color={Colors.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => page.id && handleDeleteScanPage(page.id)} hitSlop={8}>
+                        <Icon name="trash-can-outline" size={18} color={Colors.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+            <SafeButton onPress={handleScanDocument} mode={scanPages.length === 0 ? 'contained' : 'outlined'}>
+              <Icon name="camera" size={18} color={scanPages.length === 0 ? '#fff' : Colors.primary} />
+              <Text style={{ color: scanPages.length === 0 ? '#fff' : Colors.primary, fontWeight: '600', marginLeft: 6 }}>
+                {scanPages.length === 0 ? 'Scanner le document signé' : 'Ajouter une page'}
+              </Text>
+            </SafeButton>
             {Platform.OS === 'web' && (
               <View style={{ width: '100%', alignItems: 'center' }}>
                 <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 8 }}>ou importer un fichier</Text>
                 <input type="file" accept="image/*,application/pdf" onChange={handleScanWeb as any} style={{ fontSize: 14 } as any} />
               </View>
             )}
-          </View>
+          </ScrollView>
         )}
       </View>
     );

@@ -23,13 +23,13 @@ import SectionCard from '../components/SectionCard';
 import FormField from '../components/FormField';
 import SafeButton from '../components/SafeButton';
 import A4Document from '../components/A4Document';
-import { createEmploye, getEmployeById, updateEmploye, patchEmployeField, uploadScan, getScan, uploadEmployePhoto, getEmployePhotoUrl, isLocalPhotoUri, getDocumentsByEmploye, uploadDocument, deleteDocument, getDocumentTypeLabel, getDocumentTypeIcon, DOCUMENT_TYPES, getEntityHistory } from '../database/service';
+import { createEmploye, getEmployeById, updateEmploye, patchEmployeField, syncEmployeUrgence, uploadScan, getScan, uploadEmployePhoto, getEmployePhotoUrl, isLocalPhotoUri, getDocumentsByEmploye, uploadDocument, deleteDocument, getDocumentTypeLabel, getDocumentTypeIcon, DOCUMENT_TYPES, getEntityHistory } from '../database/service';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as Sharing from 'expo-sharing';
 import { printToFileAsync } from 'expo-print';
 import { buildFichePapierHtml, FichePapierData, fileUriToDataUri } from '../utils/fichePrint';
+import { shareBase64File } from '../utils/shareFile';
 import {
   CATEGORIES_EMPLOI,
   SITUATIONS_MATRIMONIALES,
@@ -44,6 +44,7 @@ interface PersonneUrgence {
   nom: string;
   prenom: string;
   telephone: string;
+  lieu?: string;
 }
 
 interface Experience {
@@ -335,7 +336,7 @@ export default function FicheInscriptionScreen() {
   const [pere, setPere] = useState({ nom: '', prenom: '', telephone: '', domicile: '' });
   const [mere, setMere] = useState({ nom: '', prenom: '', telephone: '', domicile: '' });
   const [personnesUrgence, setPersonnesUrgence] = useState<PersonneUrgence[]>([
-    { nom: '', prenom: '', telephone: '' },
+    { nom: '', prenom: '', telephone: '', lieu: '' },
   ]);
   const [experiences, setExperiences] = useState<Experience[]>([
     { entreprise: '', lieu: '', contact: '' },
@@ -386,7 +387,7 @@ export default function FicheInscriptionScreen() {
 
       if (employe.personnes_urgence?.length) {
         setPersonnesUrgence(employe.personnes_urgence.map((p: any) => ({
-          nom: p.nom || '', prenom: p.prenom || '', telephone: p.telephone || '',
+          nom: p.nom || '', prenom: p.prenom || '', telephone: p.telephone || '', lieu: p.lieu || '',
         })));
       }
       if (employe.experiences?.length) {
@@ -437,6 +438,9 @@ export default function FicheInscriptionScreen() {
       let id: string;
       if (isEditing) {
         await updateEmploye(employeId, formData);
+        // Les relations ne passent pas par updateEmploye : on resynchronise
+        // les contacts (sinon le lieu d'habitation saisi en édition est perdu).
+        await syncEmployeUrgence(employeId, personnesUrgence);
         id = employeId;
       } else {
         id = await createEmploye(employeData);
@@ -710,28 +714,29 @@ export default function FicheInscriptionScreen() {
           nom: p.nom,
           prenom: p.prenom,
           telephone: p.telephone,
-          lieu: undefined,
+          lieu: p.lieu,
         })),
       };
 
       const html = buildFichePapierHtml(data);
-      const { uri } = await printToFileAsync({ html, base64: false });
 
       if (Platform.OS === 'web') {
         // Sur web, printToFileAsync ouvre déjà l'aperçu navigateur.
+        await printToFileAsync({ html });
         return;
       }
 
-      const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: "Fiche d'inscription (papier)",
-          UTI: 'com.adobe.pdf',
-        });
-      } else {
-        Alert.alert('PDF généré', `Fiche enregistrée :\n${uri}`);
-      }
+      // Le fichier cache/Print d'expo-print n'est pas lisible par le partage
+      // Android (« Not allowed to read file under given URL ») : on récupère
+      // le base64 et on l'écrit dans NOTRE cache avant de partager
+      // (même pattern que les contrats).
+      const { base64 } = await printToFileAsync({ html, base64: true });
+      await shareBase64File(
+        base64 || '',
+        `fiche_inscription_${Date.now()}.pdf`,
+        "Fiche d'inscription (papier)",
+        'application/pdf',
+      );
     } catch (error) {
       console.error('Erreur génération fiche papier:', error);
       Alert.alert('Erreur', "Impossible de générer la fiche d'inscription.");
@@ -1117,9 +1122,16 @@ export default function FicheInscriptionScreen() {
             <FormField label="Nom" value={p.nom} onChangeText={(t) => { const n = [...personnesUrgence]; n[idx] = { ...n[idx], nom: t }; setPersonnesUrgence(n); }} placeholder="Nom" />
             <FormField label="Prénom" value={p.prenom} onChangeText={(t) => { const n = [...personnesUrgence]; n[idx] = { ...n[idx], prenom: t }; setPersonnesUrgence(n); }} placeholder="Prénom" />
             <FormField label="Téléphone" value={p.telephone} onChangeText={(t) => { const n = [...personnesUrgence]; n[idx] = { ...n[idx], telephone: t }; setPersonnesUrgence(n); }} keyboardType="phone-pad" placeholder="Téléphone" />
+            <FormField label="Lieu d'habitation" value={p.lieu || ''} onChangeText={(t) => { const n = [...personnesUrgence]; n[idx] = { ...n[idx], lieu: t }; setPersonnesUrgence(n); }} placeholder="Lieu d'habitation" />
+            {personnesUrgence.length > 1 && (
+              <TouchableOpacity onPress={() => setPersonnesUrgence(personnesUrgence.filter((_, i) => i !== idx))} style={digitalStyles.addBtn} activeOpacity={0.7}>
+                <Icon name="close-circle" size={16} color={Colors.danger} />
+                <Text style={digitalStyles.addBtnText}>Retirer ce contact</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ))}
-        <TouchableOpacity onPress={() => setPersonnesUrgence([...personnesUrgence, { nom: '', prenom: '', telephone: '' }])} style={digitalStyles.addBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => setPersonnesUrgence([...personnesUrgence, { nom: '', prenom: '', telephone: '', lieu: '' }])} style={digitalStyles.addBtn} activeOpacity={0.7}>
           <Icon name="plus-circle" size={16} color={Colors.primary} />
           <Text style={digitalStyles.addBtnText}>Ajouter un contact</Text>
         </TouchableOpacity>
@@ -1224,7 +1236,7 @@ export default function FicheInscriptionScreen() {
                         let localUri = dl;
                         if (/^https?:\/\//i.test(dl)) {
                           const safe = String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
-                          const FileSystem2 = await import('expo-file-system');
+                          const FileSystem2 = await import('expo-file-system/legacy');
                           const Sharing2 = await import('expo-sharing');
                           const tmp = (FileSystem2 as any).cacheDirectory + safe;
                           const res = await (FileSystem2 as any).downloadAsync(dl, tmp);
@@ -1532,10 +1544,28 @@ export default function FicheInscriptionScreen() {
               placeholder="Téléphone"
               fieldStyle={docStyles.fieldSmall}
             />
+            <EditableField
+              value={p.lieu || ''}
+              onChangeText={(t) => {
+                const next = [...personnesUrgence];
+                next[idx] = { ...next[idx], lieu: t };
+                setPersonnesUrgence(next);
+              }}
+              placeholder="Lieu d'habitation"
+              fieldStyle={docStyles.fieldSmall}
+            />
+            {personnesUrgence.length > 1 && (
+              <TouchableOpacity
+                onPress={() => setPersonnesUrgence(personnesUrgence.filter((_, i) => i !== idx))}
+                style={docStyles.addBtn}
+              >
+                <Icon name="close-circle" size={16} color={Colors.danger} />
+              </TouchableOpacity>
+            )}
             {idx === personnesUrgence.length - 1 && (
               <TouchableOpacity
                 onPress={() =>
-                  setPersonnesUrgence([...personnesUrgence, { nom: '', prenom: '', telephone: '' }])
+                  setPersonnesUrgence([...personnesUrgence, { nom: '', prenom: '', telephone: '', lieu: '' }])
                 }
                 style={docStyles.addBtn}
               >
@@ -1784,7 +1814,7 @@ export default function FicheInscriptionScreen() {
                     const name = scanData.image || `scan_${scanData.document_type || 'doc'}.jpg`;
                     let localUri = dl;
                     if (/^https?:\/\//i.test(dl)) {
-                      const FileSystem2 = await import('expo-file-system');
+                      const FileSystem2 = await import('expo-file-system/legacy');
                       const Sharing2 = await import('expo-sharing');
                       const safe = String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
                       const tmp = (FileSystem2 as any).cacheDirectory + safe;

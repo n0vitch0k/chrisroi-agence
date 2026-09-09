@@ -71,6 +71,10 @@ export default function MonthCalendar({ events, weekStart, onWeekChange, onEvent
     const now = new Date();
     setCurrentMonth({ year: now.getFullYear(), month: now.getMonth() });
     setSelectedDate(now);
+    // Recharger les événements du mois courant, sinon la grille affiche
+    // le mois actuel avec les événements de l'ancien mois (pastilles
+    // qui disparaissent).
+    onMonthChange?.(now.getFullYear(), now.getMonth());
   };
 
   // Grouper événements par date

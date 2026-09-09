@@ -13,7 +13,6 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import BackendDebugOverlay from './src/components/BackendDebugOverlay';
 import { Colors, Typography, Spacing, Radius, Shadows } from './src/theme';
 import type {
   RootStackParamList,
@@ -30,6 +29,8 @@ import GlobalSearchScreen from './src/screens/GlobalSearchScreen';
 import FicheInscriptionScreen from './src/screens/FicheInscriptionScreen';
 import EmployeDetailScreen from './src/screens/EmployeDetailScreen';
 import EmployeurFormScreen from './src/screens/EmployeurFormScreen';
+import EmployeurDetailScreen from './src/screens/EmployeurDetailScreen';
+import ContratDetailScreen from './src/screens/ContratDetailScreen';
 import ContratDocumentScreen from './src/screens/ContratDocumentScreen';
 import SuiviScreen from './src/screens/SuiviScreen';
 import AlertesScreen from './src/screens/AlertesScreen';
@@ -43,6 +44,9 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 const DashStack = createNativeStackNavigator<DashboardStackParamList>();
 const EmpStack = createNativeStackNavigator<EmployesStackParamList>();
+// Instance dédiée au DetailModal (ne pas partager EmpStack : les deux piles
+// peuvent être montées simultanément).
+const DetailStack = createNativeStackNavigator<EmployesStackParamList>();
 
 // Thème Paper — Warm Earth
 const theme = {
@@ -100,6 +104,16 @@ function EmployesStackScreen() {
         options={{ headerShown: false }}
       />
       <EmpStack.Screen
+        name="EmployeurDetail"
+        component={EmployeurDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <EmpStack.Screen
+        name="ContratDetail"
+        component={ContratDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <EmpStack.Screen
         name="FicheInscription"
         component={FicheInscriptionScreen}
         options={{ headerShown: false, presentation: 'modal' }}
@@ -115,6 +129,33 @@ function EmployesStackScreen() {
         options={{ headerShown: false, presentation: 'modal' }}
       />
     </EmpStack.Navigator>
+  );
+}
+
+// ─── Pile détail externe (DetailModal) ──────────────────────
+// Mêmes écrans que la pile Dossiers, mais dans une pile dédiée ouverte
+// par-dessus la modale/l'onglet appelant : le back revient à l'appelant,
+// sans polluer la pile Dossiers. Les liens croisés internes (mêmes noms
+// de routes) fonctionnent tels quels.
+function DetailModalStack() {
+  return (
+    <DetailStack.Navigator screenOptions={{ headerShown: false }}>
+      <DetailStack.Screen
+        name="EmployeDetail"
+        component={EmployeDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <DetailStack.Screen
+        name="EmployeurDetail"
+        component={EmployeurDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <DetailStack.Screen
+        name="ContratDetail"
+        component={ContratDetailScreen}
+        options={{ headerShown: false }}
+      />
+    </DetailStack.Navigator>
   );
 }
 
@@ -263,6 +304,11 @@ function AppContent() {
                 options={{ headerShown: false }}
               />
               <RootStack.Screen
+                name="DetailModal"
+                component={DetailModalStack}
+                options={{ headerShown: false }}
+              />
+              <RootStack.Screen
                 name="Scan"
                 component={ScanScreen}
                 options={{ headerShown: false }}
@@ -278,7 +324,6 @@ function AppContent() {
           <LoginScreen onLogin={onLogin} />
         )}
       </NavigationContainer>
-      <BackendDebugOverlay />
     </PaperProvider>
   );
 }

@@ -29,6 +29,8 @@ type Props = {
   route: {
     params: {
       imageUri: string;
+      imageUris?: string[];
+      base64s?: (string | null)[];
       documentType: DocumentType;
       extracted: ExtractedData;
     };
@@ -38,6 +40,8 @@ type Props = {
 
 export default function ScanResultScreen({ route, navigation }: Props) {
   const { imageUri, documentType, extracted: initialExtracted } = route.params;
+  // Toutes les pages (contrat multi-pages) — page 1 = imageUri en repli
+  const pageUris = route.params.imageUris?.length ? route.params.imageUris : [imageUri];
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -216,8 +220,8 @@ export default function ScanResultScreen({ route, navigation }: Props) {
       domicile_employe: contrat.employe_adresse,
     });
 
-    // 4. Upload scan
-    await service.uploadScan('contrat', contratId, imageUri);
+    // 4. Upload des scans (toutes les pages du contrat, dans l'ordre)
+    await service.uploadScanPages('contrat', contratId, pageUris);
   };
 
   if (saved) {
@@ -235,11 +239,18 @@ export default function ScanResultScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <AppHeader title="Résultat du scan" showBack onBack={() => navigation.goBack()} />
-      {/* Aperçu du scan */}
+      {/* Aperçu du scan (toutes les pages) */}
       <Card style={styles.previewCard}>
-        <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pagesRow}>
+          {pageUris.map((uri, i) => (
+            <View key={uri + i} style={styles.pageWrap}>
+              <Image source={{ uri }} style={styles.previewPage} resizeMode="contain" />
+              {pageUris.length > 1 && <Text style={styles.pageLabel}>Page {i + 1}</Text>}
+            </View>
+          ))}
+        </ScrollView>
         <Text style={styles.previewLabel}>
-          {documentType === 'fiche_inscription' ? "Fiche d'inscription scannée" : 'Contrat scanné'}
+          {documentType === 'fiche_inscription' ? "Fiche d'inscription scannée" : `Contrat scanné (${pageUris.length} page${pageUris.length > 1 ? 's' : ''})`}
         </Text>
       </Card>
 
@@ -378,6 +389,10 @@ const styles = StyleSheet.create({
   scrollContent: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
   previewCard: { borderRadius: Radius.md, overflow: 'hidden', backgroundColor: Colors.surface, ...Shadows.card, marginBottom: Spacing.lg },
   preview: { width: '100%', height: 200, backgroundColor: '#000' },
+  pagesRow: { gap: 8, padding: Spacing.sm },
+  pageWrap: { alignItems: 'center', width: 220 },
+  previewPage: { width: 220, height: 200, backgroundColor: '#000' },
+  pageLabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
   previewLabel: { textAlign: 'center', padding: Spacing.sm, fontSize: 12, color: Colors.textSecondary },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
   sectionHint: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.lg },

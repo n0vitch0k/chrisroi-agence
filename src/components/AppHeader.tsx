@@ -5,6 +5,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { Colors, Typography, Spacing, Radius } from '../theme';
 
@@ -34,6 +35,13 @@ export default function AppHeader({
   backColor = Colors.primary,
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
+  // Back par défaut : goBack() (corrige les headers sans onBack, ex: modale contrat).
+  // Si onBack explicite → on l'affiche toujours (l'appelant gère).
+  // Sinon on masque la flèche quand il n'y a rien à dépiler (racines d'onglets).
+  const canGoBack = navigation?.canGoBack?.() ?? true;
+  const showBackBtn = showBack && (onBack !== undefined || canGoBack);
+  const handleBack = onBack ?? (() => navigation?.goBack?.());
   return (
     <View
       style={[
@@ -47,9 +55,9 @@ export default function AppHeader({
     >
       <View style={styles.row}>
         <View style={styles.left}>
-          {showBack && (
+          {showBackBtn && (
             <Pressable
-              onPress={onBack ?? (() => {})}
+              onPress={handleBack}
               hitSlop={14}
               style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}
               accessibilityLabel="Retour"
