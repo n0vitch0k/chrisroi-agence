@@ -211,6 +211,8 @@ export default function ContratDocumentScreen() {
   const [loading, setLoading] = useState(false);
   const [showEmployePicker, setShowEmployePicker] = useState(false);
   const [showEmployeurPicker, setShowEmployeurPicker] = useState(false);
+  const [searchEmploye, setSearchEmploye] = useState('');
+  const [searchEmployeur, setSearchEmployeur] = useState('');
   const [employes, setEmployes] = useState<any[]>([]);
   const [employeurs, setEmployeurs] = useState<any[]>([]);
   const [selectedEmploye, setSelectedEmploye] = useState<any>(null);
@@ -554,6 +556,8 @@ export default function ContratDocumentScreen() {
     } catch (e: any) { Alert.alert('Erreur', e?.message || 'Sélection impossible'); }
   };
 
+  const normSearch = (s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
   const renderPickerModal = (
     visible: boolean,
     onDismiss: () => void,
@@ -561,7 +565,17 @@ export default function ContratDocumentScreen() {
     onSelect: (item: any) => void,
     selectedId: string,
     isEmploye: boolean,
-  ) => (
+    query: string,
+    setQuery: (t: string) => void,
+  ) => {
+    const q = normSearch(query.trim());
+    const filtered = q ? items.filter((item) => {
+      const hay = isEmploye
+        ? `${item.prenom || ''} ${item.nom || ''} ${item.telephone || ''} ${item.categorie_emploi || ''}`
+        : `${item.nom_complet || ''} ${item.raison_sociale || ''} ${item.nom || ''} ${item.telephone || ''}`;
+      return normSearch(hay).includes(q);
+    }) : items;
+    return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.modalOverlay}>
         <TouchableWithoutFeedback onPress={onDismiss}><View style={StyleSheet.absoluteFill} /></TouchableWithoutFeedback>
@@ -570,11 +584,18 @@ export default function ContratDocumentScreen() {
             <Text style={styles.modalTitle}>{isEmploye ? 'Sélectionner un employé' : 'Sélectionner un client'}</Text>
             <TouchableOpacity onPress={onDismiss}><Icon name="close" size={22} color={Colors.textSecondary} /></TouchableOpacity>
           </View>
-          {items.length === 0 ? (
-            <View style={styles.modalEmpty}><Text style={styles.modalEmptyText}>{isEmploye ? 'Aucun employé' : 'Aucun client'}</Text></View>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Rechercher..."
+            placeholderTextColor={Colors.textTertiary}
+            style={digitalStyles.searchInput}
+          />
+          {filtered.length === 0 ? (
+            <View style={styles.modalEmpty}><Text style={styles.modalEmptyText}>{q ? `Aucun résultat pour « ${query.trim()} »` : (isEmploye ? 'Aucun employé' : 'Aucun client')}</Text></View>
           ) : (
             <FlatList
-              data={items}
+              data={filtered}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => {
                 const isSelected = item.id === selectedId;
@@ -592,7 +613,8 @@ export default function ContratDocumentScreen() {
         </View>
       </View>
     </Modal>
-  );
+    );
+  };
 
   const renderScanTab = () => {
     const downloadPage = async (page: any, idx: number) => {
@@ -735,9 +757,9 @@ export default function ContratDocumentScreen() {
           <View style={{ flex: 1 }}><LockedField fieldKey="commission_fixe" label="Prix prestation" value={formData.commission_fixe} onChangeText={(t) => updateForm('commission_fixe', t)} placeholder="15000" keyboardType="numeric" unlocked={fieldUnlocked('commission_fixe')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
           <View style={{ flex: 1 }}><LockedField fieldKey="frais_transport" label="Frais transport (Art. 3)" value={formData.frais_transport} onChangeText={(t) => updateForm('frais_transport', t)} placeholder="5000" keyboardType="numeric" unlocked={fieldUnlocked('frais_transport')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
         </View>
+        <LockedField fieldKey="salaire" label="Salaire" value={formData.salaire} onChangeText={(t) => { updateForm('salaire', t); const n = parseFloat(t); if (!isNaN(n) && n > 0 && !formData.retenue_salaire_montant) updateForm('retenue_salaire_montant', String(Math.round(n/3))); }} placeholder="Ex: 80000" keyboardType="numeric" unlocked={fieldUnlocked('salaire')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <LockedField fieldKey="retenue_salaire_montant" label="Retenue 1er mois sur salaire net (Art. 8) — à reverser à l'agence" value={formData.retenue_salaire_montant} onChangeText={(t) => updateForm('retenue_salaire_montant', t)} placeholder="Ex: 26667" keyboardType="numeric" unlocked={fieldUnlocked('retenue_salaire_montant')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <Text style={digitalStyles.helpText}>Payable espèces ou Mobile Money dès signature (non remboursable). Retenue = montant prélevé par le client sur le salaire net du 1er mois.</Text>
-        <LockedField fieldKey="salaire" label="Salaire net employé (aide calcul retenue = 1/3 si vide)" value={formData.salaire} onChangeText={(t) => { updateForm('salaire', t); const n = parseFloat(t); if (!isNaN(n) && n > 0 && !formData.retenue_salaire_montant) updateForm('retenue_salaire_montant', String(Math.round(n/3))); }} placeholder="Ex: 80000" keyboardType="numeric" unlocked={fieldUnlocked('salaire')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1 }}><LockedField fieldKey="date_signature" label="Date de signature" value={formData.date_signature} onChangeText={(t) => updateForm('date_signature', t)} placeholder="JJ/MM/AAAA" unlocked={fieldUnlocked('date_signature')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
           <View style={{ flex: 1 }}><LockedField fieldKey="duree" label="Durée suivi" value={formData.duree} onChangeText={(t) => updateForm('duree', t)} placeholder="3 mois" unlocked={fieldUnlocked('duree')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
@@ -832,8 +854,8 @@ export default function ContratDocumentScreen() {
 
       {activeTab === 'numerique' ? renderNumerique() : renderScanTab()}
 
-      {renderPickerModal(showEmployePicker, () => setShowEmployePicker(false), employes, handleSelectEmploye, formData.employe_id, true)}
-      {renderPickerModal(showEmployeurPicker, () => setShowEmployeurPicker(false), employeurs, handleSelectEmployeur, formData.employeur_id, false)}
+      {renderPickerModal(showEmployePicker, () => { setShowEmployePicker(false); setSearchEmploye(''); }, employes, handleSelectEmploye, formData.employe_id, true, searchEmploye, setSearchEmploye)}
+      {renderPickerModal(showEmployeurPicker, () => { setShowEmployeurPicker(false); setSearchEmployeur(''); }, employeurs, handleSelectEmployeur, formData.employeur_id, false, searchEmployeur, setSearchEmployeur)}
 
       {/* PIN suppression annexe */}
       <Modal visible={pinVisible} transparent animationType="fade" onRequestClose={() => setPinVisible(false)}>
@@ -896,6 +918,7 @@ const digitalStyles = StyleSheet.create({
   pinInput: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 10, marginTop: 10, fontSize: 16, textAlign: 'center', letterSpacing: 6 } as any,
   pinBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' } as any,
   pinBtnText: { fontWeight: '700', fontSize: 12 } as any,
+  searchInput: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, marginBottom: 8, backgroundColor: '#f8fafc' } as any,
 });
 
 
