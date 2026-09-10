@@ -42,12 +42,16 @@ import {
   formatMoney,
   getStatutColor,
   getStatutLabel,
+  getFormatContratLabel,
+  getFormatContratColors,
   daysRemaining,
 } from '../utils/constants';
 import { Colors, Spacing, Radius, Shadows } from '../theme';
 import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
 import { printToFileAsync } from 'expo-print';
 import { buildContratHtml } from '../utils/contratPrint';
+import { buildContratAgenceHtml } from '../utils/contratAgencePrint';
+import { getEmployePhotoUrl } from '../database/service';
 import { shareBase64File } from '../utils/shareFile';
 
 const InfoRow = ({ icon, label, value, style }: { icon: string; label: string; value: string; style?: ViewStyle }) => (
@@ -107,7 +111,15 @@ export default function ContratDetailScreen() {
         contrat.employe_id ? getEmployeById(contrat.employe_id).catch(() => null) : Promise.resolve(null),
         contrat.employeur_id ? getEmployeurById(contrat.employeur_id).catch(() => null) : Promise.resolve(null),
       ]);
-      const html = buildContratHtml({ contrat, employe: employe || undefined, employeur: employeur || undefined });
+      const fmt = contrat.format_document || 'prestation';
+      const html = fmt === 'agence'
+        ? buildContratAgenceHtml({
+            contrat,
+            employe: employe || undefined,
+            employeur: employeur || undefined,
+            photoUrl: employe ? getEmployePhotoUrl(employe.id, employe.photo) : null,
+          })
+        : buildContratHtml({ contrat, employe: employe || undefined, employeur: employeur || undefined });
       if (Platform.OS === 'web') {
         const w = window.open('', '_blank');
         if (w) { w.document.write(html); w.document.close(); w.print(); }
@@ -115,7 +127,7 @@ export default function ContratDetailScreen() {
       }
       const { base64 } = await printToFileAsync({ html, base64: true });
       const numero = String(contrat.numero_dossier || contratId || Date.now()).replace(/[^a-zA-Z0-9._-]/g, '_');
-      await shareBase64File(base64 || '', `contrat_${numero}.pdf`, 'Contrat de prestation', 'application/pdf');
+      await shareBase64File(base64 || '', `contrat_${numero}.pdf`, fmt === 'agence' ? 'Contrat Agence' : 'Contrat de prestation', 'application/pdf');
     } catch (e: any) {
       Alert.alert('Téléchargement', e?.message || 'Impossible de générer le PDF.');
     }
@@ -243,6 +255,9 @@ export default function ContratDetailScreen() {
               {contrat.type_contrat}
             </Chip>
           ) : null}
+          <Chip mode="outlined" style={[styles.chip, { borderColor: getFormatContratColors(contrat.format_document).fg, backgroundColor: getFormatContratColors(contrat.format_document).bg }]} textStyle={[styles.chipText, { color: getFormatContratColors(contrat.format_document).fg }]}>
+            {getFormatContratLabel(contrat.format_document)}
+          </Chip>
           {remaining !== null && contrat.statut === 'en_cours' ? (
             <Chip mode="outlined" style={[styles.chip, { borderColor: Colors.primaryFaded }]} textStyle={[styles.chipText, { color: Colors.primaryDark }]}>
               {remaining >= 0 ? `Fin dans ${remaining}j` : `Terminé depuis ${-remaining}j`}
@@ -271,6 +286,7 @@ export default function ContratDetailScreen() {
           {contrat.type_contrat ? (
             <InfoRow icon="briefcase" label="Type de contrat" value={contrat.type_contrat} />
           ) : null}
+          <InfoRow icon="file-document-outline" label="Format" value={getFormatContratLabel(contrat.format_document)} />
           {contrat.poste ? (
             <InfoRow icon="account-tie" label="Poste" value={contrat.poste} />
           ) : null}

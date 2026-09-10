@@ -123,6 +123,12 @@ export const ContratsTypeContratOptions = {
 } as const
 export type ContratsTypeContratOptions = typeof ContratsTypeContratOptions[keyof typeof ContratsTypeContratOptions]
 
+export const ContratsFormatDocumentOptions = {
+  "prestation": "prestation",
+  "agence": "agence",
+} as const
+export type ContratsFormatDocumentOptions = typeof ContratsFormatDocumentOptions[keyof typeof ContratsFormatDocumentOptions]
+
 export const ContratsEmployeSexeOptions = {
 	"Masculin": "Masculin",
 	"Féminin": "Féminin",
@@ -149,6 +155,7 @@ export type ContratsRecord = {
 	employe_piece_reference?: string
 	employe_sexe?: ContratsEmployeSexeOptions
 	employeur_id?: RecordIdString
+	format_document?: ContratsFormatDocumentOptions
 	frais_dossier?: number
 	frais_payes?: boolean
 	frais_transport?: number

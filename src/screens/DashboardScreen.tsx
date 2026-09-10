@@ -8,6 +8,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import {
   createCommissionDueAlertes,
 } from '../database/service';
 import { Colors, Shadows } from '../theme';
+import { FORMATS_CONTRAT } from '../utils/constants';
 
 // Génération auto des alertes une seule fois par session (au premier passage
 // sur le Dashboard, donc à chaque ouverture de l'app).
@@ -110,6 +112,12 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [registreCounts, setRegistreCounts] = useState({ fiches: 0, contrats: 0, employeurs: 0 });
+  const [showFormatModal, setShowFormatModal] = useState(false);
+
+  const goNewContrat = (format: string) => {
+    setShowFormatModal(false);
+    navigateTab('EmployesStack', { screen: 'ContratDocument', params: { format_document: format } });
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -151,6 +159,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
   const totalRegistre = registreCounts.fiches + registreCounts.contrats + registreCounts.employeurs;
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={M.primary} />}
@@ -209,7 +218,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
             badgeText={registreCounts.contrats > 0 ? `${registreCounts.contrats} actifs` : undefined}
             badgeBg="#e8f0dc"
             badgeColor="#5a7c3a"
-            onPress={() => navigateTab('EmployesStack', { screen: 'ContratDocument' })}
+            onPress={() => setShowFormatModal(true)}
           />
           <QuickAction
             icon="📸"
@@ -258,6 +267,37 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
         )}
       </View>
     </ScrollView>
+
+    {/* ── Modal choix du format de contrat ── */}
+    <Modal visible={showFormatModal} transparent animationType="fade" onRequestClose={() => setShowFormatModal(false)}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowFormatModal(false)}>
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Nouveau contrat</Text>
+          <Text style={styles.modalSub}>Quel format créer ? (définitif)</Text>
+          {FORMATS_CONTRAT.map((f) => (
+            <TouchableOpacity
+              key={f.value}
+              style={[styles.formatOption, f.value === 'agence' ? styles.formatOptionAgence : styles.formatOptionPrestation]}
+              onPress={() => goNewContrat(f.value)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.formatIcon}>{f.value === 'agence' ? '📋' : '📄'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.formatLabel}>{f.label}</Text>
+                <Text style={styles.formatDesc}>
+                  {f.value === 'agence' ? 'Recto-verso Employé / Employeur' : 'Prestation de service — 10 articles'}
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={20} color={M.textDim} />
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.modalCancel} onPress={() => setShowFormatModal(false)} activeOpacity={0.7}>
+            <Text style={styles.modalCancelText}>Annuler</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+    </>
   );
 }
 
@@ -430,4 +470,27 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 56, marginBottom: 16, opacity: 0.3 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#8a7d72', marginBottom: 8 },
   emptyText: { fontSize: 14, color: '#b8a99e', textAlign: 'center', lineHeight: 20 },
+
+  // ── Modal choix format contrat ──
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32,
+  },
+  modalCard: {
+    width: '100%', backgroundColor: '#fff', borderRadius: 20, padding: 20,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 8,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#3d3530', textAlign: 'center' },
+  modalSub: { fontSize: 12, color: '#b8a99e', textAlign: 'center', marginTop: 4, marginBottom: 14 },
+  formatOption: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10,
+  },
+  formatOptionPrestation: { borderColor: '#0C1F3F', backgroundColor: '#E8EEF7' },
+  formatOptionAgence: { borderColor: '#c9a227', backgroundColor: '#FDF3E3' },
+  formatIcon: { fontSize: 26 },
+  formatLabel: { fontSize: 15, fontWeight: '800', color: '#3d3530' },
+  formatDesc: { fontSize: 11, color: '#8a7d72', marginTop: 2 },
+  modalCancel: { alignItems: 'center', paddingVertical: 8, marginTop: 2 },
+  modalCancelText: { fontSize: 14, fontWeight: '600', color: '#b8a99e' },
 });

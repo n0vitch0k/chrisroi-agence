@@ -21,6 +21,8 @@ import {
   getCategorieLabel,
   getStatutColor,
   getStatutLabel,
+  getFormatContratLabel,
+  getFormatContratColors,
   daysRemaining,
   formatMoney,
 } from '../utils/constants';
@@ -38,9 +40,10 @@ type StatutFilter = 'tous' | 'disponible' | 'en_poste';
  * Section par défaut à afficher. Piloté par la navbar :
  *   - onglet "Dossiers"    → 'all'        (toutes les sections)
  *   - onglet "Employeurs"  → 'employeur'  (section Employeurs)
- *   - onglet "Contrats"    → 'contrat'    (section Contrats)
+ *   - onglet "Contrats"    → 'contrat'    (les deux formats de contrats)
+ * Filtres principaux (5) : Tout / Employés / Employeurs / Prestation / Agence.
  */
-type DossierSection = 'all' | ResultType;
+type DossierSection = 'all' | ResultType | 'prestation' | 'agence';
 
 // Paramètres reçus depuis la navbar (App.tsx → initialParams).
 type GlobalSearchRouteParams = {
@@ -64,6 +67,7 @@ type SearchResult = {
   categorie?: string;
   statut?: string;
   isEnPoste?: boolean;
+  format?: string;
 };
 
 // ─── Filtres statut ─────────────────────────────────────────
@@ -77,7 +81,8 @@ const TYPE_FILTERS: Array<{ label: string; value: DossierSection }> = [
   { label: 'Tout', value: 'all' },
   { label: 'Employés', value: 'employe' },
   { label: 'Employeurs', value: 'employeur' },
-  { label: 'Contrats', value: 'contrat' },
+  { label: 'Prestation', value: 'prestation' },
+  { label: 'Agence', value: 'agence' },
 ];
 
 export default function GlobalSearchScreen() {
@@ -173,6 +178,7 @@ export default function GlobalSearchScreen() {
         next.push({
           id: `contrat-${item.id}`,
           type: 'contrat',
+          format: item.format_document || 'prestation',
           title: item.numero_dossier || `Contrat ${item.id}`,
           meta: `${item.employe_nom} ${item.employe_prenom} · ${item.nom_complet}`,
           details: [
@@ -180,7 +186,7 @@ export default function GlobalSearchScreen() {
             item.commission_agence > 0 ? `💰 ${formatMoney(item.commission_agence)}` : '',
             item.statut === 'en_cours' && remaining !== null && remaining <= 7 ? '⚠️ Urgent' : '',
           ].filter(Boolean),
-          icon: '📄',
+          icon: (item.format_document || 'prestation') === 'agence' ? '📋' : '📄',
           avatarStyle: 'orange',
           onPress: () => navigation.navigate('EmployesStack' as any, { screen: 'ContratDetail', params: { id: item.id } }),
         });
@@ -204,7 +210,9 @@ export default function GlobalSearchScreen() {
   // ─── Filtrage ─────────────────────────────────────────────
   const filteredResults = useMemo(() => {
     let items = results;
-    if (typeFilter !== 'all') {
+    if (typeFilter === 'prestation' || typeFilter === 'agence') {
+      items = items.filter((item) => item.type === 'contrat' && (item.format || 'prestation') === typeFilter);
+    } else if (typeFilter !== 'all') {
       items = items.filter((item) => item.type === typeFilter);
     }
     if (typeFilter === 'employe' || typeFilter === 'all') {
@@ -224,6 +232,8 @@ export default function GlobalSearchScreen() {
   // Comptages
   const countByType = (type: string) =>
     type === 'all' ? results.length :
+    type === 'prestation' ? results.filter((i) => i.type === 'contrat' && (i.format || 'prestation') === 'prestation').length :
+    type === 'agence' ? results.filter((i) => i.type === 'contrat' && (i.format || 'prestation') === 'agence').length :
     results.filter((i) => i.type === type).length;
 
   const countByStatut = (s: string) =>
@@ -318,8 +328,15 @@ export default function GlobalSearchScreen() {
             <Text style={styles.resultMeta}>{item.meta}</Text>
           </View>
         </View>
-        <View style={[styles.typePill, typeStyles[item.type]]}>
-          <Text style={styles.typePillText}>{typeLabel(item.type)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={[styles.typePill, typeStyles[item.type]]}>
+            <Text style={styles.typePillText}>{typeLabel(item.type)}</Text>
+          </View>
+          {item.type === 'contrat' && (
+            <View style={[styles.typePill, { backgroundColor: getFormatContratColors(item.format).bg, marginLeft: 6 }]}>
+              <Text style={[styles.typePillText, { color: getFormatContratColors(item.format).fg }]}>{getFormatContratLabel(item.format)}</Text>
+            </View>
+          )}
         </View>
       </View>
       <View style={styles.detailsRow}>
@@ -336,6 +353,8 @@ export default function GlobalSearchScreen() {
   const employeResults = filteredResults.filter((i) => i.type === 'employe');
   const employeurResults = filteredResults.filter((i) => i.type === 'employeur');
   const contratResults = filteredResults.filter((i) => i.type === 'contrat');
+  const showContratSection = typeFilter === 'all' || typeFilter === 'contrat' || typeFilter === 'prestation' || typeFilter === 'agence';
+  const contratSectionTitle = typeFilter === 'prestation' ? '📄 Contrats Prestation' : typeFilter === 'agence' ? '📋 Contrats Agence' : '📄 Contrats';
   const showStatutFilters = typeFilter === 'employe' || typeFilter === 'all';
   const showSections = typeFilter === 'all';
 
@@ -434,11 +453,11 @@ export default function GlobalSearchScreen() {
         )}
 
         {/* Section Contrats */}
-        {(typeFilter === 'all' || typeFilter === 'contrat') && contratResults.length > 0 && (
+        {showContratSection && contratResults.length > 0 && (
           <View style={styles.section}>
             {showSections && (
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>📄 Contrats</Text>
+                <Text style={styles.sectionTitle}>{contratSectionTitle}</Text>
                 <Text style={styles.sectionCount}>{contratResults.length}</Text>
               </View>
             )}

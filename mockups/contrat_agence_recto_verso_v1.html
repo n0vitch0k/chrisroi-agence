@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Maquette v2 — Contrat Agence recto-verso (premium)</title>
+<style>
+  @page { size: A4; margin: 3mm 2mm 3mm 2mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #eef1f5; color: #111827;
+    font-family: "Times New Roman", Times, Georgia, serif;
+    line-height: 1.38; font-size: 9.5pt;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sheet {
+    width: min(210mm, calc(100% - 32px));
+    margin: 24px auto; background: #fff;
+    border: 1px solid #cfd6e2; border-radius: 10px;
+    box-shadow: 0 12px 36px rgba(15,23,42,.14);
+    overflow: hidden;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    padding: 8px 16px 6px; background: #fff;
+    border-bottom: 2.5px solid #0c1f3f;
+  }
+  .header img.logo { width: 56px; height: 56px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; flex-shrink: 0; }
+  .header .brand { font-family: Arial, Helvetica, sans-serif; text-align: center; }
+  .header .kicker { font-size: 7pt; letter-spacing: .08em; text-transform: uppercase; color: #0c1f3f; font-weight: 700; line-height: 1.35; }
+  .header .name { font-size: 17pt; font-weight: 900; color: #0c1f3f; letter-spacing: .04em; line-height: 1; margin-top: 4px; }
+  .header .name .gold { color: #c9a227; }
+  .page-pad { padding: 5px 7px 4px; }
+  h1.doc-title {
+    text-align: center; font-family: Arial Black, Arial, sans-serif;
+    font-size: 11pt; font-weight: 900; color: #0c1f3f;
+    letter-spacing: .04em; text-transform: uppercase;
+    margin: 8px 0 4px;
+  }
+  h1.doc-title .page-tag {
+    display: inline-block; font-size: 8pt; background: #c9a227; color: #0c1f3f;
+    padding: 3px 10px; border-radius: 999px; vertical-align: middle; letter-spacing: .08em;
+  }
+  .ref-badge { text-align: center; margin-bottom: 6px; }
+  .ref-badge span {
+    display: inline-block; font-family: Arial, sans-serif; font-size: 7.5pt; font-weight: 800;
+    background: #0c1f3f; color: #fff; padding: 4px 10px; border-radius: 999px;
+  }
+  .divider { height: 1px; background: #0c1f3f; opacity: .14; margin: 6px 0 8px; }
+  h2.article {
+    font-family: Arial, Helvetica, sans-serif; font-size: 9pt; font-weight: 800;
+    color: #fff; background: #0c1f3f; padding: 4px 10px; border-radius: 4px;
+    margin: 10px 0 6px; letter-spacing: .03em; text-transform: uppercase;
+    break-after: avoid; break-inside: avoid;
+  }
+  h2.article .n { color: #c9a227; }
+  p { margin: 0 0 5px; text-align: justify; hyphens: auto; }
+  .field { display: inline-block; min-width: 110px; border-bottom: 1px dotted #111827; padding: 0 3px 1px; font-weight: 700; color: #0c1f3f; }
+  .field.small { min-width: 80px; }
+  .field.wide { min-width: 200px; }
+  .field.full { min-width: 300px; }
+  .parties { border: 1px solid #c8d0dc; border-radius: 6px; padding: 8px 10px; background: #f8fafc; margin-bottom: 8px; }
+  .parties p { margin-bottom: 4px; }
+  .check-pill {
+    display: inline-block; font-family: Arial, sans-serif; font-size: 8pt; font-weight: 700;
+    border: 1.5px solid #0c1f3f; border-radius: 4px; padding: 2px 8px; margin: 0 2px 0 6px; color: #0c1f3f;
+  }
+  .check-pill.on { background: #0c1f3f; color: #c9a227; }
+  .money { border: 1px solid #c9a227; background: #fffdf5; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px; }
+  .money p { margin-bottom: 4px; }
+  .duree-box { border: 1px solid #0c1f3f; border-radius: 6px; padding: 6px 10px; background: #f8fafc; text-align: center; margin-top: 8px; }
+  .sign-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .sig { border: 2px solid #0c1f3f; border-radius: 6px; min-height: 110px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; }
+  .sig p { margin: 0; font-family: Arial, sans-serif; font-size: 8pt; color: #0c1f3f; text-transform: uppercase; letter-spacing: .04em; font-weight: 800; }
+  .sig small { font-family: Arial, sans-serif; color: #0c1f3f; font-weight: 800; font-size: 9pt; }
+  .sig-line { border-top: 2px solid #0c1f3f; margin-top: 16px; padding-top: 6px; font-family: Arial, sans-serif; font-size: 8pt; color: #0c1f3f; font-weight: 700; text-align: center; }
+  .footer {
+    margin-top: 8px; border-top: 1px solid #e5e7eb; padding: 6px 14px 8px;
+    font-family: Arial, sans-serif; font-size: 6.8pt; color: #5c6675; text-align: center; line-height: 1.4; background: #f8fafc;
+  }
+  .footer strong { color: #0c1f3f; }
+  /* Page 2 (Employeur) : contenu plus court — on l'aère pour remplir la feuille */
+  .sheet:last-of-type h2.article { margin: 14px 0 8px; padding: 5px 10px; }
+  .sheet:last-of-type p { margin-bottom: 7px; }
+  .sheet:last-of-type .parties { padding: 10px 12px; }
+  .sheet:last-of-type .sign-grid { margin-top: 22px; }
+  .sheet:last-of-type .sig { min-height: 170px; }
+  .sheet:last-of-type .footer { margin-top: 18px; }
+  @media print {
+    body { background: #fff; }
+    .sheet { width: 100%; margin: 0; border: none; box-shadow: none; border-radius: 0; page-break-after: always; }
+    .sheet:last-child { page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ PAGE 1 : EMPLOYÉ ══════════ -->
+<div class="sheet">
+  <header class="header">
+    <img class="logo" src="../assets/logo-agence.jpg" alt="Logo">
+    <div class="brand">
+      <div class="kicker">Placement de personnels &bull; Service de nettoyage &bull; Courtage immobilier</div>
+      <div class="kicker">T&eacute;l : +225 27 22 34 22 83 / +225 05 03 97 47 75</div>
+      <div class="name">CHRISROI <span class="gold">AGENCE</span></div>
+    </div>
+    <img class="logo" src="../assets/logo-agence.jpg" alt="" style="visibility:hidden; width:42px;">
+  </header>
+  <div class="page-pad">
+
+  <h1 class="doc-title">Contrat Agence &mdash; <span class="page-tag">Employ&eacute;</span></h1>
+  <div class="ref-badge"><span>R&eacute;f. CRA-2026-0142 &mdash; Fait &agrave; Abidjan le 10/09/2026</span></div>
+  <div class="divider"></div>
+
+  <section>
+    <h2 class="article"><span class="n">§1</span> &mdash; Identit&eacute; de l'employ&eacute;</h2>
+    <div style="display:flex; gap:12px; align-items:stretch;">
+    <div class="parties" style="flex:1; margin-bottom:0;">
+      <p>Nom et pr&eacute;noms : <span class="field wide">Kon&eacute; Awa Fatou</span></p>
+      <p>Date et lieu de naissance : <span class="field small">14/03/1998</span> &agrave; <span class="field">Bouak&eacute;</span></p>
+      <p>Cel : <span class="field">07 08 12 34 56</span> ; Cel : <span class="field">05 66 78 90 12</span></p>
+      <p>Lieu d'habitation : <span class="field wide">Yopougon Selmer, Rue des Jardins</span></p>
+      <p>Situation matrimoniale :
+        <span class="check-pill">Mari&eacute;(e)</span>
+        <span class="check-pill">Concubinage</span>
+        <span class="check-pill on">C&eacute;libataire &#10003;</span></p>
+      <p>Religion : <span class="field">Musulmane</span> ; Ethnie : <span class="field">Malink&eacute;</span> ; Dipl&ocirc;me : <span class="field">BEPC</span></p>
+    </div>
+    <div style="width:35mm; height:45mm; border:2px solid #0c1f3f; border-radius:6px; background:#f8fafc; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+      <span style="font-family:Arial,sans-serif; font-size:8pt; font-weight:800; color:#0c1f3f; letter-spacing:.1em;">PHOTO</span>
+    </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="article"><span class="n">§2</span> &mdash; Embauche</h2>
+    <div class="money">
+      <p>Frais de dossier : <span class="field">5 000 FCFA</span></p>
+      <p>Date d'embauche : <span class="field small">10/09/2026</span> &mdash; <em>Valable pour un (1) mois et non remboursable.</em></p>
+      <p>A d&eacute;j&agrave; travaill&eacute; : <span class="check-pill on">Oui &#10003;</span> <span class="check-pill">Non</span>
+        &nbsp;Si oui, contact ancien patron : <span class="field">Mme Diallo &mdash; 07 09 44 22 11</span></p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="article"><span class="n">§3</span> &mdash; Parents</h2>
+    <div class="parties">
+      <p>Nom et pr&eacute;noms du P&egrave;re : <span class="field wide">Kon&eacute; Mamadou</span></p>
+      <p>Nom et pr&eacute;noms de la M&egrave;re : <span class="field wide">Kon&eacute; n&eacute;e Traor&eacute; Aminata</span></p>
+      <p>Domicile ou quartier du p&egrave;re : <span class="field wide">Bouak&eacute;, Koko</span></p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="article"><span class="n">§4</span> &mdash; Personnes &agrave; contacter en cas d'urgence</h2>
+    <div class="parties" style="background:#fff;">
+      <p>Noms et pr&eacute;noms : <span class="field">Kon&eacute; Mamadou</span> &nbsp; Contact : <span class="field">07 08 99 00 11</span></p>
+      <p>Noms et pr&eacute;noms : <span class="field">Traor&eacute; Aminata</span> &nbsp; Contact : <span class="field">05 66 11 22 33</span></p>
+      <p>Noms et pr&eacute;noms : <span class="field">Kon&eacute; Ibrahim</span> &nbsp; Contact : <span class="field">07 47 55 66 77</span></p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="article"><span class="n">§5</span> &mdash; Responsabilit&eacute;s de l'employ&eacute;</h2>
+    <p>L'employ&eacute; est tenu de respecter son employeur dans l'exercice de ses fonctions.</p>
+    <p>L'employ&eacute; r&eacute;pondra de ses actes devant les autorit&eacute;s ou les juridictions comp&eacute;tentes pour les actes de vols, fraude, ou tout autres d&eacute;lits.</p>
+  </section>
+
+  <section>
+    <h2 class="article"><span class="n">§6</span> &mdash; Dur&eacute;e</h2>
+    <div class="duree-box">
+      <p style="text-align:center; margin:0;">Le pr&eacute;sent contrat est conclu pour une dur&eacute;e de <span class="field">trois (03) mois</span><br>qui commence &agrave; courir &agrave; compter du <span class="field small">10/09/2026</span></p>
+    </div>
+  </section>
+
+  <div class="sign-grid">
+    <div class="sig"><div><p>L'employ&eacute;</p><small>Kon&eacute; Awa Fatou</small></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
+    <div class="sig"><div><p>ChrisRoi Agence</p><small>Mme Yao Lou Rose, G&eacute;rante</small></div><div class="sig-line">Cachet + signature</div></div>
+    <div class="sig"><div><p>L'employeur</p><small>Kouassi Yao J.-B.</small></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
+  </div>
+
+  <footer class="footer">
+    <strong>CHRISROI AGENCE</strong> &mdash; EI au Capital de 500&nbsp;000&nbsp;FCFA &mdash; Si&egrave;ge Social : Cocody Angr&eacute;-Ch&acirc;teau, Rue&nbsp;M42 &mdash; T&eacute;l : +225&nbsp;27&nbsp;22&nbsp;34&nbsp;22&nbsp;83 / +225&nbsp;05&nbsp;03&nbsp;97&nbsp;47&nbsp;75 &mdash; RCCM&nbsp;N&deg;&nbsp;CI-2023-0063618S &mdash; CC&nbsp;N&deg;&nbsp;2304937&nbsp;D &mdash; Email : chrisroiagence@gmail.com &mdash; Site : Chrisroiagence.com
+  </footer>
+  </div>
+</div>
+
+<!-- ══════════ PAGE 2 : EMPLOYEUR ══════════ -->
+<div class="sheet">
+  <header class="header">
+    <img class="logo" src="../assets/logo-agence.jpg" alt="Logo">
+    <div class="brand">
+      <div class="kicker">Placement de personnels &bull; Service de nettoyage &bull; Courtage immobilier</div>
+      <div class="kicker">T&eacute;l : +225 27 22 34 22 83 / +225 05 03 97 47 75</div>
+      <div class="name">CHRISROI <span class="gold">AGENCE</span></div>
+    </div>
+    <img class="logo" src="../assets/logo-agence.jpg" alt="" style="visibility:hidden; width:42px;">
+  </header>
+  <div class="page-pad">
+
+  <h1 class="doc-title">Contrat Agence &mdash; <span class="page-tag">Employeur</span></h1>
+  <div class="ref-badge"><span>R&eacute;f. CRA-2026-0142 &mdash; Fait &agrave; Abidjan le 10/09/2026</span></div>
+  <div class="divider"></div>
+
+  <section>
+    <h2 class="article"><span class="n">§1</span> &mdash; Identit&eacute; de l'employeur</h2>
+    <div class="parties">
+      <p>Nom et Pr&eacute;noms : <span class="field wide">Kouassi Yao Jean-Baptiste</span></p>
+      <p>Domicile et quartier : <span class="field wide">Cocody Angr&eacute; 8e tranche</span> ; Contact : <span class="field">07 07 23 45 67</span></p>
+      <p>Emploi propos&eacute; : <span class="field wide">Aide-m&eacute;nag&egrave;re</span> ; Salaire propos&eacute; : <span class="field">45 000 FCFA</span></p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="article"><span class="n">§2</span> &mdash; Conditions financi&egrave;res</h2>
+    <div class="money">
+      <p>Commission : <strong>15 000 FCFA</strong> &mdash; Valable pour un (1) mois et non remboursable. Transport pour le d&eacute;placement du personnel de l'agence (<strong>5 000 FCFA</strong>).</p>
+      <p>Le tiers (1/3) sur le premier salaire (montant pr&eacute;lev&eacute; par l'employeur sur le salaire de l'employ&eacute;(e)) : <span class="field small">15 000 FCFA</span></p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="article"><span class="n">§3</span> &mdash; Responsabilit&eacute;s de l'employeur</h2>
+    <p>L'employeur est tenu de conna&icirc;tre le domicile des parents de son employ&eacute;(e) d&egrave;s la signature du contrat d'embauche.</p>
+    <p>Toute t&acirc;che qui n'a pas &eacute;t&eacute; signal&eacute;e &agrave; l'employ&eacute;(e) &agrave; la signature du contrat entra&icirc;ne l'annulation du contrat.</p>
+    <p>L'employeur est tenu d'assurer les premiers soins en cas de maladie de l'employ&eacute;(e) et d'aviser le plus t&ocirc;t possible les parents de ce dernier.</p>
+    <p>En cas de renvoi, l'employeur est tenu d'aviser CHRISROI AGENCE.</p>
+    <p>L'employ&eacute;(e) doit &ecirc;tre pay&eacute; au plus grand tard le 5 du mois.</p>
+    <p>Les arri&eacute;r&eacute;s de salaires ne sont pas accept&eacute;s.</p>
+    <p>CHRISROI AGENCE condamne les actes de vol, bagarres, maltraitance, privation de nourriture, violence verbale, harc&egrave;lement sexuel, viol et autre d&eacute;sagr&eacute;ment au lieu de service.</p>
+    <p>En cas d'abandon de service ou d&eacute;faillance de l'employ&eacute;(e), CHRISROI AGENCE proc&egrave;dera &agrave; un remplacement de personnel dans un d&eacute;lai d'une semaine maximum.</p>
+  </section>
+
+  <div class="sign-grid">
+    <div class="sig"><div><p>L'employ&eacute;</p><small>Kon&eacute; Awa Fatou</small></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
+    <div class="sig"><div><p>ChrisRoi Agence</p><small>Mme Yao Lou Rose, G&eacute;rante</small></div><div class="sig-line">Cachet + signature</div></div>
+    <div class="sig"><div><p>L'employeur</p><small>Kouassi Yao J.-B.</small></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
+  </div>
+
+  <footer class="footer">
+    <strong>CHRISROI AGENCE</strong> &mdash; EI au Capital de 500&nbsp;000&nbsp;FCFA &mdash; Si&egrave;ge Social : Cocody Angr&eacute;-Ch&acirc;teau, Rue&nbsp;M42 &mdash; T&eacute;l : +225&nbsp;27&nbsp;22&nbsp;34&nbsp;22&nbsp;83 / +225&nbsp;05&nbsp;03&nbsp;97&nbsp;47&nbsp;75 &mdash; RCCM&nbsp;N&deg;&nbsp;CI-2023-0063618S &mdash; CC&nbsp;N&deg;&nbsp;2304937&nbsp;D &mdash; Email : chrisroiagence@gmail.com &mdash; Site : Chrisroiagence.com
+  </footer>
+  </div>
+</div>
+
+</body>
+</html>

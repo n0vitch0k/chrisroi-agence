@@ -193,6 +193,27 @@ export const TYPES_CONTRAT = [
   { value: 'personnalise', label: 'Personnalisé' },
 ];
 
+// Formats de document contrat (prestation 10 articles / agence recto-verso)
+export const FORMATS_CONTRAT = [
+  { value: 'prestation', label: 'Prestation de service' },
+  { value: 'agence', label: 'Agence' },
+];
+
+// Obtenir le libellé du format de document contrat
+export const getFormatContratLabel = (format: string | null | undefined): string => {
+  const labels: Record<string, string> = {
+    prestation: 'Prestation de service',
+    agence: 'Agence',
+  };
+  return labels[format || 'prestation'] || format || 'Prestation de service';
+};
+
+// Couleurs des badges par format de contrat (fond clair + texte)
+export const getFormatContratColors = (format: string | null | undefined): { bg: string; fg: string } => {
+  if ((format || 'prestation') === 'agence') return { bg: '#FDF3E3', fg: '#8A5A00' };
+  return { bg: '#E8EEF7', fg: '#0C1F3F' };
+};
+
 // Générer un ID unique
 export const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);

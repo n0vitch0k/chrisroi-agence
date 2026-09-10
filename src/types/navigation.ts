@@ -67,7 +67,7 @@ export type EmployesStackParamList = {
   ContratDetail: { id: string; origin?: DetailOrigin };
   FicheInscription: { id?: string } | undefined;
   EmployeurForm: { id?: string } | undefined;
-  ContratDocument: { id?: string; employe_id?: string } | undefined;
+  ContratDocument: { id?: string; employe_id?: string; format_document?: string } | undefined;
 };
 
 // ─── Origine d'un détail (contrat de navigation "back déterministe") ───

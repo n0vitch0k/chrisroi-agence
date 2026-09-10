@@ -1106,6 +1106,7 @@ export const createContrat = async (contrat: any): Promise<string> => {
       date_contrat: contrat.date_contrat || now,
       poste: contrat.poste,
       type_contrat: contrat.type_contrat || 'heberge',
+      format_document: contrat.format_document || 'prestation',
       date_debut: contrat.date_debut,
       date_fin: contrat.date_fin || '',
       duree: contrat.duree || '',
@@ -1282,6 +1283,8 @@ export const updateContrat = async (id: string, data: any): Promise<void> => {
   delete updateData.employe_prenom;
   delete updateData.nom_complet;
   delete updateData.expand;
+  // format_document figé à la création : jamais modifiable après
+  delete updateData.format_document;
 
   // La commission (tiers du salaire) est calculée à la création : si le
   // salaire est renseigné/modifié après, on la recalcule (sinon elle reste

@@ -26,6 +26,8 @@ import AppHeader from '../components/AppHeader';
 import FormField from '../components/FormField';
 import SafeButton from '../components/SafeButton';
 import { buildContratHtml } from '../utils/contratPrint';
+import { buildContratAgenceHtml } from '../utils/contratAgencePrint';
+import { getFormatContratLabel, getFormatContratColors } from '../utils/constants';
 import { shareBase64File } from '../utils/shareFile';
 import {
   createContrat,
@@ -190,6 +192,7 @@ const EMPTY_FORM = {
   poste: '',
   commission_fixe: '15000',
   frais_transport: '5000',
+  frais_dossier: '',
   retenue_salaire_montant: '',
   salaire: '',
   duree: '3 mois',
@@ -205,8 +208,9 @@ export default function ContratDocumentScreen() {
   const route = useRoute<any>();
   const contratId = route.params?.id;
   const preselectedEmployeId = route.params?.employe_id;
+  const [formatDoc, setFormatDoc] = useState<string>(route.params?.format_document || 'prestation');
 
-  const [formData, setFormData] = useState<any>({ ...EMPTY_FORM });
+  const [formData, setFormData] = useState<any>({ ...EMPTY_FORM, format_document: route.params?.format_document || 'prestation' });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showEmployePicker, setShowEmployePicker] = useState(false);
@@ -335,6 +339,8 @@ export default function ContratDocumentScreen() {
           frais_transport: String(contrat.frais_transport ?? 5000),
           retenue_salaire_montant: contrat.retenue_salaire_montant ? String(contrat.retenue_salaire_montant) : (contrat.salaire ? String(Math.round(Number(contrat.salaire)/3)) : ''),
           salaire: contrat.salaire ? String(contrat.salaire) : '',
+          frais_dossier: contrat.frais_dossier ? String(contrat.frais_dossier) : '',
+          format_document: contrat.format_document || 'prestation',
           duree: contrat.duree || '3 mois',
           date_contrat: contrat.date_contrat || '',
           date_debut: contrat.date_debut || '',
@@ -344,6 +350,7 @@ export default function ContratDocumentScreen() {
         });
         setSelectedEmploye(employe);
         setSelectedEmployeur(employeur);
+        setFormatDoc(contrat.format_document || 'prestation');
       } catch (err) { console.error('Erreur chargement contrat:', err); Alert.alert('Erreur', 'Impossible de charger le contrat'); }
     })();
   }, [contratId, navigation]);
@@ -419,6 +426,8 @@ export default function ContratDocumentScreen() {
         employe_sexe: formData.employe_sexe,
         employe_adresse_actuelle: formData.employe_adresse_actuelle,
         employe_piece_reference: formData.employe_piece_reference,
+        frais_dossier: parseInt(formData.frais_dossier) || 0,
+        format_document: formatDoc,
       };
       let id = contratId;
       if (isEditing && contratId) {
@@ -450,11 +459,14 @@ export default function ContratDocumentScreen() {
 
   const handlePrint = async () => {
     try {
+      const fmt = formatDoc;
       const c: any = {
         numero_dossier: formData.numero_dossier || `CHR-${new Date().getFullYear()}-XXXX`,
         poste: formData.poste,
         date_signature: formData.date_signature,
         date_contrat: formData.date_signature || formData.date_contrat,
+        date_debut: formData.date_debut || formData.date_signature,
+        duree: formData.duree,
         client_domicile: formData.client_domicile,
         client_piece_numero: formData.client_piece_numero,
         client_piece_date: formData.client_piece_date,
@@ -463,17 +475,21 @@ export default function ContratDocumentScreen() {
         employe_adresse_actuelle: formData.employe_adresse_actuelle,
         employe_piece_reference: formData.employe_piece_reference,
         frais_transport: formData.frais_transport,
+        frais_dossier: formData.frais_dossier,
         retenue_salaire_montant: formData.retenue_salaire_montant,
         salaire: formData.salaire,
+        format_document: fmt,
       };
-      const html = buildContratHtml({ contrat: c, employe: selectedEmploye, employeur: selectedEmployeur });
+      const html = fmt === 'agence'
+        ? buildContratAgenceHtml({ contrat: c, employe: selectedEmploye, employeur: selectedEmployeur, photoUrl: formData.employe_photo_url || null })
+        : buildContratHtml({ contrat: c, employe: selectedEmploye, employeur: selectedEmployeur });
       if (Platform.OS === 'web') {
         const w = window.open('', '_blank');
         if (w) { w.document.write(html); w.document.close(); w.print(); }
         return;
       }
       const { base64 } = await printToFileAsync({ html, base64: true });
-      await shareBase64File(base64 || '', `contrat_${Date.now()}.pdf`, 'Contrat de prestation', 'application/pdf');
+      await shareBase64File(base64 || '', `contrat_${Date.now()}.pdf`, formatDoc === 'agence' ? 'Contrat Agence' : 'Contrat de prestation', 'application/pdf');
     } catch (e: any) { Alert.alert('Erreur', e?.message || 'Impression impossible'); }
   };
 
@@ -688,12 +704,15 @@ export default function ContratDocumentScreen() {
   // ── Rendu numérique prestation ──────────────────────────
   const renderNumerique = () => (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
-      {/* En-tête prestation */}
+      {/* En-tête contrat (format figé) */}
       <View style={digitalStyles.headerCard}>
-        <Text style={digitalStyles.headerTitle}>Contrat de prestation de service</Text>
-        <Text style={digitalStyles.headerSub}>Réf. {formData.numero_dossier || `CHR-${new Date().getFullYear()}-XXXX`} • 3 mois de suivi • Art. 1-10</Text>
+        <Text style={digitalStyles.headerTitle}>{formatDoc === 'agence' ? 'Contrat Agence' : 'Contrat de prestation de service'}</Text>
+        <Text style={digitalStyles.headerSub}>Réf. {formData.numero_dossier || `CHR-${new Date().getFullYear()}-XXXX`} • {formatDoc === 'agence' ? 'Recto-verso Employé / Employeur' : '3 mois de suivi • Art. 1-10'}</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
           <View style={digitalStyles.badge}><Text style={digitalStyles.badgeText}>CRA 500k • RCCM CI-2023-0063618S</Text></View>
+          <View style={[digitalStyles.badge, { backgroundColor: getFormatContratColors(formatDoc).bg }]}>
+            <Text style={[digitalStyles.badgeText, { color: getFormatContratColors(formatDoc).fg }]}>{getFormatContratLabel(formatDoc)} • définitif</Text>
+          </View>
         </View>
       </View>
 
@@ -757,6 +776,7 @@ export default function ContratDocumentScreen() {
           <View style={{ flex: 1 }}><LockedField fieldKey="commission_fixe" label="Prix prestation" value={formData.commission_fixe} onChangeText={(t) => updateForm('commission_fixe', t)} placeholder="15000" keyboardType="numeric" unlocked={fieldUnlocked('commission_fixe')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
           <View style={{ flex: 1 }}><LockedField fieldKey="frais_transport" label="Frais transport (Art. 3)" value={formData.frais_transport} onChangeText={(t) => updateForm('frais_transport', t)} placeholder="5000" keyboardType="numeric" unlocked={fieldUnlocked('frais_transport')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
         </View>
+        <LockedField fieldKey="frais_dossier" label="Frais de dossier" value={formData.frais_dossier} onChangeText={(t) => updateForm('frais_dossier', t)} placeholder="Ex: 5000" keyboardType="numeric" unlocked={fieldUnlocked('frais_dossier')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <LockedField fieldKey="salaire" label="Salaire" value={formData.salaire} onChangeText={(t) => { updateForm('salaire', t); const n = parseFloat(t); if (!isNaN(n) && n > 0 && !formData.retenue_salaire_montant) updateForm('retenue_salaire_montant', String(Math.round(n/3))); }} placeholder="Ex: 80000" keyboardType="numeric" unlocked={fieldUnlocked('salaire')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <LockedField fieldKey="retenue_salaire_montant" label="Retenue 1er mois sur salaire net (Art. 8) — à reverser à l'agence" value={formData.retenue_salaire_montant} onChangeText={(t) => updateForm('retenue_salaire_montant', t)} placeholder="Ex: 26667" keyboardType="numeric" unlocked={fieldUnlocked('retenue_salaire_montant')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <Text style={digitalStyles.helpText}>Payable espèces ou Mobile Money dès signature (non remboursable). Retenue = montant prélevé par le client sur le salaire net du 1er mois.</Text>
@@ -833,13 +853,13 @@ export default function ContratDocumentScreen() {
         <SafeButton onPress={handleSave} loading={loading} mode="contained" style={{ flex: 1 }}>{isEditing ? "Enregistrer" : "Créer le contrat"}</SafeButton>
         <SafeButton onPress={handlePrint} mode="outlined" style={{ flex: 1 }}><Icon name="file-pdf-box" size={18} color={Colors.primary} /><Text style={{ color: Colors.primary, fontWeight: "600", marginLeft: 6 }}>Imprimer PDF</Text></SafeButton>
       </View>
-      <Text style={digitalStyles.helpText}>Le PDF reprend fidèlement les 10 articles (3 pages) avec en-tête/pied répétés. Tous les champs ci-dessus sont verrouillés après création (C1).</Text>
+      <Text style={digitalStyles.helpText}>{formatDoc === 'agence' ? 'Le PDF reprend la fiche recto-verso Employé / Employeur (2 pages) avec photo et contacts d\u2019urgence. Tous les champs ci-dessus sont verrouillés après création (C1).' : 'Le PDF reprend fidèlement les 10 articles (3 pages) avec en-tête/pied répétés. Tous les champs ci-dessus sont verrouillés après création (C1).'}</Text>
     </ScrollView>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
-      <AppHeader title={isEditing ? 'Contrat de prestation' : 'Nouveau contrat'} showBack />
+      <AppHeader title={isEditing ? (formatDoc === 'agence' ? 'Contrat Agence' : 'Contrat de prestation') : 'Nouveau contrat'} showBack />
       {/* Tabs */}
       <View style={styles.tabBar}>
         <TouchableOpacity onPress={() => setActiveTab('numerique')} style={[styles.tab, activeTab === 'numerique' && styles.tabActive]}>
