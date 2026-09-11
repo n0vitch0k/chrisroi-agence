@@ -9,6 +9,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   TextInput,
+  Image,
 } from 'react-native';
 import { Chip } from 'react-native-paper';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -16,6 +17,7 @@ import {
   getAllEmployes,
   getAllEmployeurs,
   getAllContrats,
+  getEmployePhotoUrl,
 } from '../database/service';
 import {
   getCategorieLabel,
@@ -27,6 +29,7 @@ import {
   formatMoney,
 } from '../utils/constants';
 import AppHeader from '../components/AppHeader';
+import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
 import { Colors, Spacing, Radius, Shadows } from '../theme';
 import SafeButton from '../components/SafeButton';
 
@@ -62,6 +65,8 @@ type SearchResult = {
   prenom?: string;
   nom?: string;
   initials?: string;
+  photoUrl?: string | null;
+  photoFileName?: string | null;
   telephone?: string;
   lieu_residence?: string;
   categorie?: string;
@@ -84,6 +89,44 @@ const TYPE_FILTERS: Array<{ label: string; value: DossierSection }> = [
   { label: 'Prestation', value: 'prestation' },
   { label: 'Agence', value: 'agence' },
 ];
+
+// Avatar carte employé : photo serveur si dispo (clic → plein écran),
+// initiales sinon. Miroir EmployeAvatar de l'écran détail, format carré 56.
+function SearchAvatar({
+  photoUrl,
+  initials,
+  statusColor,
+  backgroundColor,
+  onPress,
+}: {
+  photoUrl?: string | null;
+  initials?: string;
+  statusColor: string;
+  backgroundColor: string;
+  onPress?: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
+  if (photoUrl && !imgError) {
+    return (
+      <TouchableOpacity
+        style={[styles.avatar, { backgroundColor }]}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={{ uri: photoUrl }}
+          style={{ width: 52, height: 52, borderRadius: 16 }}
+          onError={() => setImgError(true)}
+        />
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <View style={[styles.avatar, { backgroundColor }]}>
+      <Text style={[styles.avatarText, { color: statusColor }]}>{initials}</Text>
+    </View>
+  );
+}
 
 export default function GlobalSearchScreen() {
   const navigation = useNavigation<GlobalNavigationProp>();
@@ -141,6 +184,8 @@ export default function GlobalSearchScreen() {
           prenom: item.prenom,
           nom: item.nom,
           initials: `${item.prenom?.charAt(0) || ''}${item.nom?.charAt(0) || ''}`.toUpperCase(),
+          photoUrl: getEmployePhotoUrl(item.id, item.photo),
+          photoFileName: item.photo || null,
           telephone: item.telephone,
           lieu_residence: item.lieu_residence,
           categorie: getCategorieLabel(item.categorie_emploi),
@@ -241,6 +286,18 @@ export default function GlobalSearchScreen() {
     employes.filter((e) => e.statut !== 'en_poste').length;
 
   // ─── Rendu carte employé ──────────────────────────────────
+  // Avatar carte employé : photo serveur si dispo, initiales sinon
+  // (miroir EmployeAvatar de l'écran détail, adapté au format carré 56).
+  const photoViewer = useDocumentViewer();
+  const openPhoto = (item: SearchResult) => {
+    if (!item.photoUrl) return;
+    photoViewer.open({
+      uri: item.photoUrl,
+      label: `${item.prenom || ''} ${item.nom || ''}`.trim() || 'Photo',
+      fileName: item.photoFileName || null,
+      mimeType: 'image/jpeg',
+    });
+  };
   const renderEmployeCard = (item: SearchResult) => {
     const statusColor = getStatutColor(item.isEnPoste ? 'en_poste' : 'disponible');
     const statusLabel = item.isEnPoste ? 'En poste' : 'Disponible';
@@ -255,9 +312,7 @@ export default function GlobalSearchScreen() {
       >
         <View style={styles.employeCardInner}>
           <View style={styles.avatarWrap}>
-            <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
-              <Text style={[styles.avatarText, { color: statusColor }]}>{item.initials}</Text>
-            </View>
+            <SearchAvatar photoUrl={item.photoUrl} initials={item.initials} statusColor={statusColor} backgroundColor={avatarBg} onPress={() => openPhoto(item)} />
             <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           </View>
           <View style={styles.cardInfo}>
@@ -480,6 +535,7 @@ export default function GlobalSearchScreen() {
 
         <View style={{ height: 80 }} />
       </ScrollView>
+      <DocumentViewerOverlay viewerDoc={photoViewer.doc} onClose={photoViewer.close} onDownload={photoViewer.download} downloading={photoViewer.downloading} />
     </View>
   );
 }
