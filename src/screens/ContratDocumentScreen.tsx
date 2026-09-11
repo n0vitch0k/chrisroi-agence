@@ -727,10 +727,12 @@ export default function ContratDocumentScreen() {
         {selectedEmployeur ? <Text style={digitalStyles.pickHint}>{selectedEmployeur.nom_complet || selectedEmployeur.nom} • {selectedEmployeur.telephone || ''}</Text> : <Text style={digitalStyles.pickHintMuted}>Sélectionnez un client existant pour pré-remplir — sinon saisissez manuellement.</Text>}
         <LockedField fieldKey="employeur_nom" label="Nom complet du client *" value={formData.employeur_nom} onChangeText={(t) => updateForm('employeur_nom', t)} placeholder="Nom du client" required unlocked={fieldUnlocked('employeur_nom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <LockedField fieldKey="client_domicile" label="Domicilié à *" value={formData.client_domicile} onChangeText={(t) => updateForm('client_domicile', t)} placeholder="Adresse du client" required unlocked={fieldUnlocked('client_domicile')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        {formatDoc !== 'agence' && (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1 }}><LockedField fieldKey="client_piece_numero" label="Pièce n° *" value={formData.client_piece_numero} onChangeText={(t) => updateForm('client_piece_numero', t)} placeholder="N° pièce" required unlocked={fieldUnlocked('client_piece_numero')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
           <View style={{ flex: 1 }}><LockedField fieldKey="client_piece_date" label="Délivrée le" value={formData.client_piece_date} onChangeText={(t) => updateForm('client_piece_date', t)} placeholder="JJ/MM/AAAA" unlocked={fieldUnlocked('client_piece_date')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
         </View>
+        )}
       </View>
 
       {/* Employé concerné */}
@@ -741,11 +743,13 @@ export default function ContratDocumentScreen() {
             <Icon name="account-search" size={16} color={Colors.primary} /><Text style={digitalStyles.pickBtnText}>{selectedEmploye ? 'Changer' : 'Choisir un employé'}</Text>
           </TouchableOpacity>
         </View>
-        {selectedEmploye ? <Text style={digitalStyles.pickHint}>{selectedEmploye.prenom} {selectedEmploye.nom} • {selectedEmploye.telephone || ''}</Text> : <Text style={digitalStyles.pickHintMuted}>Sélectionnez un employé existant — âge/sexe/adresse/pièce se pré-remplissent.</Text>}
+        {selectedEmploye ? <Text style={digitalStyles.pickHint}>{selectedEmploye.prenom} {selectedEmploye.nom} • {selectedEmploye.telephone || ''}</Text> : <Text style={digitalStyles.pickHintMuted}>{formatDoc === 'agence' ? 'Sélectionnez un employé existant — nom et adresse se pré-remplissent (le reste vient de sa fiche).' : 'Sélectionnez un employé existant — âge/sexe/adresse/pièce se pré-remplissent.'}</Text>}
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1 }}><LockedField fieldKey="employe_nom" label="Nom" value={formData.employe_nom} onChangeText={(t) => updateForm('employe_nom', t)} placeholder="Nom" unlocked={fieldUnlocked('employe_nom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
           <View style={{ flex: 1 }}><LockedField fieldKey="employe_prenom" label="Prénom" value={formData.employe_prenom} onChangeText={(t) => updateForm('employe_prenom', t)} placeholder="Prénom" unlocked={fieldUnlocked('employe_prenom')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
         </View>
+        {formatDoc !== 'agence' && (
+        <>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1 }}><LockedField fieldKey="employe_age" label="Âge" value={formData.employe_age} onChangeText={(t) => updateForm('employe_age', t)} placeholder="ex: 27" keyboardType="numeric" unlocked={fieldUnlocked('employe_age')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
           <View style={{ flex: 1 }}>
@@ -764,21 +768,25 @@ export default function ContratDocumentScreen() {
             {isEditing && <LockToggle fieldKey="employe_sexe" unlocked={fieldUnlocked('employe_sexe')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} currentValue={formData.employe_sexe} />}
           </View>
         </View>
+        </>
+        )}
         <LockedField fieldKey="poste" label="Poste attribué *" value={formData.poste} onChangeText={(t) => updateForm('poste', t)} placeholder="Ex: Nounou, aide ménagère..." required unlocked={fieldUnlocked('poste')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <LockedField fieldKey="employe_adresse_actuelle" label="Adresse actuelle de résidence" value={formData.employe_adresse_actuelle} onChangeText={(t) => updateForm('employe_adresse_actuelle', t)} placeholder="Quartier, commune..." unlocked={fieldUnlocked('employe_adresse_actuelle')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        {formatDoc !== 'agence' && (
         <LockedField fieldKey="employe_piece_reference" label="Pièce d'identité / Référence" value={formData.employe_piece_reference} onChangeText={(t) => updateForm('employe_piece_reference', t)} placeholder="N° CNI / passeport..." unlocked={fieldUnlocked('employe_piece_reference')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        )}
       </View>
 
       {/* Prix prestation */}
       <View style={digitalStyles.sectionCard}>
-        <Text style={digitalStyles.sectionTitle}>Prix de la prestation (Art. 3 & 8)</Text>
+        <Text style={digitalStyles.sectionTitle}>{formatDoc === 'agence' ? 'Prix et salaire' : 'Prix de la prestation (Art. 3 & 8)'}</Text>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1 }}><LockedField fieldKey="commission_fixe" label="Prix prestation" value={formData.commission_fixe} onChangeText={(t) => updateForm('commission_fixe', t)} placeholder="15000" keyboardType="numeric" unlocked={fieldUnlocked('commission_fixe')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
-          <View style={{ flex: 1 }}><LockedField fieldKey="frais_transport" label="Frais transport (Art. 3)" value={formData.frais_transport} onChangeText={(t) => updateForm('frais_transport', t)} placeholder="5000" keyboardType="numeric" unlocked={fieldUnlocked('frais_transport')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
+          <View style={{ flex: 1 }}><LockedField fieldKey="frais_transport" label={formatDoc === 'agence' ? 'Frais transport' : 'Frais transport (Art. 3)'} value={formData.frais_transport} onChangeText={(t) => updateForm('frais_transport', t)} placeholder="5000" keyboardType="numeric" unlocked={fieldUnlocked('frais_transport')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
         </View>
         <LockedField fieldKey="frais_dossier" label="Frais de dossier" value={formData.frais_dossier} onChangeText={(t) => updateForm('frais_dossier', t)} placeholder="Ex: 5000" keyboardType="numeric" unlocked={fieldUnlocked('frais_dossier')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <LockedField fieldKey="salaire" label="Salaire" value={formData.salaire} onChangeText={(t) => { updateForm('salaire', t); const n = parseFloat(t); if (!isNaN(n) && n > 0 && !formData.retenue_salaire_montant) updateForm('retenue_salaire_montant', String(Math.round(n/3))); }} placeholder="Ex: 80000" keyboardType="numeric" unlocked={fieldUnlocked('salaire')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
-        <LockedField fieldKey="retenue_salaire_montant" label="Retenue 1er mois sur salaire net (Art. 8) — à reverser à l'agence" value={formData.retenue_salaire_montant} onChangeText={(t) => updateForm('retenue_salaire_montant', t)} placeholder="Ex: 26667" keyboardType="numeric" unlocked={fieldUnlocked('retenue_salaire_montant')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
+        <LockedField fieldKey="retenue_salaire_montant" label={formatDoc === 'agence' ? 'Retenue 1er mois sur salaire net (tiers) — à reverser à l\u2019agence' : 'Retenue 1er mois sur salaire net (Art. 8) — à reverser à l\u2019agence'} value={formData.retenue_salaire_montant} onChangeText={(t) => updateForm('retenue_salaire_montant', t)} placeholder="Ex: 26667" keyboardType="numeric" unlocked={fieldUnlocked('retenue_salaire_montant')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
         <Text style={digitalStyles.helpText}>Payable espèces ou Mobile Money dès signature (non remboursable). Retenue = montant prélevé par le client sur le salaire net du 1er mois.</Text>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1 }}><LockedField fieldKey="date_signature" label="Date de signature" value={formData.date_signature} onChangeText={(t) => updateForm('date_signature', t)} placeholder="JJ/MM/AAAA" unlocked={fieldUnlocked('date_signature')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} /></View>
