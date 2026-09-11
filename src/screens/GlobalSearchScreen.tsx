@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { Chip } from 'react-native-paper';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -143,6 +144,9 @@ export default function GlobalSearchScreen() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [employes, setEmployes] = useState<any[]>([]);
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
 
   // Sync le typeFilter quand la navbar change la section
   useFocusEffect(useCallback(() => {
@@ -420,6 +424,7 @@ export default function GlobalSearchScreen() {
 
       {/* ─── Filtres collés sous le header ── */}
       <View style={styles.toolbar}>
+      <View style={styles.toolbarInner}>
         <View style={styles.searchWrap}>
           <Text style={styles.searchIcon}>🔎</Text>
           <TextInput
@@ -470,6 +475,7 @@ export default function GlobalSearchScreen() {
           </ScrollView>
         )}
       </View>
+      </View>
 
       {/* ─── Contenu scrollable ── */}
       <ScrollView
@@ -486,9 +492,11 @@ export default function GlobalSearchScreen() {
                 <Text style={styles.sectionCount}>{employeResults.length}</Text>
               </View>
             )}
+            <View style={wide ? styles.cardGridWide : undefined}>
             {employeResults.map((item) => (
-              <View key={item.id}>{renderEmployeCard(item)}</View>
+              <View key={item.id} style={wide ? styles.cardGridItem : undefined}>{renderEmployeCard(item)}</View>
             ))}
+            </View>
           </View>
         )}
 
@@ -501,9 +509,11 @@ export default function GlobalSearchScreen() {
                 <Text style={styles.sectionCount}>{employeurResults.length}</Text>
               </View>
             )}
+            <View style={wide ? styles.cardGridWide : undefined}>
             {employeurResults.map((item) => (
-              <View key={item.id}>{renderGenericCard(item)}</View>
+              <View key={item.id} style={wide ? styles.cardGridItem : undefined}>{renderGenericCard(item)}</View>
             ))}
+            </View>
           </View>
         )}
 
@@ -516,9 +526,11 @@ export default function GlobalSearchScreen() {
                 <Text style={styles.sectionCount}>{contratResults.length}</Text>
               </View>
             )}
+            <View style={wide ? styles.cardGridWide : undefined}>
             {contratResults.map((item) => (
-              <View key={item.id}>{renderGenericCard(item)}</View>
+              <View key={item.id} style={wide ? styles.cardGridItem : undefined}>{renderGenericCard(item)}</View>
             ))}
+            </View>
           </View>
         )}
 
@@ -560,6 +572,11 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: M.borderSoft,
+  },
+  toolbarInner: {
+    width: '100%',
+    maxWidth: 1100,
+    alignSelf: 'center',
   },
 
   // Search
@@ -630,6 +647,22 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: {
     padding: Spacing.lg,
+    width: '100%',
+    maxWidth: 1100,
+    alignSelf: 'center',
+  },
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  cardGridWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  cardGridItem: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 420,
+    maxWidth: 545,
   },
 
   // Sections
