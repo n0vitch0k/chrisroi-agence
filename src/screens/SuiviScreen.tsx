@@ -257,6 +257,7 @@ const aRelancer = commissions.filter((c: any) => now >= dueTime(c));
       <AppHeader title="Suivi commissions" showBack={false} />
       <ScrollView
         style={styles.container}
+        contentContainerStyle={{ width: '100%', maxWidth: 1100, alignSelf: 'center' }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
         }

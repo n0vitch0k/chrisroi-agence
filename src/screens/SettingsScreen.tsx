@@ -566,7 +566,13 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: M.bg },
   scroll: { flex: 1 },
-  scrollContent: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+  scrollContent: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+    width: '100%',
+    maxWidth: 800,
+    alignSelf: 'center',
+  },
 
   // Profil
   profileCard: {

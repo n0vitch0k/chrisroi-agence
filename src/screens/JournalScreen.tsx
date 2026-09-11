@@ -357,6 +357,7 @@ export default function JournalScreen() {
 
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={{ width: '100%', maxWidth: 1100, alignSelf: 'center' }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {Object.keys(grouped).length === 0 ? (

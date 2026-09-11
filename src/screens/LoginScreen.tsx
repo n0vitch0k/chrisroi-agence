@@ -265,6 +265,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.xxxl,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   // ─── Entête ─────────────────────────────────────────────
   topSection: {

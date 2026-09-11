@@ -386,7 +386,13 @@ function ContratForm({ contrat, setContrat }: { contrat: ContratExtracted; setCo
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   centered: { justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
-  scrollContent: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+  scrollContent: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+    width: '100%',
+    maxWidth: 800,
+    alignSelf: 'center',
+  },
   previewCard: { borderRadius: Radius.md, overflow: 'hidden', backgroundColor: Colors.surface, ...Shadows.card, marginBottom: Spacing.lg },
   preview: { width: '100%', height: 200, backgroundColor: '#000' },
   pagesRow: { gap: 8, padding: Spacing.sm },

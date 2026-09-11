@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.lg, backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border },
   headerText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-  list: { padding: Spacing.lg },
+  list: { padding: Spacing.lg, width: '100%', maxWidth: 1100, alignSelf: 'center' },
   card: card,
   cardUnread: { borderLeftWidth: 3, borderLeftColor: Colors.warning },
   cardPad: { paddingVertical: 4 },
