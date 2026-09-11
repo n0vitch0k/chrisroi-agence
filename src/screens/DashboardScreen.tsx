@@ -9,6 +9,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -57,8 +58,12 @@ const QuickAction = ({
   badgeBg?: string;
   badgeColor?: string;
   onPress: () => void;
-}) => (
-  <TouchableOpacity style={styles.quickAction} onPress={onPress} activeOpacity={0.7}>
+}) => {
+  // Chromebook/large : 4 cartes par ligne au lieu de 2
+  const { width } = useWindowDimensions();
+  const cardStyle = width >= 900 ? styles.quickActionWide : undefined;
+  return (
+  <TouchableOpacity style={[styles.quickAction, cardStyle]} onPress={onPress} activeOpacity={0.7}>
     <View style={[styles.quickIcon, { backgroundColor: iconBg }]}>
       <Text style={[styles.quickIconText, { color: iconColor }]}>{icon}</Text>
     </View>
@@ -70,7 +75,8 @@ const QuickAction = ({
       </View>
     )}
   </TouchableOpacity>
-);
+  );
+};
 
 // ─── Composant : DossierRow ─────────────────────────────────────
 const DossierRow = ({
@@ -170,6 +176,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
         <View style={styles.headerCircleTop} />
         <View style={styles.headerCircleBottom} />
 
+        <View style={styles.headerInner}>
         <View style={styles.headerTop}>
           <View style={styles.brand}>
             <View style={styles.brandLogo}>
@@ -191,6 +198,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
         </View>
         <Text style={styles.greeting}>Bonjour,</Text>
         <Text style={styles.userName}>{user.prenom} {user.nom}</Text>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -333,6 +341,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
+  headerInner: { width: '100%', maxWidth: 1100, alignSelf: 'center' },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -365,8 +374,8 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 14, color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' },
   userName: { fontSize: 24, fontWeight: '700', color: '#fff', marginTop: 2, letterSpacing: -0.3 },
 
-  // ── Contenu ──
-  content: { padding: 20, paddingBottom: 40 },
+  // ── Contenu (centré, largeur contenue sur grand écran) ──
+  content: { padding: 20, paddingBottom: 40, width: '100%', maxWidth: 1100, alignSelf: 'center' },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
@@ -397,6 +406,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
+  // Chromebook/large : 4 cartes par ligne
+  quickActionWide: { width: '23.5%' },
   quickIcon: {
     width: 44,
     height: 44,
@@ -477,7 +488,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32,
   },
   modalCard: {
-    width: '100%', backgroundColor: '#fff', borderRadius: 20, padding: 20,
+    width: '100%', maxWidth: 480, alignSelf: 'center', backgroundColor: '#fff', borderRadius: 20, padding: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 8,
   },
   modalTitle: { fontSize: 18, fontWeight: '800', color: '#3d3530', textAlign: 'center' },
