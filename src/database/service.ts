@@ -832,6 +832,20 @@ export const patchContratField = async (
 
 export const deleteEmploye = async (id: string): Promise<void> => {
   const pb = getPb();
+  // Les contrats liés ne sont jamais supprimés en cascade : on bloque avec un message clair.
+  const contrats = await pb.collection('contrats').getFullList({
+    filter: `employe_id = "${id}"`,
+  }).catch(() => []);
+  if (contrats.length > 0) {
+    throw new Error(`Suppression impossible : cet employé est lié à ${contrats.length} contrat(s). Terminez ou supprimez d'abord le(s) contrat(s).`);
+  }
+  // Les relations requises (parents, urgences, expériences) bloqueraient le delete (400)
+  // car sans cascadeDelete côté PB : on les supprime d'abord. Les documents suivent
+  // en cascade côté PB (cascadeDelete), on les nettoie aussi par sécurité.
+  await deleteRelationsByEmploye('parents', id);
+  await deleteRelationsByEmploye('personnes_urgence', id);
+  await deleteRelationsByEmploye('experiences_pro', id);
+  await deleteRelationsByEmploye('documents', id);
   await pb.collection('employes').delete(id);
   
   // Log action
@@ -2158,8 +2172,11 @@ export const uploadEmployePhoto = async (
   const pb = getPb();
   let photoField: any;
   if (typeof imageUri === 'string') {
+    // Assainir l'URI (cache Expo Go doublement encodé %25 → multipart status 0),
+    // comme les 4 autres uploads (documents, scans, contrats, employeurs).
+    const safe = await safeLocalUri(imageUri, `photo_${employeId}.jpg`);
     photoField = {
-      uri: imageUri,
+      uri: safe,
       type: 'image/jpeg',
       name: `photo_${employeId}.jpg`,
     };

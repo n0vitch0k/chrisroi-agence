@@ -285,9 +285,9 @@ export default function EmployeDetailScreen() {
           try {
             await deleteEmploye(employeId);
             navigation.goBack();
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error deleting employe:', error);
-            Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression');
+            Alert.alert('Erreur', error?.message || 'Une erreur est survenue lors de la suppression');
           }
         },
       },
