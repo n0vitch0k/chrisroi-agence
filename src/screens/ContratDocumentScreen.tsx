@@ -651,7 +651,7 @@ export default function ContratDocumentScreen() {
         {scanLoading && scanPages.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}><Text style={{ color: Colors.textSecondary }}>Chargement...</Text></View>
         ) : (
-          <ScrollView contentContainerStyle={{ padding: 14, gap: 12 }}>
+          <ScrollView contentContainerStyle={{ padding: 14, gap: 12, width: '100%', maxWidth: 800, alignSelf: 'center' }}>
             <Text style={{ color: Colors.textSecondary, textAlign: 'center' }}>
               {scanPages.length === 0
                 ? "Aucun scan. Enregistrez d'abord le contrat puis scannez chaque page du document signé."
@@ -703,7 +703,7 @@ export default function ContratDocumentScreen() {
 
   // ── Rendu numérique prestation ──────────────────────────
   const renderNumerique = () => (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100, width: '100%', maxWidth: 800, alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
       {/* En-tête contrat (format figé) */}
       <View style={digitalStyles.headerCard}>
         <Text style={digitalStyles.headerTitle}>{formatDoc === 'agence' ? 'Contrat Agence' : 'Contrat de prestation de service'}</Text>

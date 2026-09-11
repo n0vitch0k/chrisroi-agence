@@ -833,6 +833,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: Spacing.lg,
     paddingBottom: Spacing.xxl,
+    width: '100%',
+    maxWidth: 800,
+    alignSelf: 'center',
   },
   segmented: {
     marginBottom: Spacing.md,

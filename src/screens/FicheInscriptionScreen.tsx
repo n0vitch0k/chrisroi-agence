@@ -1007,7 +1007,7 @@ export default function FicheInscriptionScreen() {
   //  RENDU — Formulaire numérique (saisie)
   // ════════════════════════════════════════════════════════
   const renderDigitalForm = () => (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled"
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 40, width: '100%', maxWidth: 800, alignSelf: 'center' }} keyboardShouldPersistTaps="handled"
     >
       {/* ── Photo + Identité ── */}
       <SectionCard title="👤 Identité du candidat">
