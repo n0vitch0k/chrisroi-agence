@@ -5,6 +5,7 @@
 import { getPocketBase, getPocketBaseUrl, hydratePocketBaseUrl } from './pocketbase';
 import { getSetting, setSetting } from './localSettings';
 import { cacheDirectory, copyAsync, getInfoAsync, uploadAsync, FileSystemUploadType } from 'expo-file-system/legacy';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 /** Copie un fichier local vers un nom sûr du cache (sans %, espaces, accents).
  *  Le dossier cache d'Expo Go contient des segments doublement encodés (%25…)
@@ -2207,19 +2208,48 @@ export const uploadEmployePhoto = async (
   imageUri: string | File,
 ): Promise<string | null> => {
   const pb = getPb();
-  let photoField: any;
-  if (typeof imageUri === 'string') {
-    // Assainir l'URI (cache Expo Go doublement encodé %25 → multipart status 0),
-    // comme les 4 autres uploads (documents, scans, contrats, employeurs).
-    const safe = await safeLocalUri(imageUri, `photo_${employeId}.jpg`);
-    photoField = {
-      uri: safe,
-      type: 'image/jpeg',
-      name: `photo_${employeId}.jpg`,
-    };
-  } else {
-    photoField = imageUri;
+  if (typeof imageUri !== 'string') {
+    const record = await pb.collection('employes').update(employeId, { photo: imageUri });
+    return (record as any).photo || null;
   }
+  // 1. Réduire : l'appareil/galerie en qualité max produit des originaux de
+  // plusieurs Mo, rejetés par PB (photo limitée à 5 Mo) avec une 400.
+  // Sans éditeur dans ce flux, on envoie l'original tel quel → échec.
+  let uri = await safeLocalUri(imageUri, `photo_${employeId}.jpg`);
+  try {
+    const small = await manipulateAsync(uri, [{ resize: { width: 1280 } }], {
+      compress: 0.8,
+      format: SaveFormat.JPEG,
+    });
+    if (small?.uri) uri = small.uri;
+  } catch { /* on envoie l'URI assainie telle quelle */ }
+  const photoField = {
+    uri,
+    type: 'image/jpeg',
+    name: `photo_${employeId}.jpg`,
+  };
+  // 2. Chemin natif (PATCH) comme les 4 autres uploads : le multipart via
+  // fetch échoue en status 0 depuis Expo Go. Repli SDK ensuite.
+  try {
+    const token = (pb.authStore as any)?.token;
+    if (token) {
+      const res = await uploadAsync(
+        `${getPocketBaseUrl()}/api/collections/employes/records/${employeId}`,
+        uri,
+        {
+          httpMethod: 'PATCH',
+          uploadType: FileSystemUploadType.MULTIPART,
+          fieldName: 'photo',
+          mimeType: 'image/jpeg',
+          headers: { Authorization: token },
+        },
+      );
+      if (res.status >= 200 && res.status < 300) {
+        const parsed = JSON.parse(res.body);
+        if ((parsed as any)?.photo) return (parsed as any).photo;
+      }
+    }
+  } catch { /* repli SDK ci-dessous */ }
   const record = await pb.collection('employes').update(employeId, { photo: photoField });
   return (record as any).photo || null;
 };

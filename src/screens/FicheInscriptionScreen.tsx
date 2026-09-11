@@ -448,16 +448,23 @@ export default function FicheInscriptionScreen() {
       }
 
       // Upload de la photo d'identité (file field `photo`) si une URI locale est présente
+      let photoFailed = false;
       if (formData.photo_uri && isLocalPhotoUri(formData.photo_uri)) {
         try {
           const filename = await uploadEmployePhoto(id, formData.photo_uri);
           if (filename) setPhotoUrl(getEmployePhotoUrl(id, filename));
-        } catch (e) {
-          console.warn('Upload photo échoué:', e);
+          else photoFailed = true;
+        } catch (e: any) {
+          console.warn('Upload photo échoué:', e?.message || e);
+          photoFailed = true;
         }
       }
 
-      Alert.alert('Succès', isEditing ? 'Employé modifié' : 'Employé inscrit');
+      if (photoFailed) {
+        Alert.alert('Employé enregistré', "La fiche est enregistrée mais la photo n'a pas pu être envoyée. Rouvre la fiche et réessaie la photo.");
+      } else {
+        Alert.alert('Succès', isEditing ? 'Employé modifié' : 'Employé inscrit');
+      }
 
       // ── Upload des documents/scans mis en attente en mode CRÉATION ──
       // En création, l'employé vient d'être créé (id connu) : on upload tout
