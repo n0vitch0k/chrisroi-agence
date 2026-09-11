@@ -989,6 +989,7 @@ export const createEmployeur = async (employeur: any): Promise<string> => {
     telephone: (employeur.telephone || '').trim(),
     nom_contact: (employeur.nom_contact || '').trim(),
     prenom_contact: (employeur.prenom_contact || '').trim(),
+    salaire_propose: employeur.salaire_propose ? Math.round(Number(employeur.salaire_propose)) : 0,
     notes: (employeur.notes || '').trim(),
   };
   const email = (employeur.email || '').trim();

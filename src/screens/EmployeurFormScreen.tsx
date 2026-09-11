@@ -128,6 +128,7 @@ export default function EmployeurFormScreen() {
     adresse: '',
     telephone: '',
     email: '',
+    salaire_propose: '',
     nom_contact: '',
     prenom_contact: '',
     fonction_contact: '',
@@ -203,6 +204,7 @@ export default function EmployeurFormScreen() {
         adresse: data.adresse || '',
         telephone: data.telephone || '',
         email: data.email || '',
+        salaire_propose: data.salaire_propose ? String(data.salaire_propose) : '',
         nom_contact: data.nom_contact || '',
         prenom_contact: data.prenom_contact || '',
         fonction_contact: data.fonction_contact || '',
@@ -487,6 +489,19 @@ export default function EmployeurFormScreen() {
             placeholder="Ex: 01 02 03 04 05"
             keyboardType="phone-pad"
             unlocked={fieldUnlocked('telephone')}
+            onToggleLock={toggleFieldLock}
+            onPatch={patchField}
+            isEditing={isEditing}
+          />
+
+          <LockedField
+            fieldKey="salaire_propose"
+            label="Salaire proposé"
+            value={formData.salaire_propose}
+            onChangeText={updateField('salaire_propose')}
+            placeholder="Ex: 80000"
+            keyboardType="numeric"
+            unlocked={fieldUnlocked('salaire_propose')}
             onToggleLock={toggleFieldLock}
             onPatch={patchField}
             isEditing={isEditing}

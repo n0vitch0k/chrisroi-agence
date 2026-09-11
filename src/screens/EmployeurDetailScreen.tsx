@@ -253,6 +253,9 @@ export default function EmployeurDetailScreen() {
           <InfoRow icon="tag" label="Type" value={typeLabel(employeur.type_besoin)} />
           <InfoRow icon="phone" label="Téléphone" value={employeur.telephone} />
           <InfoRow icon="email" label="Email" value={employeur.email} />
+          {employeur.salaire_propose > 0 ? (
+            <InfoRow icon="cash" label="Salaire proposé" value={formatMoney(employeur.salaire_propose)} />
+          ) : null}
           <InfoRow icon="map-marker" label="Adresse" value={adresse} />
           {contactName ? (
             <InfoRow icon="account" label={`Contact${employeur.fonction_contact ? ` (${employeur.fonction_contact})` : ''}`} value={contactName} />

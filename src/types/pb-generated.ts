@@ -271,6 +271,7 @@ export type EmployeursRecord = {
 	piece_date?: IsoDateString
 	piece_numero?: string
 	prenom_contact?: string
+	salaire_propose?: number
 	telephone?: string
 	type_besoin?: EmployeursTypeBesoinOptions
 	updated: IsoAutoDateString

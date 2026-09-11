@@ -396,7 +396,7 @@ export default function ContratDocumentScreen() {
       const full = await getEmployeurById(item.id);
       if (full) {
         setSelectedEmployeur(full);
-        setFormData((prev: any) => ({ ...prev, client_domicile: full.adresse || prev.client_domicile, client_piece_numero: (full as any).piece_numero || prev.client_piece_numero, client_piece_date: (full as any).piece_date || prev.client_piece_date, employeur_nom: full.nom_complet || full.raison_sociale || full.nom || prev.employeur_nom }));
+        setFormData((prev: any) => ({ ...prev, client_domicile: full.adresse || prev.client_domicile, client_piece_numero: (full as any).piece_numero || prev.client_piece_numero, client_piece_date: (full as any).piece_date || prev.client_piece_date, employeur_nom: full.nom_complet || full.raison_sociale || full.nom || prev.employeur_nom, salaire: (full as any).salaire_propose && !prev.salaire ? String((full as any).salaire_propose) : prev.salaire }));
       }
     } catch {}
   };
