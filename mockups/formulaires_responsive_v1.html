@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Formulaires responsive V1 — téléphone vs Chromebook</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, Arial, sans-serif; background: #e8e0d5; color: #3d3530; padding: 24px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #6b5f55; margin-bottom: 20px; }
+  .frames { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .frame-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .phone { width: 390px; border: 10px solid #222; border-radius: 36px; overflow: hidden; background: #fdf8f3; }
+  .chromebook { width: 1280px; max-width: 100%; border: 10px solid #222; border-radius: 12px; overflow: hidden; background: #fdf8f3; }
+  .appheader { background: #fff; padding: 14px 16px; font-weight: 700; border-bottom: 1px solid #eedec9; }
+  .form { padding: 16px; }
+  .form-inner { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .head-card { background: #0c1f3f; color: #fff; border-radius: 12px; padding: 14px 16px; }
+  .head-card .t { font-size: 15px; font-weight: 800; }
+  .head-card .s { font-size: 12px; opacity: .7; margin-top: 2px; }
+  .section { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; }
+  .stitle { font-size: 13px; font-weight: 800; margin-bottom: 10px; }
+  .field { margin-bottom: 10px; }
+  .flabel { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .finput { border: 1.5px solid #e0d3c2; border-radius: 10px; padding: 10px 12px; font-size: 14px; color: #8a7d72; background: #fff; }
+  .row2 { display: flex; gap: 10px; }
+  .row2 .field { flex: 1; }
+  .btns { display: flex; gap: 10px; }
+  .btn { flex: 1; text-align: center; font-size: 14px; font-weight: 700; padding: 13px; border-radius: 12px; }
+  .btn.p { background: #c45a2a; color: #fff; }
+  .btn.o { border: 1.5px solid #c45a2a; color: #c45a2a; }
+</style>
+</head>
+<body>
+<h1>Formulaires responsive V1 (Fiche / Contrat / Employeur — même principe)</h1>
+<p class="sub">Gauche : téléphone (390px, pleine largeur). Droite : Chromebook (1280px, formulaire en colonne centrée de 800 — largeur de lecture confortable, pas étiré). Les lignes à 2 champs restent à 2 champs.</p>
+<div class="frames">
+  <div>
+    <p class="frame-label">Téléphone — 390px</p>
+    <div class="phone">
+      <div class="appheader">← Nouveau contrat</div>
+      <div class="form"><div class="form-inner">
+        <div class="head-card"><div class="t">Contrat Agence</div><div class="s">Réf. CHR-2026-XXXX • Recto-verso Employé / Employeur</div></div>
+        <div class="section"><div class="stitle">Client</div><div class="field"><div class="flabel">Nom complet du client *</div><div class="finput">Koffi Mensah</div></div><div class="field"><div class="flabel">Domicilié à *</div><div class="finput">Cocody Angré</div></div></div>
+        <div class="section"><div class="stitle">Employé mis en relation</div><div class="row2"><div class="field"><div class="flabel">Nom</div><div class="finput">Koné</div></div><div class="field"><div class="flabel">Prénom</div><div class="finput">Awa</div></div></div><div class="field"><div class="flabel">Poste attribué *</div><div class="finput">Serveuse</div></div></div>
+        <div class="btns"><span class="btn p">Créer le contrat</span><span class="btn o">Imprimer PDF</span></div>
+      </div></div>
+    </div>
+  </div>
+  <div style="flex:1;min-width:320px">
+    <p class="frame-label">Chromebook — 1280px</p>
+    <div class="chromebook">
+      <div class="appheader">← Nouveau contrat</div>
+      <div class="form"><div class="form-inner">
+        <div class="head-card"><div class="t">Contrat Agence</div><div class="s">Réf. CHR-2026-XXXX • Recto-verso Employé / Employeur</div></div>
+        <div class="section"><div class="stitle">Client</div><div class="field"><div class="flabel">Nom complet du client *</div><div class="finput">Koffi Mensah</div></div><div class="field"><div class="flabel">Domicilié à *</div><div class="finput">Cocody Angré</div></div></div>
+        <div class="section"><div class="stitle">Employé mis en relation</div><div class="row2"><div class="field"><div class="flabel">Nom</div><div class="finput">Koné</div></div><div class="field"><div class="flabel">Prénom</div><div class="finput">Awa</div></div></div><div class="field"><div class="flabel">Poste attribué *</div><div class="finput">Serveuse</div></div></div>
+        <div class="btns"><span class="btn p">Créer le contrat</span><span class="btn o">Imprimer PDF</span></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
