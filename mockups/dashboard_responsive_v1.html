@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dashboard responsive V1 — téléphone vs Chromebook</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, Arial, sans-serif; background: #e8e0d5; color: #3d3530; padding: 24px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #6b5f55; margin-bottom: 20px; }
+  .frames { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .frame-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .phone { width: 390px; border: 10px solid #222; border-radius: 36px; overflow: hidden; background: #fdf8f3; }
+  .chromebook { width: 1280px; max-width: 100%; border: 10px solid #222; border-radius: 12px; overflow: hidden; background: #fdf8f3; }
+  .header { background: #c45a2a; padding: 50px 24px 24px; border-radius: 0 0 30px 30px; color: #fff; position: relative; overflow: hidden; }
+  .header-inner { max-width: 1100px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .logo { width: 42px; height: 42px; border-radius: 14px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+  .greeting { font-size: 14px; font-style: italic; opacity: .75; }
+  .username { font-size: 24px; font-weight: 700; }
+  .content { padding: 20px; max-width: 1100px; margin: 0 auto; }
+  .section-title { font-size: 12px; font-weight: 700; color: #8a7d72; text-transform: uppercase; letter-spacing: .8px; margin: 20px 0 12px 4px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .card { background: #fff; border: 1px solid #eedec9; border-radius: 20px; padding: 18px; width: 48%; }
+  .chromebook .card { width: 23.5%; }
+  .icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
+  .t { font-size: 14px; font-weight: 700; }
+  .s { font-size: 11px; color: #b8a99e; margin-top: 2px; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 600; margin-top: 8px; }
+  .dossier { background: #fff; border: 1px solid #eedec9; border-radius: 20px; padding: 22px 18px; display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+  .dossier-icon { width: 44px; height: 44px; border-radius: 14px; background: #e8f0dc; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .dossier-name { font-size: 17px; font-weight: 800; }
+  .dossier-sub { font-size: 12px; color: #5a7c3a; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Dashboard responsive V1</h1>
+<p class="sub">Gauche : téléphone (390px, 2 colonnes). Droite : Chromebook (1280px, contenu centré 1100, 4 colonnes). Seuil : 900px.</p>
+<div class="frames">
+  <div>
+    <p class="frame-label">Téléphone — 390px</p>
+    <div class="phone">
+      <div class="header"><div class="brand"><div class="logo">CR</div><div>ChrisRoi Agence</div></div><div class="greeting">Bonjour,</div><div class="username">Jean Kouassi</div></div>
+      <div class="content">
+        <p class="section-title">Actions rapides</p>
+        <div class="grid">
+          <div class="card"><div class="icon" style="background:#fdebd8">👤</div><div class="t">Inscrire</div><div class="s">Nouvelle fiche</div><span class="badge" style="background:#fdebd8;color:#c45a2a">12 fiches</span></div>
+          <div class="card"><div class="icon" style="background:#e8f0dc">📄</div><div class="t">Contrat</div><div class="s">Placement</div><span class="badge" style="background:#e8f0dc;color:#5a7c3a">5 actifs</span></div>
+          <div class="card"><div class="icon" style="background:#faf3d1">📸</div><div class="t">Scanner</div><div class="s">OCR / Photo</div></div>
+          <div class="card"><div class="icon" style="background:#d8ecec">🏢</div><div class="t">Employeur</div><div class="s">Entreprise</div><span class="badge" style="background:#d8ecec;color:#2a7a7a">8 inscrits</span></div>
+        </div>
+        <p class="section-title">Dossiers</p>
+        <div class="dossier"><div class="dossier-icon">📁</div><div><div class="dossier-name">Tous les dossiers</div><div class="dossier-sub">25 dossiers actifs</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div style="flex:1;min-width:320px">
+    <p class="frame-label">Chromebook — 1280px</p>
+    <div class="chromebook">
+      <div class="header"><div class="header-inner"><div class="brand"><div class="logo">CR</div><div>ChrisRoi Agence</div></div><div class="greeting">Bonjour,</div><div class="username">Jean Kouassi</div></div></div>
+      <div class="content">
+        <p class="section-title">Actions rapides</p>
+        <div class="grid">
+          <div class="card"><div class="icon" style="background:#fdebd8">👤</div><div class="t">Inscrire</div><div class="s">Nouvelle fiche</div><span class="badge" style="background:#fdebd8;color:#c45a2a">12 fiches</span></div>
+          <div class="card"><div class="icon" style="background:#e8f0dc">📄</div><div class="t">Contrat</div><div class="s">Placement</div><span class="badge" style="background:#e8f0dc;color:#5a7c3a">5 actifs</span></div>
+          <div class="card"><div class="icon" style="background:#faf3d1">📸</div><div class="t">Scanner</div><div class="s">OCR / Photo</div></div>
+          <div class="card"><div class="icon" style="background:#d8ecec">🏢</div><div class="t">Employeur</div><div class="s">Entreprise</div><span class="badge" style="background:#d8ecec;color:#2a7a7a">8 inscrits</span></div>
+        </div>
+        <p class="section-title">Dossiers</p>
+        <div class="dossier"><div class="dossier-icon">📁</div><div><div class="dossier-name">Tous les dossiers</div><div class="dossier-sub">25 dossiers actifs</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
