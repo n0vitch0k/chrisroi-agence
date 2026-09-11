@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dossiers/Recherche responsive V1 — téléphone vs Chromebook</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, Arial, sans-serif; background: #e8e0d5; color: #3d3530; padding: 24px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #6b5f55; margin-bottom: 20px; }
+  .frames { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .frame-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .phone { width: 390px; border: 10px solid #222; border-radius: 36px; overflow: hidden; background: #fdf8f3; }
+  .chromebook { width: 1280px; max-width: 100%; border: 10px solid #222; border-radius: 12px; overflow: hidden; background: #fdf8f3; }
+  .toolbar { background: #fff7ef; padding: 8px 20px 12px; border-bottom: 1px solid #eedec9; }
+  .toolbar-inner { max-width: 1100px; margin: 0 auto; }
+  .search { display: flex; align-items: center; gap: 10px; height: 48px; border: 1.5px solid #e0d3c2; border-radius: 16px; background: #fff; padding: 0 14px; font-size: 15px; color: #b8a99e; }
+  .chips { display: flex; gap: 8px; margin-top: 10px; }
+  .chip { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid #e0d3c2; }
+  .chip.on { background: #c45a2a; color: #fff; border-color: #c45a2a; }
+  .scroll { padding: 20px; }
+  .scroll-inner { max-width: 1100px; margin: 0 auto; }
+  .section-head { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 0 4px; }
+  .section-title { font-size: 16px; font-weight: 800; }
+  .section-count { font-size: 13px; color: #8a7d72; }
+  .grid { display: flex; flex-direction: column; gap: 0; }
+  .chromebook .grid { flex-direction: row; flex-wrap: wrap; gap: 12px; }
+  .ecard { background: #fff; border: 1px solid #e0d3c2; border-radius: 20px; margin-bottom: 12px; overflow: hidden; }
+  .chromebook .ecard { width: 49%; margin-bottom: 0; }
+  .erow { display: flex; gap: 14px; padding: 16px; }
+  .avatar { width: 56px; height: 56px; border-radius: 18px; background: #fdebd8; border: 2px solid #f5ebe0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; color: #c45a2a; flex-shrink: 0; }
+  .avatar.img { background: #ddd; font-size: 11px; color: #666; }
+  .cname { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .tags { display: flex; gap: 6px; margin-bottom: 6px; }
+  .tag { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 8px; background: #fdebd8; color: #c45a2a; }
+  .tag.green { background: #e8f0dc; color: #5a7c3a; }
+  .meta { font-size: 12px; color: #8a7d72; }
+  .actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #f5ebe0; background: #faf6f0; }
+  .btn { flex: 1; text-align: center; font-size: 13px; font-weight: 700; padding: 9px; border-radius: 12px; }
+  .btn.p { background: #5a7c3a; color: #fff; }
+  .btn.s { background: #f5ebe0; color: #8a7d72; }
+  .gcard { background: #fff; border: 1px solid #e0d3c2; border-radius: 16px; padding: 16px; margin-bottom: 10px; }
+  .chromebook .gcard { width: 49%; margin-bottom: 0; }
+  .gtop { display: flex; gap: 12px; align-items: center; }
+  .gavatar { width: 44px; height: 44px; border-radius: 10px; background: #e8eef7; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .gtitle { font-size: 15px; font-weight: 700; }
+  .gpill { font-size: 11px; font-weight: 700; background: #e8eef7; color: #0c1f3f; padding: 3px 10px; border-radius: 999px; margin-top: 4px; display: inline-block; }
+</style>
+</head>
+<body>
+<h1>Dossiers/Recherche responsive V1</h1>
+<p class="sub">Gauche : téléphone (390px, cartes empilées). Droite : Chromebook (1280px, contenu centré 1100, cartes en 2 colonnes). Seuil : 900px. Toolbar (recherche + filtres) centrée aussi.</p>
+<div class="frames">
+  <div>
+    <p class="frame-label">Téléphone — 390px</p>
+    <div class="phone">
+      <div class="toolbar"><div class="search">🔎 Rechercher : nom, téléphone, contrat...</div><div class="chips"><span class="chip on">Tout (25)</span><span class="chip">Employés</span><span class="chip">Contrats</span></div></div>
+      <div class="scroll"><div class="section-head"><span class="section-title">👤 Employés</span><span class="section-count">2</span></div>
+        <div class="grid">
+          <div class="ecard"><div class="erow"><div class="avatar img">PHOTO</div><div><div class="cname">Awa Koné</div><div class="tags"><span class="tag">Serveuse</span><span class="tag green">Disponible</span></div><div class="meta">📞 07 00 00 00 · 📍 Cocody</div></div></div><div class="actions"><span class="btn p">📋 Placer</span><span class="btn s">📄 Fiche</span></div></div>
+          <div class="ecard"><div class="erow"><div class="avatar">MK</div><div><div class="cname">Mariam Konaté</div><div class="tags"><span class="tag">Nounou</span><span class="tag green">Disponible</span></div><div class="meta">📞 05 00 00 00 · 📍 Yopougon</div></div></div><div class="actions"><span class="btn p">📋 Placer</span><span class="btn s">📄 Fiche</span></div></div>
+        </div>
+        <div class="section-head" style="margin-top:16px"><span class="section-title">📄 Contrats</span><span class="section-count">1</span></div>
+        <div class="grid">
+          <div class="gcard"><div class="gtop"><div class="gavatar">📄</div><div><div class="gtitle">CHR-2026-AB12CD</div><span class="gpill">Prestation</span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="flex:1;min-width:320px">
+    <p class="frame-label">Chromebook — 1280px</p>
+    <div class="chromebook">
+      <div class="toolbar"><div class="toolbar-inner"><div class="search">🔎 Rechercher : nom, téléphone, contrat...</div><div class="chips"><span class="chip on">Tout (25)</span><span class="chip">Employés</span><span class="chip">Employeurs</span><span class="chip">Prestation</span><span class="chip">Agence</span></div></div></div>
+      <div class="scroll"><div class="scroll-inner"><div class="section-head"><span class="section-title">👤 Employés</span><span class="section-count">2</span></div>
+        <div class="grid">
+          <div class="ecard"><div class="erow"><div class="avatar img">PHOTO</div><div><div class="cname">Awa Koné</div><div class="tags"><span class="tag">Serveuse</span><span class="tag green">Disponible</span></div><div class="meta">📞 07 00 00 00 · 📍 Cocody</div></div></div><div class="actions"><span class="btn p">📋 Placer</span><span class="btn s">📄 Fiche</span></div></div>
+          <div class="ecard"><div class="erow"><div class="avatar">MK</div><div><div class="cname">Mariam Konaté</div><div class="tags"><span class="tag">Nounou</span><span class="tag green">Disponible</span></div><div class="meta">📞 05 00 00 00 · 📍 Yopougon</div></div></div><div class="actions"><span class="btn p">📋 Placer</span><span class="btn s">📄 Fiche</span></div></div>
+        </div>
+        <div class="section-head" style="margin-top:16px"><span class="section-title">📄 Contrats</span><span class="section-count">2</span></div>
+        <div class="grid">
+          <div class="gcard"><div class="gtop"><div class="gavatar">📄</div><div><div class="gtitle">CHR-2026-AB12CD</div><span class="gpill">Prestation</span></div></div></div>
+          <div class="gcard"><div class="gtop"><div class="gavatar">📋</div><div><div class="gtitle">CHR-2026-EF34GH</div><span class="gpill" style="background:#FDF3E3;color:#8a6d1b">Agence</span></div></div></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
