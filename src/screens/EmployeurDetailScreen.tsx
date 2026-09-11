@@ -11,6 +11,7 @@ import {
   Image,
   Modal,
   ViewStyle,
+  useWindowDimensions,
 } from 'react-native';;
 import { Card, Chip, Divider, Menu } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
@@ -69,6 +70,9 @@ export default function EmployeurDetailScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [documents, setDocuments] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
@@ -240,7 +244,8 @@ export default function EmployeurDetailScreen() {
       </View>
 
       {/* ── Informations ───────────────────────────────── */}
-      <Card style={card}>
+      <View style={wide ? styles.detailGridWide : undefined}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>Informations</Text>
@@ -260,7 +265,7 @@ export default function EmployeurDetailScreen() {
       </Card>
 
       {/* ── Documents associés ─────────────────────────── */}
-      <Card style={card}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <View style={styles.docHeader}>
@@ -323,7 +328,7 @@ export default function EmployeurDetailScreen() {
 
       {/* ── Contrats liés ──────────────────────────────── */}
       {contrats.length > 0 && (
-        <Card style={card}>
+        <Card style={[card, wide && styles.detailGridItem]}>
           <View style={styles.accent} />
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>Contrats liés ({contrats.length})</Text>
@@ -353,7 +358,7 @@ export default function EmployeurDetailScreen() {
 
       {/* ── Historique des actions ── */}
       {history.length > 0 && (
-        <Card style={card}>
+        <Card style={[card, wide && styles.detailGridItem]}>
           <View style={[styles.accent, { backgroundColor: Colors.info }]} />
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>Historique</Text>
@@ -371,6 +376,7 @@ export default function EmployeurDetailScreen() {
           </Card.Content>
         </Card>
       )}
+      </View>
 
       <View style={{ height: Spacing.xxl }} />
     </ScrollView>
@@ -518,7 +524,7 @@ const card: ViewStyle = { marginHorizontal: Spacing.lg, marginTop: Spacing.lg, b
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: Spacing.xxl },
+  scrollContent: { paddingBottom: Spacing.xxl, width: '100%', maxWidth: 1100, alignSelf: 'center' },
   // ── Entête ────────────────────────────────────────────
   header: header,
   avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md, backgroundColor: Colors.primaryDim },
@@ -531,6 +537,19 @@ const styles = StyleSheet.create({
   moreBtn: { padding: Spacing.sm },
   // ── Cartes ────────────────────────────────────────────
   card: card,
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  detailGridWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    justifyContent: 'center',
+  },
+  detailGridItem: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 420,
+    maxWidth: 542,
+  },
   accent: { height: 3, backgroundColor: Colors.primary },
   cardContent: { padding: Spacing.lg },
   cardTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary, marginBottom: Spacing.md },

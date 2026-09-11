@@ -12,6 +12,7 @@ import {
   ViewStyle,
   Image,
   Modal,
+  useWindowDimensions,
 } from 'react-native';;
 import { Card, Chip, Divider, Menu } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
@@ -109,6 +110,9 @@ export default function EmployeDetailScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [documents, setDocuments] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
@@ -356,7 +360,8 @@ export default function EmployeDetailScreen() {
       </View>
 
       {/* ── Infos personnelles ─────────────────────────── */}
-      <Card style={card}>
+      <View style={wide ? styles.detailGridWide : undefined}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>Informations personnelles</Text>
@@ -374,7 +379,7 @@ export default function EmployeDetailScreen() {
 
       {/* ── Parents ────────────────────────────────────── */}
       {employe.parents && employe.parents.length > 0 && (
-        <Card style={card}>
+        <Card style={[card, wide && styles.detailGridItem]}>
           <View style={styles.accent} />
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>Parents</Text>
@@ -392,7 +397,7 @@ export default function EmployeDetailScreen() {
 
       {/* ── Urgences ───────────────────────────────────── */}
       {employe.personnes_urgence && employe.personnes_urgence.length > 0 && (
-        <Card style={card}>
+        <Card style={[card, wide && styles.detailGridItem]}>
           <View style={styles.accent} />
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>Personnes à contacter en cas d'urgence</Text>
@@ -410,7 +415,7 @@ export default function EmployeDetailScreen() {
       )}
 
       {/* ── Expérience ─────────────────────────────────── */}
-      <Card style={card}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>Expérience professionnelle</Text>
@@ -432,7 +437,7 @@ export default function EmployeDetailScreen() {
       </Card>
 
       {/* ── Documents associés ─────────────────────────── */}
-      <Card style={card}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <View style={styles.docHeader}>
@@ -495,7 +500,7 @@ export default function EmployeDetailScreen() {
 
       {/* ── Contrats ────────────────────────────────────── */}
       {contrats.length > 0 && (
-        <Card style={card}>
+        <Card style={[card, wide && styles.detailGridItem]}>
           <View style={styles.accent} />
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>Historique des contrats ({contrats.length})</Text>
@@ -525,7 +530,7 @@ export default function EmployeDetailScreen() {
 
       {/* ── Historique des actions ── */}
       {history.length > 0 && (
-        <Card style={card}>
+        <Card style={[card, wide && styles.detailGridItem]}>
           <View style={[styles.accent, { backgroundColor: Colors.info }]} />
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>Historique</Text>
@@ -543,6 +548,7 @@ export default function EmployeDetailScreen() {
           </Card.Content>
         </Card>
       )}
+      </View>
 
       <View style={{ height: Spacing.xxl }} />
     </ScrollView>
@@ -690,7 +696,7 @@ const card: ViewStyle = { marginHorizontal: Spacing.lg, marginTop: Spacing.lg, b
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: Spacing.xxl },
+  scrollContent: { paddingBottom: Spacing.xxl, width: '100%', maxWidth: 1100, alignSelf: 'center' },
   // ── Entête ────────────────────────────────────────────
   header: header,
   avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
@@ -705,6 +711,19 @@ const styles = StyleSheet.create({
   moreBtn: { padding: Spacing.sm },
   // ── Cartes ────────────────────────────────────────────
   card: card,
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  detailGridWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    justifyContent: 'center',
+  },
+  detailGridItem: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 420,
+    maxWidth: 542,
+  },
   accent: { height: 3, backgroundColor: Colors.primary },
   cardContent: { padding: Spacing.lg },
   cardTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary, marginBottom: Spacing.md },

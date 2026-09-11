@@ -12,6 +12,7 @@ import {
   Modal,
   Platform,
   ViewStyle,
+  useWindowDimensions,
 } from 'react-native';;
 import { Card, Chip, Menu } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
@@ -73,6 +74,9 @@ export default function ContratDetailScreen() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [scanPages, setScanPages] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
   const [menuVisible, setMenuVisible] = useState(false);
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
@@ -309,7 +313,8 @@ export default function ContratDetailScreen() {
       </View>
 
       {/* ── Dossier ────────────────────────────────────── */}
-      <Card style={card}>
+      <View style={wide ? styles.detailGridWide : undefined}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>Dossier</Text>
@@ -335,7 +340,7 @@ export default function ContratDetailScreen() {
       </Card>
 
       {/* ── Version signée (scan lié à la fiche numérique) ── */}
-      <Card style={card}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>Contrat signé</Text>
@@ -370,7 +375,7 @@ export default function ContratDetailScreen() {
       </Card>
 
       {/* ── Employé ────────────────────────────────────── */}
-      <Card style={card}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>Employé</Text>
@@ -390,7 +395,7 @@ export default function ContratDetailScreen() {
       </Card>
 
       {/* ── Employeur ──────────────────────────────────── */}
-      <Card style={card}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>Employeur</Text>
@@ -413,7 +418,7 @@ export default function ContratDetailScreen() {
       </Card>
 
       {/* ── Documents associés ─────────────────────────── */}
-      <Card style={card}>
+      <Card style={[card, wide && styles.detailGridItem]}>
         <View style={styles.accent} />
         <Card.Content style={styles.cardContent}>
           <View style={styles.docHeader}>
@@ -476,7 +481,7 @@ export default function ContratDetailScreen() {
 
       {/* ── Historique des actions ── */}
       {history.length > 0 && (
-        <Card style={card}>
+        <Card style={[card, wide && styles.detailGridItem]}>
           <View style={[styles.accent, { backgroundColor: Colors.info }]} />
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>Historique</Text>
@@ -494,6 +499,7 @@ export default function ContratDetailScreen() {
           </Card.Content>
         </Card>
       )}
+      </View>
 
       <View style={{ height: Spacing.xxl }} />
     </ScrollView>
@@ -641,7 +647,7 @@ const card: ViewStyle = { marginHorizontal: Spacing.lg, marginTop: Spacing.lg, b
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: Spacing.xxl },
+  scrollContent: { paddingBottom: Spacing.xxl, width: '100%', maxWidth: 1100, alignSelf: 'center' },
   // ── Entête ────────────────────────────────────────────
   header: header,
   avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md, backgroundColor: Colors.primaryDim },
@@ -654,6 +660,19 @@ const styles = StyleSheet.create({
   moreBtn: { padding: Spacing.sm },
   // ── Cartes ────────────────────────────────────────────
   card: card,
+  // Chromebook/large : cartes en groupe centré de 2 colonnes
+  detailGridWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    justifyContent: 'center',
+  },
+  detailGridItem: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 420,
+    maxWidth: 542,
+  },
   accent: { height: 3, backgroundColor: Colors.primary },
   cardContent: { padding: Spacing.lg },
   cardTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary, marginBottom: Spacing.md },
