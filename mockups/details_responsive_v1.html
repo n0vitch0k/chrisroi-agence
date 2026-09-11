@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Détails responsive V1 — téléphone vs Chromebook</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, Arial, sans-serif; background: #e8e0d5; color: #1a2333; padding: 24px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #6b5f55; margin-bottom: 20px; }
+  .frames { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .frame-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .phone { width: 390px; border: 10px solid #222; border-radius: 36px; overflow: hidden; background: #f2f5f9; }
+  .chromebook { width: 1280px; max-width: 100%; border: 10px solid #222; border-radius: 12px; overflow: hidden; background: #f2f5f9; }
+  .appheader { background: #fff; padding: 14px 16px; font-weight: 700; border-bottom: 1px solid #e3e9f2; }
+  .hero { background: #fff; border-bottom: 1px solid #e3e9f2; text-align: center; padding: 24px 16px; }
+  .hero-inner { max-width: 1100px; margin: 0 auto; }
+  .avatar { font-size: 38px; }
+  .docnum { font-size: 18px; font-weight: 800; margin: 8px 0; }
+  .chips { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .chip { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 1px solid #c9d4e6; color: #0c1f3f; }
+  .chip.green { border-color: #5a7c3a; color: #5a7c3a; }
+  .chip.gold { background: #fdf3e3; border-color: #c9a227; color: #8a6d1b; }
+  .btns { display: flex; gap: 10px; justify-content: center; }
+  .btn { font-size: 14px; font-weight: 700; padding: 10px 22px; border-radius: 10px; }
+  .btn.p { background: #c45a2a; color: #fff; }
+  .btn.o { border: 1.5px solid #c45a2a; color: #c45a2a; }
+  .cards { padding: 16px; }
+  .cards-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
+  .chromebook .cards-inner { flex-direction: row; flex-wrap: wrap; gap: 16px; justify-content: center; }
+  .card { background: #fff; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .chromebook .card { flex: 1 1 420px; max-width: 542px; margin-bottom: 0; }
+  .accent { height: 3px; background: #c45a2a; }
+  .cbody { padding: 16px; }
+  .ctitle { font-size: 15px; font-weight: 800; margin-bottom: 10px; }
+  .row { display: flex; gap: 8px; font-size: 13px; padding: 7px 0; border-bottom: 1px solid #f0f3f8; }
+  .row:last-child { border: none; }
+  .lbl { color: #8a94a6; width: 110px; flex-shrink: 0; }
+  .val { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Détails responsive V1 (Employé / Employeur / Contrat — même squelette)</h1>
+<p class="sub">Gauche : téléphone (390px, cartes empilées). Droite : Chromebook (1280px, contenu centré 1100, cartes en groupe centré de 2 colonnes). Seuil : 900px. Bandeau d'entête pleine largeur, intérieur centré.</p>
+<div class="frames">
+  <div>
+    <p class="frame-label">Téléphone — 390px</p>
+    <div class="phone">
+      <div class="appheader">← CHR-2026-AB12CD</div>
+      <div class="hero"><div class="avatar">📄</div><div class="docnum">CHR-2026-AB12CD</div><div class="chips"><span class="chip green">En cours</span><span class="chip gold">Prestation</span></div><div class="btns"><span class="btn p">Modifier</span><span class="btn o">PDF</span></div></div>
+      <div class="cards"><div class="cards-inner">
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Dossier</div><div class="row"><span class="lbl">N° dossier</span><span class="val">CHR-2026-AB12CD</span></div><div class="row"><span class="lbl">Statut</span><span class="val">En cours</span></div><div class="row"><span class="lbl">Salaire</span><span class="val">80 000 FCFA</span></div></div></div>
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Employé</div><div class="row"><span class="lbl">Nom</span><span class="val">Awa Koné</span></div><div class="row"><span class="lbl">Poste</span><span class="val">Serveuse</span></div></div></div>
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Contrat signé</div><div class="row"><span class="lbl">Pages</span><span class="val">2 pages scannées</span></div></div></div>
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Historique</div><div class="row"><span class="lbl">12/09</span><span class="val">Contrat modifié</span></div></div></div>
+      </div></div>
+    </div>
+  </div>
+  <div style="flex:1;min-width:320px">
+    <p class="frame-label">Chromebook — 1280px</p>
+    <div class="chromebook">
+      <div class="appheader">← CHR-2026-AB12CD</div>
+      <div class="hero"><div class="hero-inner"><div class="avatar">📄</div><div class="docnum">CHR-2026-AB12CD</div><div class="chips"><span class="chip green">En cours</span><span class="chip gold">Prestation</span></div><div class="btns"><span class="btn p">Modifier</span><span class="btn o">PDF</span></div></div></div>
+      <div class="cards"><div class="cards-inner">
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Dossier</div><div class="row"><span class="lbl">N° dossier</span><span class="val">CHR-2026-AB12CD</span></div><div class="row"><span class="lbl">Statut</span><span class="val">En cours</span></div><div class="row"><span class="lbl">Salaire</span><span class="val">80 000 FCFA</span></div></div></div>
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Employé</div><div class="row"><span class="lbl">Nom</span><span class="val">Awa Koné</span></div><div class="row"><span class="lbl">Poste</span><span class="val">Serveuse</span></div></div></div>
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Contrat signé</div><div class="row"><span class="lbl">Pages</span><span class="val">2 pages scannées</span></div></div></div>
+        <div class="card"><div class="accent"></div><div class="cbody"><div class="ctitle">Historique</div><div class="row"><span class="lbl">12/09</span><span class="val">Contrat modifié</span></div></div></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
