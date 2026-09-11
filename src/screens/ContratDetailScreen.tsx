@@ -13,7 +13,7 @@ import {
   Platform,
   ViewStyle,
 } from 'react-native';;
-import { Card, Chip } from 'react-native-paper';
+import { Card, Chip, Menu } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
@@ -26,6 +26,7 @@ import {
   getScans,
   uploadContratDocument,
   deleteDocument,
+  deleteContrat,
   getDocumentTypeLabel,
   getDocumentTypeIcon,
   DOCUMENT_TYPES,
@@ -72,6 +73,7 @@ export default function ContratDetailScreen() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [scanPages, setScanPages] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showDocSourcePicker, setShowDocSourcePicker] = useState(false);
   const [docTypePending, setDocTypePending] = useState<string | null>(null);
@@ -222,6 +224,24 @@ export default function ContratDetailScreen() {
     ]);
   };
 
+  const handleDelete = () => {
+    Alert.alert('Confirmer la suppression', 'Êtes-vous sûr de vouloir supprimer ce contrat ? Documents, scans et alertes liés seront aussi supprimés. Cette action est irréversible.', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer', style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteContrat(contratId);
+            navigation.goBack();
+          } catch (error: any) {
+            console.error('Error deleting contrat:', error);
+            Alert.alert('Erreur', error?.message || 'Une erreur est survenue lors de la suppression');
+          }
+        },
+      },
+    ]);
+  };
+
   if (!contrat) {
     return (
       <View style={styles.loadingContainer}>
@@ -273,6 +293,18 @@ export default function ContratDetailScreen() {
             <Icon name="file-pdf-box" size={18} color={Colors.primary} />
             <Text style={{ color: Colors.primary, fontWeight: '600', marginLeft: 6 }}>PDF</Text>
           </SafeButton>
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuVisible(true)}>
+                <Icon name="dots-vertical" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            }
+          >
+            <Menu.Item onPress={() => { setMenuVisible(false); handleDelete(); }}
+              title="Supprimer" leadingIcon="delete" titleStyle={{ color: Colors.danger }} />
+          </Menu>
         </View>
       </View>
 
@@ -619,6 +651,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: '600' },
   actionsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, width: '100%' },
   editBtn: { flex: 1, borderRadius: Radius.sm },
+  moreBtn: { padding: Spacing.sm },
   // ── Cartes ────────────────────────────────────────────
   card: card,
   accent: { height: 3, backgroundColor: Colors.primary },

@@ -1339,6 +1339,43 @@ export const terminerContrat = async (id: string): Promise<void> => {
   });
 };
 
+export const deleteContrat = async (id: string): Promise<void> => {
+  const pb = getPb();
+  const contrat = await getContratById(id).catch(() => null);
+  const numero = (contrat as any)?.numero_dossier || '';
+  const employeId = (contrat as any)?.employe_id || '';
+  // Pièces liées : documents (contrat_id), scans signés, alertes — best effort,
+  // car sans cascadeDelete côté PB elles bloqueraient le delete.
+  try {
+    const docs = await getDocumentsByContrat(id).catch(() => []);
+    await Promise.all((docs || []).map((d: any) => pb.collection('documents').delete(d.id).catch(() => null)));
+  } catch { /* best effort */ }
+  try {
+    const pages = await getScans('contrat', id).catch(() => []);
+    await Promise.all((pages || []).map((p: any) => pb.collection('scans').delete(p.id).catch(() => null)));
+  } catch { /* best effort */ }
+  try {
+    const alertes = await pb.collection('alertes').getFullList({ filter: `contrat_id = "${id}"` }).catch(() => []);
+    await Promise.all((alertes || []).map((a: any) => pb.collection('alertes').delete(a.id).catch(() => null)));
+  } catch { /* best effort */ }
+  await pb.collection('contrats').delete(id);
+  // L'employé redevient disponible, comme à la fin d'un contrat.
+  if (employeId) {
+    try { await pb.collection('employes').update(employeId, { statut: 'disponible' }); } catch { /* best effort */ }
+  }
+
+  // Log action (historique + journal)
+  const user = getCurrentUser();
+  if (user) {
+    await logAction({
+      actionType: 'suppression_contrat',
+      entiteType: 'contrat',
+      entiteId: id,
+      description: `${user.prenom} ${user.nom} a supprimé le contrat${numero ? ` ${numero}` : ''}`,
+    });
+  }
+};
+
 export const marquerCommissionPayee = async (id: string, datePrelevement?: string): Promise<void> => {
   const pb = getPb();
   const updateData: any = { commission_payee: true };
