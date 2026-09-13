@@ -586,6 +586,44 @@ export const createUser = async (user: {
   return record.id;
 };
 
+export const deleteUser = async (id: string): Promise<void> => {
+  const pb = getPb();
+  const currentUser = getCurrentUser();
+  // On ne supprime jamais son propre compte.
+  if (currentUser && (currentUser as any).id === id) {
+    throw new Error('Vous ne pouvez pas supprimer votre propre compte.');
+  }
+  // Garde-fou : ne jamais supprimer le dernier administrateur.
+  const target = await pb.collection('users').getOne(id).catch(() => null);
+  if (target && (target as any).role === 'admin') {
+    const admins = await pb.collection('users').getFullList({
+      filter: 'role = "admin"',
+    }).catch(() => []);
+    if (admins.length <= 1) {
+      throw new Error("Suppression impossible : c'est le dernier administrateur.");
+    }
+  }
+  try {
+    await pb.collection('users').delete(id);
+  } catch (e: any) {
+    // Supprimer un user exige des droits élevés (403 sinon).
+    if (e?.status === 403) {
+      throw new Error("Droits insuffisants : la suppression d'utilisateur requiert les droits PocketBase.");
+    }
+    throw e;
+  }
+
+  // Log action
+  if (currentUser) {
+    await logAction({
+      actionType: 'suppression_utilisateur',
+      entiteType: 'user',
+      entiteId: id,
+      description: `${currentUser.prenom} ${currentUser.nom} a supprimé l'utilisateur ${((target as any)?.prenom || '').trim()} ${((target as any)?.nom || '').trim()}`.trim(),
+    });
+  }
+};
+
 // ============== GESTION DES EMPLOYÉS ==============
 
 // Filtre sécurisé pour PocketBase (échappe les guillemets et backslashes)

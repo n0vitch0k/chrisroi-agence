@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
-import { getAllUsers, createUser, getGeminiApiKey, saveGeminiApiKey, getKilocodeApiKey, saveKilocodeApiKey } from '../database/service';
+import { getAllUsers, createUser, deleteUser, getGeminiApiKey, saveGeminiApiKey, getKilocodeApiKey, saveKilocodeApiKey } from '../database/service';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../theme';
 import AppHeader from '../components/AppHeader';
 import SafeButton from '../components/SafeButton';
@@ -73,6 +73,7 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
   const [kilocodeKey, setKilocodeKey] = useState('');
   const [kilocodeKeyVisible, setKilocodeKeyVisible] = useState(false);
   const [addingUser, setAddingUser] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState(false);
   const [newUser, setNewUser] = useState({
     nom: '', prenom: '', email: '', mot_de_passe: '', role: 'agent',
@@ -178,6 +179,40 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
     }
   };
 
+  const handleDeleteUser = (u: any) => {
+    if (u.id === user.id) {
+      Alert.alert('Impossible', 'Vous ne pouvez pas supprimer votre propre compte.');
+      return;
+    }
+    if (u.role === 'admin' && users.filter((x) => x.role === 'admin').length <= 1) {
+      Alert.alert('Impossible', "C'est le dernier administrateur, suppression interdite.");
+      return;
+    }
+    Alert.alert(
+      'Supprimer cet utilisateur ?',
+      `${u.prenom} ${u.nom} (${u.email}) ne pourra plus se connecter.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingUserId(u.id);
+            try {
+              await deleteUser(u.id);
+              loadUsers();
+              Alert.alert('Succès', 'Utilisateur supprimé.');
+            } catch (error: any) {
+              Alert.alert('Erreur', error?.message || 'Suppression impossible.');
+            } finally {
+              setDeletingUserId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const handleLogout = () => {
     Alert.alert('Déconnexion', 'Êtes-vous sûr de vouloir vous déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
@@ -246,6 +281,21 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
                         {u.role === 'admin' ? 'Admin' : 'Agent'}
                       </Text>
                     </View>
+                    {u.id !== user.id && (
+                      <TouchableOpacity
+                        style={styles.userDeleteBtn}
+                        onPress={() => handleDeleteUser(u)}
+                        disabled={deletingUserId === u.id}
+                        activeOpacity={0.7}
+                        hitSlop={8}
+                      >
+                        <Icon
+                          name="trash-can-outline"
+                          size={20}
+                          color={deletingUserId === u.id ? M.textTertiary : M.danger}
+                        />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </React.Fragment>
               ))
@@ -656,6 +706,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   userRoleBadgeText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  userDeleteBtn: { marginLeft: Spacing.sm, padding: Spacing.xs },
 
   emptyUsers: { fontSize: 14, color: M.textSecondary, textAlign: 'center', padding: Spacing.lg },
 
