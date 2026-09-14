@@ -603,6 +603,20 @@ export const deleteUser = async (id: string): Promise<void> => {
       throw new Error("Suppression impossible : c'est le dernier administrateur.");
     }
   }
+  // Détache les entrées du journal liées à cet utilisateur (user_id optionnel
+  // depuis le fix 09/2026) : l'historique est conservé (date, action,
+  // description avec le nom en toutes lettres), seul le lien est vidé.
+  // Sans ça, PocketBase refuse le delete (relation required reference).
+  try {
+    const linked = await pb.collection('journal_actions').getFullList({
+      filter: `user_id = "${id}"`,
+    }).catch(() => []);
+    for (const entry of linked) {
+      await pb.collection('journal_actions').update(entry.id, { user_id: '' }).catch(() => null);
+    }
+  } catch {
+    // Best-effort : le détachement ne bloque jamais la suppression.
+  }
   try {
     await pb.collection('users').delete(id);
   } catch (e: any) {
