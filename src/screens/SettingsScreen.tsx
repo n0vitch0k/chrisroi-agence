@@ -164,6 +164,10 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
+    if (newUser.mot_de_passe.length < 8) {
+      Alert.alert('Mot de passe trop court', 'Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
     setAddingUser(true);
     try {
       await createUser(newUser);
@@ -171,9 +175,12 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
       setNewUser({ nom: '', prenom: '', email: '', mot_de_passe: '', role: 'agent' });
       loadUsers();
       Alert.alert('Succès', 'Utilisateur ajouté avec succès');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding user:', error);
-      Alert.alert('Erreur', "Une erreur est survenue lors de l'ajout");
+      // Affiche le vrai message serveur (ex: email déjà utilisé) + détails par champ.
+      const details = error?.fieldErrors ? Object.values(error.fieldErrors).join('\n') : '';
+      const message = [error?.message, details].filter(Boolean).join('\n') || "Une erreur est survenue lors de l'ajout";
+      Alert.alert('Erreur', message);
     } finally {
       setAddingUser(false);
     }

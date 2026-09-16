@@ -512,7 +512,7 @@ export const createUser = async (user: {
   role: string;
 }): Promise<string> => {
   const pb = getPb();
-  const record = await pb.collection('users').create({
+  const record = await withPbErrorHandling(() => pb.collection('users').create({
     email: user.email,
     password: user.mot_de_passe,
     passwordConfirm: user.mot_de_passe,
@@ -520,7 +520,7 @@ export const createUser = async (user: {
     prenom: user.prenom,
     role: user.role,
     actif: true,
-  });
+  }));
   
   // Log action
   const currentUser = getCurrentUser();
