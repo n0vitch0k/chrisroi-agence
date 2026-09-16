@@ -713,6 +713,7 @@ export default function FicheInscriptionScreen() {
         niveau_etude: formData.niveau_etude,
         deja_travaille: formData.a_deja_travaille,
         experience_details: formData.experience_details,
+        contacts_anciens_patrons: experiences.map((e) => e.contact).filter(Boolean),
         allergie_sante: formData.allergie_sante,
         intervention_chirurgicale: formData.intervention_chirurgicale,
         photo: photoSource,
