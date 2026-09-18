@@ -16,11 +16,11 @@ import { Colors, Spacing, Radius, Shadows } from '../theme';
 import SafeButton from '../components/SafeButton';
 
 interface LoginScreenProps {
-  onLogin: (user: { id: string; nom: string; prenom: string; email: string; role: string }) => void;
+  onLogin: (user: { id: string; nom: string; prenom: string; username: string; role: string }) => void;
 }
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -29,13 +29,13 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [testingServer, setTestingServer] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Erreur de saisie', 'Veuillez remplir l\'email et le mot de passe');
+    if (!username.trim() || !password.trim()) {
+      Alert.alert('Erreur de saisie', 'Veuillez remplir le nom d\'utilisateur et le mot de passe');
       return;
     }
 
     setLoading(true);
-    logBackend('Login', `Tentative de connexion : ${email.trim()}`, 'info');
+    logBackend('Login', `Tentative de connexion : ${username.trim()}`, 'info');
 
     // 1. Vérifier d'abord si le serveur répond
     logBackend('Login', 'Vérification du serveur...', 'info');
@@ -53,7 +53,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
     try {
       logBackend('Login', 'Authentification en cours...', 'info');
-      const user = await authenticateUser(email.trim(), password);
+      const user = await authenticateUser(username.trim(), password);
       if (user) {
         logBackend('Login', `✅ Connecté : ${user.prenom} ${user.nom} (${user.role})`, 'success');
         onLogin(user);
@@ -61,7 +61,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         logBackend('Login', '⛔ Échec : identifiants incorrects', 'warn');
         Alert.alert(
           'Échec de connexion',
-          'Email ou mot de passe incorrect\n\nVérifiez :\n• Email : admin@chrisroi.com\n• Mot de passe : chrisroi2024'
+          'Identifiants incorrects.\nVérifiez votre nom d\'utilisateur et votre mot de passe.'
         );
       }
     } catch (error: any) {
@@ -148,17 +148,17 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           </Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>EMAIL</Text>
+            <Text style={styles.inputLabel}>UTILISATEUR</Text>
             <TextInput
-              value={email}
-              onChangeText={setEmail}
+              value={username}
+              onChangeText={setUsername}
               mode="outlined"
-              keyboardType="email-address"
+              keyboardType="default"
               autoCapitalize="none"
-              placeholder="admin@chrisroi.com"
+              placeholder="Votre nom d'utilisateur"
               style={styles.input}
               outlineStyle={styles.inputOutline}
-              left={<TextInput.Icon icon="email-outline" />}
+              left={<TextInput.Icon icon="account-outline" />}
               theme={{ colors: { primary: Colors.primary, outline: Colors.border, onSurfaceVariant: Colors.textTertiary } }}
             />
           </View>
@@ -193,15 +193,6 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           >
             Se connecter
           </SafeButton>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.hint}>
-            Identifiants par défaut :
-          </Text>
-          <Text style={styles.hintDetail}>
-            admin@chrisroi.com / chrisroi2024
-          </Text>
 
           <SafeButton
             mode="text"

@@ -10,13 +10,13 @@ const SESSION_KEY = 'chrisroi_user_v1';
 // Evite d'exposer nom/prénom à un script tiers si XSS sur la version web.
 interface MinimalSession {
   id: string;
-  email: string;
+  username: string;
   role: string;
 }
 
 const toMinimal = (u: any): MinimalSession => ({
   id: u.id,
-  email: u.email,
+  username: u.username,
   role: u.role || 'agent',
 });
 
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (valid && model && model.id === parsed.id) {
               setUser({
                 id: parsed.id,
-                email: parsed.email || model.email || '',
+                username: parsed.username || model.username || '',
                 role: parsed.role || model.role || 'agent',
                 nom: parsed.nom || model.nom || '',
                 prenom: parsed.prenom || model.prenom || '',
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const onLogin = useCallback((loggedUser: UserInfo) => {
     setUser(loggedUser);
-    // Stocke uniquement {id, email, role} en localStorage. Les champs nom/prénom
+    // Stocke uniquement {id, username, role} en localStorage. Les champs nom/prénom
     // restent en mémoire (state) mais pas exposés à un éventuel XSS.
     try { localStorage.setItem(SESSION_KEY, JSON.stringify(toMinimal(loggedUser))); } catch {}
   }, []);

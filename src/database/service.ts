@@ -193,20 +193,20 @@ export const initDatabase = async (): Promise<null> => {
     // donc cet auth peut échouer : pas grave, l'admin users existe déjà.
     // Toute session ouverte ici est refermée aussitôt : on ne laisse AUCUN token.
     try {
-      await pb.collection('_superusers').authWithPassword('admin@chrisroi.com', 'chrisroi2024');
+      await pb.collection('_superusers').authWithPassword('admin@chrisroi.local', 'TempPass123!');
       try {
         // Vérifier si l'admin par défaut existe déjà dans users
         const existing = await pb.collection('users').getList(1, 1, {
-          filter: `email = "admin@chrisroi.com"`,
+          filter: `username = "williams"`,
         });
         if (existing.totalItems === 0) {
           await pb.collection('users').create({
-            email: 'admin@chrisroi.com',
-            password: 'chrisroi2024',
-            passwordConfirm: 'chrisroi2024',
-            name: 'ChrisRoi Admin',   // champ standard PocketBase
+            username: 'williams',
+            password: '23102001',
+            passwordConfirm: '23102001',
+            name: 'Williams Admin',   // champ standard PocketBase
             nom: 'Admin',
-            prenom: 'ChrisRoi',
+            prenom: 'Williams',
             role: 'admin',
             actif: true,
           });
@@ -243,7 +243,7 @@ const getPb = () => {
 
 export const getCurrentUser = (): {
   id: string;
-  email: string;
+  username: string;
   nom: string;
   prenom: string;
   role: string;
@@ -254,7 +254,7 @@ export const getCurrentUser = (): {
     if (!model) return null;
     return {
       id: (model as any).id,
-      email: (model as any).email,
+      username: (model as any).username || '',
       nom: (model as any).nom || '',
       prenom: (model as any).prenom || '',
       role: (model as any).role || 'agent',
@@ -276,11 +276,11 @@ export const logAction = async (params: {
     if (!user) return null;
     const pb = getPb();
     // user_display robuste : un superuser (admin) n'a pas toujours prenom/nom,
-    // on utilise alors son email, sinon un libellé générique.
+    // on utilise alors son username, sinon un libellé générique.
     const display =
       user.prenom || user.nom
         ? `${user.prenom || ''} ${user.nom || ''}`.trim()
-        : (user.email || 'Utilisateur');
+        : (user.username || 'Utilisateur');
     const data = {
       user_id: user.id,
       user_display: display,
@@ -419,16 +419,16 @@ export const getEntityHistory = async (entiteType: string, entiteId: string): Pr
 
 // ============== GESTION DES UTILISATEURS ==============
 
-export const authenticateUser = async (email: string, password: string): Promise<{
+export const authenticateUser = async (username: string, password: string): Promise<{
   id: string;
   nom: string;
   prenom: string;
-  email: string;
+  username: string;
   role: string;
 } | null> => {
   try {
     const pb = getPocketBase();
-    const authData = await pb.collection('users').authWithPassword(email, password);
+    const authData = await pb.collection('users').authWithPassword(username, password);
 
     const user = authData.record;
 
@@ -459,7 +459,7 @@ export const authenticateUser = async (email: string, password: string): Promise
       id: user.id,
       nom: nom || 'Admin',
       prenom: prenom || '',
-      email: user.email as string,
+      username: (user.username as string) || username,
       role: (user.role as string) || 'agent',
     };
     // Log action (journal des connexions — logAction ne throw jamais)
@@ -507,13 +507,13 @@ export const getAllUsers = async (): Promise<any[]> => {
 export const createUser = async (user: {
   nom: string;
   prenom: string;
-  email: string;
+  username: string;
   mot_de_passe: string;
   role: string;
 }): Promise<string> => {
   const pb = getPb();
   const record = await withPbErrorHandling(() => pb.collection('users').create({
-    email: user.email,
+    username: user.username,
     password: user.mot_de_passe,
     passwordConfirm: user.mot_de_passe,
     nom: user.nom,

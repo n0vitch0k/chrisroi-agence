@@ -27,7 +27,7 @@ interface SettingsScreenProps {
     id: string;
     nom: string;
     prenom: string;
-    email: string;
+    username: string;
     role: string;
   };
   onLogout: () => void;
@@ -76,7 +76,7 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState(false);
   const [newUser, setNewUser] = useState({
-    nom: '', prenom: '', email: '', mot_de_passe: '', role: 'agent',
+    nom: '', prenom: '', username: '', mot_de_passe: '', role: 'agent',
   });
 
   const loadUsers = async () => {
@@ -160,7 +160,7 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
   };
 
   const handleAddUser = async () => {
-    if (!newUser.nom || !newUser.prenom || !newUser.email || !newUser.mot_de_passe) {
+    if (!newUser.nom || !newUser.prenom || !newUser.username || !newUser.mot_de_passe) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
@@ -172,12 +172,11 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
     try {
       await createUser(newUser);
       setShowAddUser(false);
-      setNewUser({ nom: '', prenom: '', email: '', mot_de_passe: '', role: 'agent' });
+      setNewUser({ nom: '', prenom: '', username: '', mot_de_passe: '', role: 'agent' });
       loadUsers();
       Alert.alert('Succès', 'Utilisateur ajouté avec succès');
     } catch (error: any) {
       console.error('Error adding user:', error);
-      // Affiche le vrai message serveur (ex: email déjà utilisé) + détails par champ.
       const details = error?.fieldErrors ? Object.values(error.fieldErrors).join('\n') : '';
       const message = [error?.message, details].filter(Boolean).join('\n') || "Une erreur est survenue lors de l'ajout";
       Alert.alert('Erreur', message);
@@ -197,7 +196,7 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
     }
     Alert.alert(
       'Supprimer cet utilisateur ?',
-      `${u.prenom} ${u.nom} (${u.email}) ne pourra plus se connecter.`,
+      `${u.prenom} ${u.nom} (${u.username}) ne pourra plus se connecter.`,
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -241,7 +240,7 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user.prenom} {user.nom}</Text>
-            <Text style={styles.profileEmail}>{user.email}</Text>
+            <Text style={styles.profileEmail}>{user.username}</Text>
             <Text style={styles.profileRole}>
               {user.role === 'admin' ? 'Administrateur' : 'Agent'}
             </Text>
@@ -277,7 +276,7 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
                     </View>
                     <View style={styles.userInfo}>
                       <Text style={styles.userName}>{u.prenom} {u.nom}</Text>
-                      <Text style={styles.userEmail}>{u.email}</Text>
+                      <Text style={styles.userEmail}>{u.username}</Text>
                     </View>
                     <View style={[styles.userRoleBadge, {
                       backgroundColor: u.role === 'admin' ? M.primaryLight : M.infoLight,
@@ -400,14 +399,14 @@ export default function SettingsScreen({ user, onLogout }: SettingsScreenProps) 
                 />
               </View>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email</Text>
+                <Text style={styles.inputLabel}>Nom d'utilisateur</Text>
                 <TextInput
-                  value={newUser.email}
-                  onChangeText={(t) => setNewUser({ ...newUser, email: t })}
+                  value={newUser.username}
+                  onChangeText={(t) => setNewUser({ ...newUser, username: t })}
                   style={styles.dialogInput}
-                  placeholder="agent@chrisroi.com"
+                  placeholder="Ex: jean"
                   placeholderTextColor={M.textDim}
-                  keyboardType="email-address"
+                  keyboardType="default"
                   autoCapitalize="none"
                 />
               </View>
