@@ -62,9 +62,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: seededUser.email,
             role: seededUser.role,
           })); } catch {}
+        } else {
+          // initDatabase retourne null → auth échouée → nettoyer session stale
+          // sinon l'UI restaure un user mort depuis localStorage et skip le login.
+          setUser(null);
+          try { localStorage.removeItem(SESSION_KEY); } catch {}
         }
       } catch (error) {
         console.error('Failed to initialize database:', error);
+        // Erreur (réseau, PB down) → idem, ne pas garder une session fantôme
+        setUser(null);
+        try { localStorage.removeItem(SESSION_KEY); } catch {}
       } finally {
         setIsLoading(false);
       }

@@ -126,9 +126,9 @@ export function buildContratAgenceHtml(ctx: PrintContratAgenceContext): string {
 
   const signatures = `
   <div class="sign-grid">
-    <div class="sig"><div><p>L'employ&eacute;</p><small>${employeNom}</small></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
-    <div class="sig"><div><p>ChrisRoi Agence</p><small>Mme Yao Lou Rose, G&eacute;rante</small></div><div class="sig-line">Cachet + signature</div></div>
-    <div class="sig"><div><p>L'employeur</p><small>${employeurNom}</small></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
+    <div class="sig"><div><p>L'employ&eacute;</p></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
+    <div class="sig"><div><p>ChrisRoi Agence</p></div><div class="sig-line">Cachet + signature</div></div>
+    <div class="sig"><div><p>L'employeur</p></div><div class="sig-line">Lu et approuv&eacute; + signature</div></div>
   </div>`;
 
   const footer = `
@@ -158,7 +158,7 @@ export function buildContratAgenceHtml(ctx: PrintContratAgenceContext): string {
   body {
     margin: 0; background: #eef1f5; color: #111827;
     font-family: "Times New Roman", Times, Georgia, serif;
-    line-height: 1.38; font-size: 9.5pt;
+    line-height: 1.35; font-size: 9.5pt;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   .sheet {
@@ -169,21 +169,21 @@ export function buildContratAgenceHtml(ctx: PrintContratAgenceContext): string {
     overflow: hidden;
   }
   .header {
-    display: flex; align-items: center; justify-content: center; gap: 16px;
-    padding: 8px 16px 6px; background: #fff;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 10px 12px 8px; background: #fff;
     border-bottom: 2.5px solid #0c1f3f;
   }
-  .header img.logo { width: 56px; height: 56px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; flex-shrink: 0; }
+  .header img.logo { width: 48px; height: 48px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; flex-shrink: 0; }
   .header .brand { font-family: Arial, Helvetica, sans-serif; text-align: center; }
-  .header .kicker { font-size: 7pt; letter-spacing: .08em; text-transform: uppercase; color: #0c1f3f; font-weight: 700; line-height: 1.35; }
-  .header .name { font-size: 17pt; font-weight: 900; color: #0c1f3f; letter-spacing: .04em; line-height: 1; margin-top: 4px; }
+  .header .kicker { font-size: 6pt; letter-spacing: .08em; text-transform: uppercase; color: #0c1f3f; font-weight: 700; line-height: 1.3; }
+  .header .name { font-size: 14pt; font-weight: 900; color: #0c1f3f; letter-spacing: .04em; line-height: 1; margin-top: 2px; }
   .header .name .gold { color: #c9a227; }
-  .page-pad { padding: 5px 7px 4px; }
+  .page-pad { padding: 6px 5px 5px; }
   h1.doc-title {
     text-align: center; font-family: Arial Black, Arial, sans-serif;
     font-size: 11pt; font-weight: 900; color: #0c1f3f;
     letter-spacing: .04em; text-transform: uppercase;
-    margin: 8px 0 4px;
+    margin: 12px 0 6px;
   }
   h1.doc-title .page-tag {
     display: inline-block; font-size: 8pt; background: #c9a227; color: #0c1f3f;
@@ -197,17 +197,17 @@ export function buildContratAgenceHtml(ctx: PrintContratAgenceContext): string {
   .divider { height: 1px; background: #0c1f3f; opacity: .14; margin: 6px 0 8px; }
   h2.article {
     font-family: Arial, Helvetica, sans-serif; font-size: 9pt; font-weight: 800;
-    color: #fff; background: #0c1f3f; padding: 4px 10px; border-radius: 4px;
-    margin: 10px 0 6px; letter-spacing: .03em; text-transform: uppercase;
+    color: #fff; background: #0c1f3f; padding: 3px 10px; border-radius: 4px;
+    margin: 10px 0 5px; letter-spacing: .03em; text-transform: uppercase;
     break-after: avoid; break-inside: avoid;
   }
   h2.article .n { color: #c9a227; }
-  p { margin: 0 0 5px; text-align: justify; hyphens: auto; }
+  p { margin: 0 0 6px; text-align: justify; hyphens: auto; }
   .field { display: inline-block; min-width: 110px; border-bottom: 1px dotted #111827; padding: 0 3px 1px; font-weight: 700; color: #0c1f3f; }
   .field.small { min-width: 80px; }
   .field.wide { min-width: 200px; }
-  .parties { border: 1px solid #c8d0dc; border-radius: 6px; padding: 8px 10px; background: #f8fafc; margin-bottom: 8px; }
-  .parties p { margin-bottom: 4px; }
+  .parties { border: 1px solid #c8d0dc; border-radius: 6px; padding: 9px 8px; background: #f8fafc; margin-bottom: 9px; break-inside: avoid; }
+  .parties p { margin-bottom: 6px; }
   .check-pill {
     display: inline-block; font-family: Arial, sans-serif; font-size: 8pt; font-weight: 700;
     border: 1.5px solid #0c1f3f; border-radius: 4px; padding: 2px 8px; margin: 0 2px 0 6px; color: #0c1f3f;
@@ -216,25 +216,35 @@ export function buildContratAgenceHtml(ctx: PrintContratAgenceContext): string {
   .money { border: 1px solid #c9a227; background: #fffdf5; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px; }
   .money p { margin-bottom: 4px; }
   .duree-box { border: 1px solid #0c1f3f; border-radius: 6px; padding: 6px 10px; background: #f8fafc; text-align: center; margin-top: 8px; }
-  .photo-frame { width: 35mm; height: 45mm; border: 2px solid #0c1f3f; border-radius: 6px; background: #f8fafc; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+  .photo-frame { width: 30mm; height: 40mm; border: 2px solid #0c1f3f; border-radius: 6px; background: #f8fafc; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
   .photo-ph { font-family: Arial, sans-serif; font-size: 8pt; font-weight: 800; color: #0c1f3f; letter-spacing: .1em; }
-  .sign-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 12px; }
-  .sig { border: 2px solid #0c1f3f; border-radius: 6px; min-height: 110px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; }
+  .sign-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .sig { border: 2px solid #0c1f3f; border-radius: 6px; min-height: 120px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; }
   .sig p { margin: 0; font-family: Arial, sans-serif; font-size: 8pt; color: #0c1f3f; text-transform: uppercase; letter-spacing: .04em; font-weight: 800; }
   .sig small { font-family: Arial, sans-serif; color: #0c1f3f; font-weight: 800; font-size: 9pt; }
-  .sig-line { border-top: 2px solid #0c1f3f; margin-top: 16px; padding-top: 6px; font-family: Arial, sans-serif; font-size: 8pt; color: #0c1f3f; font-weight: 700; text-align: center; }
+  .sig-line { border-top: 2px solid #0c1f3f; margin-top: 20px; padding-top: 6px; font-family: Arial, sans-serif; font-size: 8pt; color: #0c1f3f; font-weight: 700; text-align: center; }
   .footer {
-    margin-top: 8px; border-top: 1px solid #e5e7eb; padding: 6px 14px 8px;
+    margin-top: 12px; border-top: 1px solid #e5e7eb; padding: 8px 14px 10px;
     font-family: Arial, sans-serif; font-size: 6.8pt; color: #5c6675; text-align: center; line-height: 1.4; background: #f8fafc;
   }
   .footer strong { color: #0c1f3f; }
-  /* Page 2 (Employeur) : contenu plus court — on l'aère pour remplir la feuille */
-  .sheet:last-of-type h2.article { margin: 14px 0 8px; padding: 5px 10px; }
-  .sheet:last-of-type p { margin-bottom: 7px; }
-  .sheet:last-of-type .parties { padding: 10px 12px; }
-  .sheet:last-of-type .sign-grid { margin-top: 22px; }
-  .sheet:last-of-type .sig { min-height: 170px; }
-  .sheet:last-of-type .footer { margin-top: 18px; }
+  section { break-inside: avoid; }
+  /* Page 1 (Employé) : +15% vertical */
+  .sheet:first-of-type h1.doc-title { margin: 14px 0 7px; }
+  .sheet:first-of-type p { margin-bottom: 7px; }
+  .sheet:first-of-type .parties { padding: 10px 8px; margin-bottom: 10px; }
+  .sheet:first-of-type .sign-grid { margin-top: 18px; }
+  .sheet:first-of-type .sig { min-height: 138px; }
+  .sheet:first-of-type .sig-line { margin-top: 23px; }
+  .sheet:first-of-type .footer { margin-top: 14px; padding: 9px 14px 11px; }
+  /* Page 2 (Employeur) : +30% vertical */
+  .sheet:last-of-type h1.doc-title { margin: 16px 0 8px; }
+  .sheet:last-of-type p { margin-bottom: 8px; }
+  .sheet:last-of-type .parties { padding: 12px 8px; margin-bottom: 12px; }
+  .sheet:last-of-type .sign-grid { margin-top: 21px; }
+  .sheet:last-of-type .sig { min-height: 156px; }
+  .sheet:last-of-type .sig-line { margin-top: 26px; }
+  .sheet:last-of-type .footer { margin-top: 16px; padding: 10px 14px 12px; }
   @media print {
     body { background: #fff; }
     .sheet { width: 100%; margin: 0; border: none; box-shadow: none; border-radius: 0; page-break-after: always; }

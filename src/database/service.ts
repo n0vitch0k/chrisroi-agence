@@ -11,10 +11,10 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
  *  Le dossier cache d'Expo Go contient des segments doublement encodés (%25…)
  *  qui font échouer l'upload multipart RN (erreur réseau status 0).
  *  Retourne l'URI d'origine en cas d'échec (comportement inchangé). */
-export const safeLocalUri = async (uri: string, fileName?: string): Promise<string> => {
+export const safeLocalUri = async (uri: string, fileName?: string, forceCopy = false): Promise<string> => {
   try {
     if (!/^file:\/\//i.test(uri)) return uri;
-    if (!/[% ]/.test(uri)) return uri;
+    if (!forceCopy && !/[% ]/.test(uri)) return uri;
     console.log('[UPLOAD-DIAG] sanitize: cacheDirectory =', cacheDirectory);
     if (!cacheDirectory) {
       console.log('[UPLOAD-DIAG] sanitize IMPOSSIBLE: pas de cacheDirectory');
@@ -22,7 +22,10 @@ export const safeLocalUri = async (uri: string, fileName?: string): Promise<stri
     }
     const rawExt = (fileName || uri).split('.').pop()?.toLowerCase().split('?')[0] || 'jpg';
     const cleanExt = /^[a-z0-9]{1,5}$/.test(rawExt) ? rawExt : 'jpg';
-    const dest = `${cacheDirectory}upload_${Date.now()}_${Math.floor(Math.random() * 1e6)}.${cleanExt}`;
+    const rawStem = (fileName || uri).split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || 'file';
+    const safeStem = rawStem.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60) || 'file';
+    const prefix = forceCopy ? `${safeStem}_` : 'upload_';
+    const dest = `${cacheDirectory}${prefix}${Date.now()}_${Math.floor(Math.random() * 1e6)}.${cleanExt}`;
     await copyAsync({ from: uri, to: dest });
     const info = await getInfoAsync(dest);
     if (!info?.exists) {
@@ -1151,10 +1154,17 @@ export const patchEmployeurField = async (
 };
 // ============== GESTION DES CONTRATS ==============
 
+/** Une date de contrat est réellement renseignée si elle contient autre chose que des espaces. */
+const hasContractDateValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  return true;
+};
+
 export const createContrat = async (contrat: any): Promise<string> => {
   const pb = getPb();
-  const now = new Date().toISOString();
-  const year = new Date().getFullYear();
+  const contractCreationDate = new Date().toISOString();
+  const year = new Date(contractCreationDate).getFullYear();
 
   // Numéro de dossier robuste aux courses :
   // on utilise un fragment d'ID PB (15 chars, base62) + année. C'est garanti unique
@@ -1164,6 +1174,16 @@ export const createContrat = async (contrat: any): Promise<string> => {
 
   const commission = contrat.salaire ? Math.round(contrat.salaire / 3) : 0;
 
+  const effectiveDateSignature = hasContractDateValue(contrat.date_signature)
+    ? contrat.date_signature
+    : contractCreationDate;
+  const effectiveDateContrat = hasContractDateValue(contrat.date_contrat)
+    ? contrat.date_contrat
+    : contractCreationDate;
+  const effectiveDateDebut = hasContractDateValue(contrat.date_debut)
+    ? contrat.date_debut
+    : contractCreationDate;
+
   let record;
   try {
     record = await pb.collection('contrats').create({
@@ -1171,11 +1191,11 @@ export const createContrat = async (contrat: any): Promise<string> => {
       employe_id: contrat.employe_id,
       employeur_id: contrat.employeur_id,
       demande_id: contrat.demande_id || '',
-      date_contrat: contrat.date_contrat || now,
+      date_contrat: effectiveDateContrat,
       poste: contrat.poste,
       type_contrat: contrat.type_contrat || 'heberge',
       format_document: contrat.format_document || 'prestation',
-      date_debut: contrat.date_debut,
+      date_debut: effectiveDateDebut,
       date_fin: contrat.date_fin || '',
       duree: contrat.duree || '',
       salaire: contrat.salaire,
@@ -1196,7 +1216,7 @@ export const createContrat = async (contrat: any): Promise<string> => {
       employe_adresse_actuelle: contrat.employe_adresse_actuelle || '',
       employe_piece_reference: contrat.employe_piece_reference || '',
       retenue_salaire_montant: contrat.retenue_salaire_montant ?? null,
-      date_signature: contrat.date_signature || contrat.date_contrat || '',
+      date_signature: effectiveDateSignature,
       signature_employe: contrat.signature_employe || '',
       signature_agence: contrat.signature_agence || '',
       signature_employeur: contrat.signature_employeur || '',
@@ -1837,42 +1857,53 @@ export const uploadScan = async (
   documentId: string,
   imageUri: string | File,
   replace = true,
+  pageIndex?: number,
 ): Promise<string> => {
   const pb = getPb();
-
-  // Supprimer l'ancien scan s'il existe (on remplace), sauf en mode ajout (multi-pages)
-  if (replace) {
-    const existing = await getScan(documentType, documentId);
-    if (existing) {
-      try { await pb.collection('scans').delete(existing.id); } catch {}
-    }
-  }
+  const existing = replace ? await getScan(documentType, documentId) : null;
+  const extraParams: Record<string, string> = {
+    document_type: documentType,
+    document_id: documentId,
+  };
 
   let imageField: any;
+  const pageFileName = pageIndex !== undefined
+    ? `scan_${documentType}_${documentId}_page_${Math.max(0, Math.floor(pageIndex)) + 1}.jpg`
+    : undefined;
   if (typeof imageUri === 'string') {
-    // React Native — URI locale (ex: expo-image-picker), assainie (% → copie cache)
-    imageUri = await safeLocalUri(imageUri);
+    // Une page de contrat conserve un nom stable même si son URI cache change.
+    imageUri = await safeLocalUri(imageUri, pageFileName, Boolean(pageFileName));
     // Tentative native (multipart natif, contourne le fetch RN défaillant)
-    const safeNative = await nativeUploadRecord('scans', imageUri, 'image', 'image/jpeg', {
-      document_type: documentType,
-      document_id: documentId,
-    });
-    if (safeNative?.id) return safeNative.id;
+    const safeNative = await nativeUploadRecord('scans', imageUri, 'image', 'image/jpeg', extraParams);
+    if (safeNative?.id) {
+      if (existing) {
+        try { await pb.collection('scans').delete(existing.id); } catch (error) {
+          console.warn('[SCAN] Ancien scan non supprimé après remplacement:', error);
+        }
+      }
+      return safeNative.id;
+    }
     imageField = {
       uri: imageUri,
       type: 'image/jpeg',
-      name: `scan_${documentType}_${documentId}.jpg`,
+      name: pageFileName || `scan_${documentType}_${documentId}.jpg`,
     };
   } else {
-    // Web — File object
-    imageField = imageUri;
+    // Web — File object. Renommer le fichier conserve l'ordre même sans champ PB.
+    imageField = pageFileName
+      ? new File([imageUri], pageFileName, { type: imageUri.type || 'image/jpeg' })
+      : imageUri;
   }
 
   const record = await pb.collection('scans').create({
     image: imageField,
-    document_type: documentType,
-    document_id: documentId,
+    ...extraParams,
   });
+  if (existing) {
+    try { await pb.collection('scans').delete(existing.id); } catch (error) {
+      console.warn('[SCAN] Ancien scan non supprimé après remplacement:', error);
+    }
+  }
   return record.id;
 };
 
@@ -1901,24 +1932,36 @@ export const getScan = async (
 };
 
 /** Stocke les N pages d'un scan multi-pages (ex: contrat 3 pages).
- *  Remplace les anciens scans du document, puis crée un record `scans`
- *  par page, dans l'ordre (page 1 = la plus ancienne = premier item de getScans). */
+ *  Crée d'abord toutes les nouvelles pages ; l'ancien jeu n'est supprimé
+ *  qu'après une création complète. En cas d'échec, les nouvelles pages sont
+ *  supprimées et l'ancien jeu reste intact. */
 export const uploadScanPages = async (
   documentType: 'fiche_inscription' | 'contrat',
   documentId: string,
   imageUris: (string | File)[],
+  _base64s?: string[],
 ): Promise<string[]> => {
   const pb = getPb();
+  let existing: any[] = [];
   try {
-    const existing = await pb.collection('scans').getFullList({
+    existing = await pb.collection('scans').getFullList({
       filter: `document_type="${documentType}" && document_id="${documentId}"`,
     });
-    await Promise.all(existing.map((s: any) => pb.collection('scans').delete(s.id).catch(() => null)));
-  } catch { /* best effort */ }
+  } catch { existing = []; }
+
   const ids: string[] = [];
-  for (const uri of imageUris) {
-    ids.push(await uploadScan(documentType, documentId, uri, false));
+  try {
+    for (let index = 0; index < imageUris.length; index += 1) {
+      ids.push(await uploadScan(documentType, documentId, imageUris[index], false, index));
+    }
+  } catch (error) {
+    await Promise.all(ids.map((id) => pb.collection('scans').delete(id).catch(() => null)));
+    throw error;
   }
+
+  await Promise.all(existing.map((scan: any) => pb.collection('scans').delete(scan.id).catch((cleanupError: any) => {
+    console.warn('[SCAN] Ancienne page non supprimée:', cleanupError);
+  })));
   return ids;
 };
 
@@ -1934,7 +1977,18 @@ export const getScans = async (
       // Pas de tri serveur : filtre + tri = 400 sur pb2 → tri client ci-dessous
       filter: `document_type="${documentType}" && document_id="${documentId}"`,
     });
-    const ordered = [...records].sort((a: any, b: any) => +new Date(a.created) - +new Date(b.created));
+    const ordered = [...records].sort((a: any, b: any) => {
+      const orderA = Number.isFinite(Number(a.page_index)) ? Number(a.page_index) : Number.MAX_SAFE_INTEGER;
+      const filenameA = String(a.image || '').match(/_page_(\d+)/i)?.[1];
+      const fileIndexA = filenameA ? Number(filenameA) : Number.MAX_SAFE_INTEGER;
+      const pageA = Math.min(orderA, fileIndexA);
+      const orderB = Number.isFinite(Number(b.page_index)) ? Number(b.page_index) : Number.MAX_SAFE_INTEGER;
+      const filenameB = String(b.image || '').match(/_page_(\d+)/i)?.[1];
+      const fileIndexB = filenameB ? Number(filenameB) : Number.MAX_SAFE_INTEGER;
+      const pageB = Math.min(orderB, fileIndexB);
+      if (pageA !== pageB) return pageA - pageB;
+      return String(a.image || '').localeCompare(String(b.image || ''), undefined, { numeric: true }) || (+new Date(a.created) - +new Date(b.created));
+    });
     return ordered.map((item: any) => ({
       ...item,
       imageUrl: item.image ? `${pbUrl}/api/files/scans/${item.id}/${item.image}` : null,

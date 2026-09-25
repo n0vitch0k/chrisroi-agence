@@ -62,6 +62,8 @@ export interface ScanResult {
   imageUri: string;
   /** Toutes les pages (page 1 = imageUri). Mono-page = tableau à 1 élément. */
   imageUris: string[];
+  /** Base64 JPEG des pages redressées, dans le même ordre. */
+  base64s: string[];
   documentType: DocumentType;
   extracted: ExtractedData;
 }
@@ -76,7 +78,7 @@ export interface ScanState {
   imageUri: string | null;
   /** Pages capturées (contrat multi-pages) + base64 associées */
   imageUris: string[];
-  base64s: (string | null)[];
+  base64s: string[];
   extracted: ExtractedData | null;
   error: string | null;
 }

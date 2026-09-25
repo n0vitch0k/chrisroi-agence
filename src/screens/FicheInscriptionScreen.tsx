@@ -30,6 +30,7 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { printToFileAsync } from 'expo-print';
 import { buildFichePapierHtml, FichePapierData, fileUriToDataUri } from '../utils/fichePrint';
 import { shareBase64File } from '../utils/shareFile';
+import DocumentScanCaptureModal from '../components/DocumentScanCaptureModal';
 import {
   CATEGORIES_EMPLOI,
   SITUATIONS_MATRIMONIALES,
@@ -303,6 +304,7 @@ export default function FicheInscriptionScreen() {
   const [activeTab, setActiveTab] = useState<'numerique' | 'scanne'>('numerique');
   const [scanData, setScanData] = useState<any>(null);
   const [scanLoading, setScanLoading] = useState(false);
+  const [showDocumentScan, setShowDocumentScan] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   // ── Sélecteur de source photo ───────────────
@@ -573,63 +575,27 @@ export default function FicheInscriptionScreen() {
   // ── Scan du document signé ─────────────────────────────
   // Ouvrir le choix galerie / caméra (pas seulement caméra) — plus fiable en prod
   // et évite les refus silencieux si la caméra n'est pas autorisée.
-  const handleScanDocument = async () => {
-    try {
-      setScanLoading(true);
-      // Demander les 2 permissions d'abord (Android 13+ = séparées)
-      const camPerm = await ImagePicker.requestCameraPermissionsAsync();
-      if (camPerm.status !== 'granted') {
-        // fallback : galerie si caméra refusée
-        const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (libPerm.status !== 'granted') {
-          Alert.alert('Permission refusée', "Autorisez l'appareil photo ou la galerie dans les réglages.");
-          setScanLoading(false);
-          return;
-        }
-        const libRes = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsEditing: false });
-        if (libRes.canceled || !libRes.assets[0]) { setScanLoading(false); return; }
-        const libUri = libRes.assets[0].uri;
-        if (!employeId) {
-          setPendingScanUri(libUri);
-          setScanLoading(false);
-          Alert.alert('Scan en attente', "Le scan sera enregistré après l'inscription.");
-          return;
-        }
-        await uploadScan('fiche_inscription', employeId, libUri);
-        const upLib = await getScan('fiche_inscription', employeId);
-        setScanData(upLib);
-        Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
-        setScanLoading(false);
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: 'images',
-        quality: 0.85,
-        allowsEditing: false,
-      });
-      if (result.canceled || !result.assets[0]) {
-        setScanLoading(false);
-        return;
-      }
-      const imageUri = result.assets[0].uri;
+  const handleScanDocument = () => {
+    setShowDocumentScan(true);
+  };
 
-      // Mode CRÉATION : on stocke le scan en attente (upload après handleSave)
+  const handleProcessedDocument = async (page: any) => {
+    setScanLoading(true);
+    try {
+      const uri = page.processedUri;
       if (!employeId) {
-        setPendingScanUri(imageUri);
-        setScanLoading(false);
+        setPendingScanUri(uri);
         Alert.alert('Scan en attente', "Le scan sera enregistré après l'inscription.");
         return;
       }
-      // Upload vers PocketBase
-      await uploadScan('fiche_inscription', employeId, imageUri);
-      // Recharger le scan
+      await uploadScan('fiche_inscription', employeId, uri);
       const updated = await getScan('fiche_inscription', employeId);
       setScanData(updated);
-      Alert.alert('Scan ajouté', 'Le document scanné a été enregistré.');
-      setScanLoading(false);
+      Alert.alert('Scan ajouté', 'Le document redressé a été enregistré.');
     } catch (e: any) {
-      console.warn('[scan] handleScanDocument error', e?.message || e);
-      Alert.alert('Scan', e?.message || "Le scan a échoué. Réessayez.");
+      Alert.alert('Scan', e?.message || "La page n'a pas pu être enregistrée.");
+      throw e;
+    } finally {
       setScanLoading(false);
     }
   };
@@ -1884,6 +1850,13 @@ export default function FicheInscriptionScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+      <DocumentScanCaptureModal
+        visible={showDocumentScan}
+        title="Scanner le document signé"
+        onCancel={() => setShowDocumentScan(false)}
+        onApplied={handleProcessedDocument}
+      />
+
       {/* ── Header ─────────────────────────────────────── */}
       <AppHeader title={headerTitle} showBack onBack={() => navigation.goBack()} />
       {/* ── Barre d'actions liées (fiche existante) ── */}

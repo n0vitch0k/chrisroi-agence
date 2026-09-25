@@ -16,7 +16,6 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { ContratDocumentNavigationProp } from '../types/navigation';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
-import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -29,6 +28,7 @@ import { buildContratHtml } from '../utils/contratPrint';
 import { buildContratAgenceHtml } from '../utils/contratAgencePrint';
 import { getFormatContratLabel, getFormatContratColors } from '../utils/constants';
 import { shareBase64File } from '../utils/shareFile';
+import { shareScanPdf } from '../utils/scanPdf';
 import {
   createContrat,
   updateContrat,
@@ -51,6 +51,7 @@ import {
 } from '../database/service';
 import { Colors, Spacing, Radius } from '../theme';
 import { DocumentViewerOverlay, useDocumentViewer } from '../components/DocumentViewer';
+import DocumentScanCaptureModal from '../components/DocumentScanCaptureModal';
 
 // ── Helpers ──────────────────────────────────────────────────
 function calcAge(dateNaissance?: string | null): number | null {
@@ -225,6 +226,7 @@ export default function ContratDocumentScreen() {
   const [activeTab, setActiveTab] = useState<'numerique' | 'scanne'>('numerique');
   const [scanPages, setScanPages] = useState<any[]>([]);
   const [scanLoading, setScanLoading] = useState(false);
+  const [showDocumentScan, setShowDocumentScan] = useState(false);
 
   const reloadScanPages = async (id?: string | null) => {
     const cid = id ?? contratId;
@@ -333,7 +335,7 @@ export default function ContratDocumentScreen() {
           client_piece_numero: contrat.client_piece_numero || employeur?.piece_numero || '',
           client_piece_date: contrat.client_piece_date || employeur?.piece_date || '',
           numero_dossier: contrat.numero_dossier || '',
-          date_signature: contrat.date_signature || contrat.date_contrat || '',
+          date_signature: contrat.date_signature || '',
           poste: contrat.poste || '',
           commission_fixe: String(contrat.commission_fixe ?? 15000),
           frais_transport: String(contrat.frais_transport ?? 5000),
@@ -407,17 +409,33 @@ export default function ContratDocumentScreen() {
     if (!formData.poste.trim()) { Alert.alert('Champs requis', 'Le poste attribué est obligatoire.'); return; }
     setLoading(true);
     try {
+      const hasDate = (value: unknown): boolean => {
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'string') return value.trim().length > 0;
+        return true;
+      };
+      const contractCreationDate = new Date().toISOString();
+      const effectiveDateSignature = hasDate(formData.date_signature)
+        ? formData.date_signature
+        : contractCreationDate;
+      const effectiveDateContrat = hasDate(formData.date_contrat)
+        ? formData.date_contrat
+        : contractCreationDate;
+      const effectiveDateDebut = hasDate(formData.date_debut)
+        ? formData.date_debut
+        : contractCreationDate;
+
       const payload: any = {
         employe_id: formData.employe_id,
         employeur_id: formData.employeur_id,
         poste: formData.poste,
-        date_signature: formData.date_signature || new Date().toISOString(),
-        date_contrat: formData.date_signature || formData.date_contrat || new Date().toISOString(),
-        date_debut: formData.date_signature || formData.date_debut || new Date().toISOString(),
+        date_signature: effectiveDateSignature,
+        date_contrat: effectiveDateContrat,
+        date_debut: effectiveDateDebut,
         duree: formData.duree || '3 mois',
         commission_fixe: parseInt(formData.commission_fixe) || 15000,
         frais_transport: parseInt(formData.frais_transport) || 5000,
-        retenue_salaire_montant: parseInt(formData.retenue_salaire_montant) || (formData.salaire ? Math.round(parseFloat(formData.salaire)/3) : 0),
+        retenue_salaire_montant: parseInt(formData.retenue_salaire_montant) || (formData.salaire ? Math.round(parseFloat(formData.salaire) / 3) : 0),
         salaire: parseFloat(formData.salaire) || 0,
         client_domicile: formData.client_domicile,
         client_piece_numero: formData.client_piece_numero,
@@ -460,12 +478,18 @@ export default function ContratDocumentScreen() {
   const handlePrint = async () => {
     try {
       const fmt = formatDoc;
+      const hasDate = (value: unknown): boolean => {
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'string') return value.trim().length > 0;
+        return true;
+      };
+      const contractCreationDate = new Date().toISOString();
       const c: any = {
         numero_dossier: formData.numero_dossier || `CHR-${new Date().getFullYear()}-XXXX`,
         poste: formData.poste,
-        date_signature: formData.date_signature,
-        date_contrat: formData.date_signature || formData.date_contrat,
-        date_debut: formData.date_debut || formData.date_signature,
+        date_signature: hasDate(formData.date_signature) ? formData.date_signature : contractCreationDate,
+        date_contrat: hasDate(formData.date_contrat) ? formData.date_contrat : contractCreationDate,
+        date_debut: hasDate(formData.date_debut) ? formData.date_debut : contractCreationDate,
         duree: formData.duree,
         client_domicile: formData.client_domicile,
         client_piece_numero: formData.client_piece_numero,
@@ -493,32 +517,31 @@ export default function ContratDocumentScreen() {
     } catch (e: any) { Alert.alert('Erreur', e?.message || 'Impression impossible'); }
   };
 
-  // Scan
-  const handleScanDocument = async () => {
+  const handleScanDocument = () => {
+    if (!isEditing || !contratId) {
+      Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner.");
+      return;
+    }
+    if (scanPages.length >= 3) {
+      Alert.alert('Limite atteinte', 'Le contrat comporte 3 pages.');
+      return;
+    }
+    setShowDocumentScan(true);
+  };
+
+  const handleProcessedDocument = async (page: any) => {
+    if (!isEditing || !contratId) return;
+    setScanLoading(true);
     try {
-      setScanLoading(true);
-      const camPerm = await ImagePicker.requestCameraPermissionsAsync();
-      if (camPerm.status !== 'granted') {
-        const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (libPerm.status !== 'granted') { Alert.alert('Permission refusée', "Autorisez l'appareil photo ou la galerie."); setScanLoading(false); return; }
-        const libRes = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsEditing: false });
-        if (libRes.canceled || !libRes.assets[0]) { setScanLoading(false); return; }
-        const docId = isEditing ? contratId : null;
-        if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); setScanLoading(false); return; }
-        await uploadScan('contrat', docId, libRes.assets[0].uri, false);
-        await reloadScanPages(docId);
-        Alert.alert('Scan ajouté', 'Page enregistrée.');
-        setScanLoading(false); return;
-      }
-      const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.85, allowsEditing: false });
-      if (result.canceled || !result.assets[0]) { setScanLoading(false); return; }
-      const docId = isEditing ? contratId : null;
-      if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); setScanLoading(false); return; }
-      await uploadScan('contrat', docId, result.assets[0].uri, false);
-      await reloadScanPages(docId);
-      Alert.alert('Scan ajouté', 'Page enregistrée.');
+      await uploadScan('contrat', contratId, page.processedUri, false);
+      await reloadScanPages(contratId);
+      Alert.alert('Scan ajouté', 'Page redressée enregistrée.');
+    } catch (e: any) {
+      Alert.alert('Scan', e?.message || "La page n'a pas pu être enregistrée.");
+      throw e;
+    } finally {
       setScanLoading(false);
-    } catch (e: any) { console.warn('[scan-contrat]', e?.message); Alert.alert('Scan', e?.message || 'Le scan a échoué.'); setScanLoading(false); }
+    }
   };
   const handleScanWeb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return; (e.target as HTMLInputElement).value = '';
@@ -526,6 +549,24 @@ export default function ContratDocumentScreen() {
     if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); return; }
     try { setScanLoading(true); await uploadScan('contrat', docId, file, false); await reloadScanPages(docId); Alert.alert('Scan ajouté', 'Page enregistrée.'); } catch (err: any) { Alert.alert('Erreur', err?.message || "Échec de l'upload"); } finally { setScanLoading(false); }
   };
+  const handleDownloadScanPdf = async () => {
+    if (scanPages.length === 0) {
+      Alert.alert('Scan', 'Aucune page scannée à convertir.');
+      return;
+    }
+    try {
+      setScanLoading(true);
+      const pages = scanPages
+        .filter((page: any) => page.imageUrl)
+        .map((page: any, index: number) => ({ uri: page.imageUrl, label: `Contrat signé — page ${index + 1}` }));
+      await shareScanPdf(pages, `contrat_signe_${contratId || Date.now()}.pdf`, 'Contrat signé — PDF multipage');
+    } catch (e: any) {
+      Alert.alert('PDF', e?.message || 'Impossible de générer le PDF multipage.');
+    } finally {
+      setScanLoading(false);
+    }
+  };
+
   const handleDeleteScanPage = (scanId: string) => {
     Alert.alert('Supprimer cette page ?', 'La page scannée sera définitivement supprimée.', [
       { text: 'Annuler', style: 'cancel' },
@@ -683,12 +724,49 @@ export default function ContratDocumentScreen() {
                 </View>
               ))}
             </View>
-            <SafeButton onPress={handleScanDocument} mode={scanPages.length === 0 ? 'contained' : 'outlined'}>
-              <Icon name="camera" size={18} color={scanPages.length === 0 ? '#fff' : Colors.primary} />
-              <Text style={{ color: scanPages.length === 0 ? '#fff' : Colors.primary, fontWeight: '600', marginLeft: 6 }}>
-                {scanPages.length === 0 ? 'Scanner le document signé' : 'Ajouter une page'}
-              </Text>
-            </SafeButton>
+            <View style={{ flexDirection: 'row', gap: 10, width: '100%', justifyContent: 'center' }}>
+              <TouchableOpacity
+                onPress={handleScanDocument}
+                disabled={scanLoading}
+                style={{
+                  flex: 1,
+                  minHeight: 48,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 16,
+                  borderRadius: Radius.md,
+                  backgroundColor: scanPages.length === 0 ? Colors.primary : 'transparent',
+                  borderWidth: scanPages.length === 0 ? 0 : 1.5,
+                  borderColor: Colors.primary,
+                }}
+              >
+                <Icon name="camera" size={18} color={scanPages.length === 0 ? Colors.textOnPrimary : Colors.primary} />
+                <Text style={{ color: scanPages.length === 0 ? Colors.textOnPrimary : Colors.primary, fontWeight: '600', marginLeft: 6 }}>
+                  {scanPages.length === 0 ? 'Scanner le document signé' : 'Ajouter une page'}
+                </Text>
+              </TouchableOpacity>
+              {scanPages.length > 0 && (
+                <TouchableOpacity
+                  onPress={handleDownloadScanPdf}
+                  disabled={scanLoading}
+                  style={{
+                    flex: 1,
+                    minHeight: 48,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 16,
+                    borderRadius: Radius.md,
+                    borderWidth: 1.5,
+                    borderColor: Colors.primary,
+                  }}
+                >
+                  <Icon name="file-pdf-box" size={18} color={Colors.primary} />
+                  <Text style={{ color: Colors.primary, fontWeight: '600', marginLeft: 6 }}>PDF multipage</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {Platform.OS === 'web' && (
               <View style={{ width: '100%', alignItems: 'center' }}>
                 <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 8 }}>ou importer un fichier</Text>
@@ -881,6 +959,13 @@ export default function ContratDocumentScreen() {
       </View>
 
       {activeTab === 'numerique' ? renderNumerique() : renderScanTab()}
+
+      <DocumentScanCaptureModal
+        visible={showDocumentScan}
+        title="Scanner le contrat signé"
+        onCancel={() => setShowDocumentScan(false)}
+        onApplied={handleProcessedDocument}
+      />
 
       {renderPickerModal(showEmployePicker, () => { setShowEmployePicker(false); setSearchEmploye(''); }, employes, handleSelectEmploye, formData.employe_id, true, searchEmploye, setSearchEmploye)}
       {renderPickerModal(showEmployeurPicker, () => { setShowEmployeurPicker(false); setSearchEmployeur(''); }, employeurs, handleSelectEmployeur, formData.employeur_id, false, searchEmployeur, setSearchEmployeur)}

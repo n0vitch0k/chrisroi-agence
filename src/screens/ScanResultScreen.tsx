@@ -29,8 +29,8 @@ type Props = {
   route: {
     params: {
       imageUri: string;
-      imageUris?: string[];
-      base64s?: (string | null)[];
+      imageUris: string[];
+      base64s: string[];
       documentType: DocumentType;
       extracted: ExtractedData;
     };
@@ -42,6 +42,7 @@ export default function ScanResultScreen({ route, navigation }: Props) {
   const { imageUri, documentType, extracted: initialExtracted } = route.params;
   // Toutes les pages (contrat multi-pages) — page 1 = imageUri en repli
   const pageUris = route.params.imageUris?.length ? route.params.imageUris : [imageUri];
+  const pageBase64s = route.params.base64s ?? pageUris.map(() => '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -221,7 +222,7 @@ export default function ScanResultScreen({ route, navigation }: Props) {
     });
 
     // 4. Upload des scans (toutes les pages du contrat, dans l'ordre)
-    await service.uploadScanPages('contrat', contratId, pageUris);
+    await service.uploadScanPages('contrat', contratId, pageUris, pageBase64s);
   };
 
   if (saved) {

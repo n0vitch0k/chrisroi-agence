@@ -26,9 +26,10 @@ export type RootStackParamList = {
   DetailModal: NavigatorScreenParams<EmployesStackParamList>;
   ScanResult: {
     imageUri: string;  documentType: 'fiche_inscription' | 'contrat';
-    /** Toutes les pages (page 1 = imageUri). Absent en mono-page. */
-    imageUris?: string[];
-    base64s?: (string | null)[];
+    /** Toutes les pages corrigées (page 1 = imageUri). */
+    imageUris: string[];
+    /** JPEG base64 des pages corrigées, dans le même ordre. */
+    base64s: string[];
     extracted: any;
   };
 };
