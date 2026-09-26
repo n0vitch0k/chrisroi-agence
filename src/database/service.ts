@@ -1977,17 +1977,21 @@ export const getScans = async (
       // Pas de tri serveur : filtre + tri = 400 sur pb2 → tri client ci-dessous
       filter: `document_type="${documentType}" && document_id="${documentId}"`,
     });
+    // Tri 100% client : le serveur refuse filtre+tri sur pb2 (400), et
+    // l'ordre des pages ne peut pas reposer sur `created` (deux pages creees
+    // dans la meme seconde sont ambigues). La seule source de verite est le
+    // suffixe _page_N du nom de fichier, pose a l'upload via pageIndex.
+    // Aucun champ page_index n'existe sur la collection : inutile d'en lire un.
+    const pageNumberOf = (record: any): number => {
+      const match = String(record.image || '').match(/_page_(\d+)/i);
+      return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+    };
     const ordered = [...records].sort((a: any, b: any) => {
-      const orderA = Number.isFinite(Number(a.page_index)) ? Number(a.page_index) : Number.MAX_SAFE_INTEGER;
-      const filenameA = String(a.image || '').match(/_page_(\d+)/i)?.[1];
-      const fileIndexA = filenameA ? Number(filenameA) : Number.MAX_SAFE_INTEGER;
-      const pageA = Math.min(orderA, fileIndexA);
-      const orderB = Number.isFinite(Number(b.page_index)) ? Number(b.page_index) : Number.MAX_SAFE_INTEGER;
-      const filenameB = String(b.image || '').match(/_page_(\d+)/i)?.[1];
-      const fileIndexB = filenameB ? Number(filenameB) : Number.MAX_SAFE_INTEGER;
-      const pageB = Math.min(orderB, fileIndexB);
+      const pageA = pageNumberOf(a);
+      const pageB = pageNumberOf(b);
       if (pageA !== pageB) return pageA - pageB;
-      return String(a.image || '').localeCompare(String(b.image || ''), undefined, { numeric: true }) || (+new Date(a.created) - +new Date(b.created));
+      return String(a.image || '').localeCompare(String(b.image || ''), undefined, { numeric: true })
+        || (+new Date(a.created) - +new Date(b.created));
     });
     return ordered.map((item: any) => ({
       ...item,

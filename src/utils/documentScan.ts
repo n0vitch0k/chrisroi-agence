@@ -104,6 +104,13 @@ const BIN_BAND_ROWS = 512;
 
 const FINAL_JPEG_QUALITY = 92;
 
+/**
+ * Qualité de la copie OCR : volontairement plus basse que la page stockée.
+ * L'OCR ne lit que le texte, et une compression à 85 reste très au-dessus du
+ * seuil où un caractère devient ambigu.
+ */
+const OCR_JPEG_QUALITY = 85;
+
 let cachedJpeg: JpegModule | null = null;
 
 function getJpegModule(): JpegModule {
@@ -354,27 +361,31 @@ function transformPerspective(
  * transition conserve l'antialiasing d'origine - des contours plus fidèles que
  * la photo de l'appareil, et non plus durs.
  *
- * Traitement par bandes de lignes : la mémoire reste proportionnelle à la
- * largeur et à la bande, pas à la hauteur totale de l'image. Indispensable sur
- * un téléphone, où une page 12 MP tient ~45 Mo de luminance.
+ * Traitement par bandes de lignes : la mémoire de travail reste proportionnelle
+ * à la largeur et à la bande, pas à la hauteur totale. Indispensable sur un
+ * téléphone, où une page 12 MP tient ~45 Mo de luminance.
+ *
+ * La luminance n'est PAS précalculée dans deux Float32Array pleine image : elle
+ * est calculée à la volée dans la passe horizontale, arrondie en float32
+ * (Math.fround) pour reproduire exactement l'écriture dans un Float32Array. Les
+ * deux tableaux pleine image coûtaient 51,5 Mo sur une page 6,8 MP sans changer
+ * un seul pixel — mesuré, pas estimé.
  */
 function renderBlackAndWhite(rgba: Uint8Array, width: number, height: number): Uint8Array {
-  const count = width * height;
   const radius = Math.max(1, Math.min(BIN_WINDOW_RADIUS, Math.floor(Math.min(width, height) / 2)));
   const span = radius * 2 + 1;
   const invSpan = 1 / span;
 
   // Les deux moments sont necessaires : le seuil de Sauvola se sert de l'ecart
-  // type local, donc moyenne ET moyenne des carres, calculees sur la MEME
-  // fenetre rectangulaire.
-  const lum = new Float32Array(count);
-  const square = new Float32Array(count);
-  for (let pixel = 0; pixel < count; pixel += 1) {
-    const index = pixel * 4;
-    const value = 0.2126 * rgba[index] + 0.7152 * rgba[index + 1] + 0.0722 * rgba[index + 2];
-    lum[pixel] = value;
-    square[pixel] = value * value;
-  }
+  // type local, donc moyenne ET moyenne des carrees, calculees sur la MEME
+  // fenetre rectangulaire. Math.fround est indispensable : sans lui la somme
+  // glissante derive en float64 et le rendu differe d'un ou deux niveaux.
+  const lumAt = (rowBase: number, column: number): number => {
+    const index = (rowBase + column) * 4;
+    return Math.fround(
+      0.2126 * rgba[index] + 0.7152 * rgba[index + 1] + 0.0722 * rgba[index + 2],
+    );
+  };
 
   const output = new Uint8Array(rgba.length);
   for (let y0 = 0; y0 < height; y0 += BIN_BAND_ROWS) {
@@ -393,17 +404,17 @@ function renderBlackAndWhite(rgba: Uint8Array, width: number, height: number): U
       let sum = 0;
       let sumSquare = 0;
       for (let offset = -radius; offset <= radius; offset += 1) {
-        const index = source + clamp(offset, 0, width - 1);
-        sum += lum[index];
-        sumSquare += square[index];
+        const value = lumAt(source, clamp(offset, 0, width - 1));
+        sum += value;
+        sumSquare += value * value;
       }
       for (let x = 0; x < width; x += 1) {
         horizontal[target + x] = sum * invSpan;
         horizontalSquare[target + x] = sumSquare * invSpan;
-        const entering = source + clamp(x + radius + 1, 0, width - 1);
-        const leaving = source + clamp(x - radius, 0, width - 1);
-        sum += lum[entering] - lum[leaving];
-        sumSquare += square[entering] - square[leaving];
+        const entering = lumAt(source, clamp(x + radius + 1, 0, width - 1));
+        const leaving = lumAt(source, clamp(x - radius, 0, width - 1));
+        sum += entering - leaving;
+        sumSquare += entering * entering - leaving * leaving;
       }
     }
 
@@ -576,6 +587,83 @@ export async function finalizeScanPage(
 
 export function cornersToPixels(corners: ScanCorner[], width: number, height: number): ScanCorner[] {
   return normalizeCorners(corners).map((corner) => ({ x: corner.x * width, y: corner.y * height }));
+}
+
+/**
+ * Côté long de la copie envoyée à l'OCR. L'extraction de texte ne tire aucun
+ * bénéfice au-delà de ~150 ppp, alors que la page stockée vaut ~360 ppp : on
+ * envoie donc une version allégée, mesurée à 1500 px de côté long.
+ *
+ * Gain mesuré (document 3 pages, une seule requête) : corps JSON de 2,16 Mo
+ * ramené à 0,93 Mo, soit 2,3x plus léger. La page enregistrée dans PocketBase et
+ * affichée dans l'app garde la pleine résolution : seule la copie OCR est
+ * réduite.
+ */
+const OCR_MAX_EDGE = 1500;
+
+/**
+ * Réduit une page pour l'OCR, en rééchantillonnage par boîte (moyenne) puis
+ * ré-encodage. Retourne le base64 d'entrée si l'image est déjà assez petite ou
+ * si l'encodage échoue : mieux vaut envoyer une page trop grande que pas de
+ * page du tout.
+ */
+export async function buildOcrBase64(page: {
+  base64: string;
+  width: number;
+  height: number;
+}): Promise<string> {
+  const longest = Math.max(page.width, page.height);
+  if (page.base64.length === 0 || longest <= OCR_MAX_EDGE) return page.base64;
+  try {
+    const bytes = new Uint8Array(Buffer.from(page.base64, 'base64'));
+    const decoded = getJpegModule().decode(bytes, {
+      useTArray: true,
+      formatAsRGBA: true,
+      maxResolutionInMP: DECODE_MAX_MP,
+      maxMemoryUsageInMB: DECODE_MAX_MEMORY_MB,
+    });
+    // Facteur entier : le rééchantillonnage boîte aligne alors exactement sur
+    // la grille, sans dérive ni mélange de deux lignes.
+    const factor = Math.max(1, Math.round(longest / OCR_MAX_EDGE));
+    const width = Math.max(1, Math.floor(decoded.width / factor));
+    const height = Math.max(1, Math.floor(decoded.height / factor));
+    const source = decoded.data instanceof Uint8Array
+      ? decoded.data
+      : new Uint8Array(decoded.data as ArrayBuffer);
+    const reduced = new Uint8Array(width * height * 4);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const target = (y * width + x) * 4;
+        // Moyenne du bloc factor x factor : préserve la finesse des jambages
+        // là où une simple sélection aurait aliasé les caractères.
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        for (let dy = 0; dy < factor; dy += 1) {
+          const rowBase = (y * factor + dy) * decoded.width + x * factor;
+          for (let dx = 0; dx < factor; dx += 1) {
+            const index = (rowBase + dx) * 4;
+            r += source[index];
+            g += source[index + 1];
+            b += source[index + 2];
+          }
+        }
+        const samples = factor * factor;
+        reduced[target] = Math.round(r / samples);
+        reduced[target + 1] = Math.round(g / samples);
+        reduced[target + 2] = Math.round(b / samples);
+        reduced[target + 3] = 255;
+      }
+    }
+    const encoded = getJpegModule().encode(
+      { width, height, data: reduced },
+      OCR_JPEG_QUALITY,
+    );
+    return Buffer.from(encoded.data as any).toString('base64');
+  } catch {
+    // Réduction impossible : la page pleine résolution part telle quelle.
+    return page.base64;
+  }
 }
 
 export function defaultScanCorners(): ScanCorner[] {

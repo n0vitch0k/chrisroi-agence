@@ -533,7 +533,9 @@ export default function ContratDocumentScreen() {
     if (!isEditing || !contratId) return;
     setScanLoading(true);
     try {
-      await uploadScan('contrat', contratId, page.processedUri, false);
+      // L'index est indispensable : le tri de getScans() s'appuie sur le
+      // suffixe _page_N du nom de fichier, absent si on ne le passe pas.
+      await uploadScan('contrat', contratId, page.processedUri, false, scanPages.length);
       await reloadScanPages(contratId);
       Alert.alert('Scan ajouté', 'Page redressée enregistrée.');
     } catch (e: any) {
@@ -547,7 +549,7 @@ export default function ContratDocumentScreen() {
     const file = e.target.files?.[0]; if (!file) return; (e.target as HTMLInputElement).value = '';
     const docId = isEditing ? contratId : null;
     if (!docId) { Alert.alert('Info', "Enregistrez d'abord le contrat avant de scanner."); return; }
-    try { setScanLoading(true); await uploadScan('contrat', docId, file, false); await reloadScanPages(docId); Alert.alert('Scan ajouté', 'Page enregistrée.'); } catch (err: any) { Alert.alert('Erreur', err?.message || "Échec de l'upload"); } finally { setScanLoading(false); }
+    try { setScanLoading(true); await uploadScan('contrat', docId, file, false, scanPages.length); await reloadScanPages(docId); Alert.alert('Scan ajouté', 'Page enregistrée.'); } catch (err: any) { Alert.alert('Erreur', err?.message || "Échec de l'upload"); } finally { setScanLoading(false); }
   };
   const handleDownloadScanPdf = async () => {
     if (scanPages.length === 0) {
