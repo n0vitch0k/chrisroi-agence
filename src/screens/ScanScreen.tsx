@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   View,
@@ -28,6 +28,8 @@ import {
   defaultScanCorners,
   buildOcrBase64,
   resetScanTrace,
+  subscribeScanTrace,
+  type ScanTraceEntry,
   type PreparedScanSource,
   type ScanCorner,
   type ProcessedScanPage,
@@ -85,6 +87,10 @@ export default function ScanScreen({ navigation }: Props) {
   // Etape longue en cours : preparation N/total, ou preparation OCR. Evite un
   // ecran fige sans indication quand l'operation depasse plusieurs secondes.
   const [progress, setProgress] = useState<{ step: string; done: number; total: number } | null>(null);
+  // Timings affiches dans l'app : sur un telephone, un console.log est invisible.
+  const [timings, setTimings] = useState<ScanTraceEntry[]>([]);
+
+  useEffect(() => subscribeScanTrace(setTimings), []);
 
   const setPagesAndState = (next: PageCapture[], documentType: DocumentType) => {
     setPages(next);
@@ -127,6 +133,8 @@ export default function ScanScreen({ navigation }: Props) {
     setProcessing(true);
     setScanState((previous) => ({ ...previous, error: null }));
     // Journal de timings : a lire dans la console Metro (Expo Go) ou logcat.
+    // NOTE : sur un telephone physique, console.log n'apparait PAS a l'ecran.
+    // Le panneau "Timings" plus bas affiche les memes valeurs dans l'app.
     resetScanTrace();
 
     const total = Math.min(assets.length, remaining);
@@ -504,6 +512,35 @@ export default function ScanScreen({ navigation }: Props) {
         </Card>
       )}
 
+      {timings.length > 0 && (
+        <Card style={styles.timingsCard}>
+          <Card.Content>
+            <View style={styles.timingsHeader}>
+              <Icon name="timer-outline" size={18} color={Colors.textSecondary} />
+              <Text style={styles.timingsTitle}>Timings de la dernière page</Text>
+            </View>
+            {timings.map((entry, index) => (
+              <View key={`${entry.step}-${index}`} style={styles.timingsRow}>
+                <Text style={styles.timingsStep} numberOfLines={1}>
+                  {entry.step.trim()}
+                </Text>
+                <Text style={styles.timingsMs}>{entry.ms} ms</Text>
+              </View>
+            ))}
+            <View style={[styles.timingsRow, styles.timingsTotalRow]}>
+              <Text style={styles.timingsTotalLabel}>Total</Text>
+              <Text style={styles.timingsTotalMs}>
+                {timings.reduce((sum, entry) => sum + entry.ms, 0)} ms
+              </Text>
+            </View>
+            {(() => {
+              const detail = timings.find((entry) => entry.detail)?.detail;
+              return detail ? <Text style={styles.timingsDetail}>{detail}</Text> : null;
+            })()}
+          </Card.Content>
+        </Card>
+      )}
+
       <Card style={styles.helpCard}>
         <Card.Content>
           <Text style={styles.helpTitle}>Conseils pour un bon scan</Text>
@@ -646,6 +683,35 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   errorText: { color: Colors.danger, fontSize: 14 },
+  timingsCard: {
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceAlt,
+    marginBottom: Spacing.lg,
+  },
+  timingsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  timingsTitle: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  timingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  timingsStep: { fontSize: 12, color: Colors.textSecondary, flex: 1, marginRight: Spacing.sm },
+  timingsMs: { fontSize: 12, color: Colors.textPrimary, fontWeight: '600' },
+  timingsTotalRow: {
+    marginTop: Spacing.xs,
+    paddingTop: Spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: Colors.surface,
+  },
+  timingsTotalLabel: { fontSize: 12, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
+  timingsTotalMs: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+  timingsDetail: { fontSize: 11, color: Colors.textSecondary, marginTop: Spacing.xs },
   helpCard: {
     borderRadius: Radius.md,
     backgroundColor: Colors.surface,

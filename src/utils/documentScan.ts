@@ -116,9 +116,29 @@ const FINAL_JPEG_QUALITY = 92;
  */
 const TRACE_SCAN_STEPS = true;
 
-type ScanTraceEntry = { step: string; ms: number; detail?: string };
+export type ScanTraceEntry = { step: string; ms: number; detail?: string };
 
 let scanTrace: ScanTraceEntry[] = [];
+
+/**
+ * Abonnes au journal des etapes. L'ecran de scan s'y inscrit pour afficher
+ * les temps directement dans l'interface : sur un telephone physique, rien
+ * n'apparait a l'ecran, donc un console.log seul est invisible pour l'utilisateur.
+ */
+const traceListeners = new Set<(entries: ScanTraceEntry[]) => void>();
+
+const notifyTrace = () => {
+  const snapshot = [...scanTrace];
+  traceListeners.forEach((listener) => listener(snapshot));
+};
+
+export const subscribeScanTrace = (listener: (entries: ScanTraceEntry[]) => void): (() => void) => {
+  traceListeners.add(listener);
+  listener([...scanTrace]);
+  return () => {
+    traceListeners.delete(listener);
+  };
+};
 
 const now = (): number =>
   (typeof globalThis !== 'undefined' && typeof (globalThis as any).performance?.now === 'function')
@@ -133,14 +153,16 @@ const trace = (step: string, startedAt: number, detail?: string) => {
   scanTrace.push(entry);
   // eslint-disable-next-line no-console
   console.log(`[SCAN-TRACE] ${step.padEnd(34)} ${String(ms).padStart(6)} ms${detail ? '  ' + detail : ''}`);
+  notifyTrace();
 };
 
 /** Vide le journal des etapes et affiche le total. A appeler au depart. */
 export const resetScanTrace = (): void => {
   scanTrace = [];
+  notifyTrace();
   if (!TRACE_SCAN_STEPS) return;
   // eslint-disable-next-line no-console
-  console.log('[SCAN-TRACE] ---------- journal vidé, debut d\'un scan ----------');
+  console.log('[SCAN-TRACE] ---------- journal vidé, début d\'un scan ----------');
 };
 
 /** Journal des etapes + total, pour lecture immediate dans la console. */
