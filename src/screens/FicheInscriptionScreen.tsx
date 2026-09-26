@@ -1164,14 +1164,43 @@ export default function FicheInscriptionScreen() {
       <SectionCard title="🎯 Emploi recherché">
         <Text style={digitalStyles.fieldLabel}>Catégorie d'emploi</Text>
         <View style={digitalStyles.chipRow}>
-          {CATEGORIES_EMPLOI.map((cat) => (
-            <TouchableOpacity key={cat.value} onPress={() => { if (fieldUnlocked('categorie_emploi')) updateForm('categorie_emploi', cat.value); }} style={[digitalStyles.chip, formData.categorie_emploi === cat.value && digitalStyles.chipActive, !fieldUnlocked('categorie_emploi') && digitalStyles.chipLocked]} activeOpacity={0.7} disabled={!fieldUnlocked('categorie_emploi')}>
-              <Text style={[digitalStyles.chipText, formData.categorie_emploi === cat.value && digitalStyles.chipTextActive]}>{cat.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {CATEGORIES_EMPLOI.map((cat) => {
+            // « Autre » n'est pas un badge : c'est un declencheur. Le badge
+            // affiche a sa place le metier saisi (voir showAutreEmploi).
+            if (cat.value === 'autre') {
+              const metierLibre = categorieEstLibre(formData.categorie_emploi);
+              if (showAutreEmploi && metierLibre) {
+                return (
+                  <TouchableOpacity
+                    key={cat.value}
+                    onPress={() => setShowAutreEmploi(true)}
+                    style={[digitalStyles.chip, digitalStyles.chipActive, !fieldUnlocked('categorie_emploi') && digitalStyles.chipLocked]}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[digitalStyles.chipText, digitalStyles.chipTextActive]}>{formData.categorie_emploi}</Text>
+                  </TouchableOpacity>
+                );
+              }
+              return (
+                <TouchableOpacity
+                  key={cat.value}
+                  onPress={() => ouvrirSaisieAutre()}
+                  style={[digitalStyles.chip, showAutreEmploi && digitalStyles.chipActive, !fieldUnlocked('categorie_emploi') && digitalStyles.chipLocked]}
+                  activeOpacity={0.7}
+                  disabled={!fieldUnlocked('categorie_emploi')}
+                >
+                  <Text style={[digitalStyles.chipText, showAutreEmploi && digitalStyles.chipTextActive]}>{cat.label}</Text>
+                </TouchableOpacity>
+              );
+            }
+            return (
+              <TouchableOpacity key={cat.value} onPress={() => choisirCategorie(cat.value)} style={[digitalStyles.chip, formData.categorie_emploi === cat.value && digitalStyles.chipActive, !fieldUnlocked('categorie_emploi') && digitalStyles.chipLocked]} activeOpacity={0.7} disabled={!fieldUnlocked('categorie_emploi')}>
+                <Text style={[digitalStyles.chipText, formData.categorie_emploi === cat.value && digitalStyles.chipTextActive]}>{cat.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
         {isEditing && <LockToggle fieldKey="categorie_emploi" unlocked={fieldUnlocked('categorie_emploi')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} employeId={employeId} currentValue={(formData as any)['categorie_emploi']} />}
-        <LockedField fieldKey="motivation" label="Motivation" value={formData.motivation} onChangeText={(t) => updateForm('motivation', t)} numberOfLines={3} placeholder="Pourquoi souhaitez-vous travailler via notre agence ?" unlocked={fieldUnlocked('motivation')} onToggleLock={toggleFieldLock} onPatch={patchField} isEditing={isEditing} />
       </SectionCard>
 
       {/* ── Documents associés ── */}
@@ -1384,6 +1413,18 @@ export default function FicheInscriptionScreen() {
             <EditableField
               value={formData.religion}
               onChangeText={(t) => updateForm('religion', t)}
+              placeholder="(optionnelle)"
+            />
+          </View>
+          {/* BUG FIX : le champ Ethnie existait dans le formulaire et dans le PDF
+              papier, mais PAS dans ce document imprime — la valeur saisie
+              n'apparait donc nulle part a l impression. D ou l impression vide
+              alors que le formulaire est rempli. */}
+          <View style={docStyles.infoItem}>
+            <Text style={docStyles.fieldLabel}>Ethnie</Text>
+            <EditableField
+              value={formData.ethnie}
+              onChangeText={(t) => updateForm('ethnie', t)}
               placeholder="(optionnelle)"
             />
           </View>
@@ -1645,35 +1686,37 @@ export default function FicheInscriptionScreen() {
 
         <Text style={docStyles.fieldLabel}>Catégorie d'emploi</Text>
         <View style={docStyles.chipRow}>
-          {CATEGORIES_EMPLOI.map((cat) => (
-            <TouchableOpacity
-              key={cat.value}
-              onPress={() => updateForm('categorie_emploi', cat.value)}
-              style={[
-                docStyles.chip,
-                formData.categorie_emploi === cat.value && docStyles.chipActive,
-              ]}
-            >
-              <Text
+          {CATEGORIES_EMPLOI.map((cat) => {
+            // Comme dans le formulaire : « Autre » affiche le métier saisi.
+            if (cat.value === 'autre') {
+              const libere = categorieEstLibre(formData.categorie_emploi);
+              if (!libere) return null;
+              return (
+                <View key={cat.value} style={[docStyles.chip, docStyles.chipActive]}>
+                  <Text style={[docStyles.chipText, docStyles.chipTextActive]}>{formData.categorie_emploi}</Text>
+                </View>
+              );
+            }
+            return (
+              <View
+                key={cat.value}
                 style={[
-                  docStyles.chipText,
-                  formData.categorie_emploi === cat.value && docStyles.chipTextActive,
+                  docStyles.chip,
+                  formData.categorie_emploi === cat.value && docStyles.chipActive,
                 ]}
               >
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    docStyles.chipText,
+                    formData.categorie_emploi === cat.value && docStyles.chipTextActive,
+                  ]}
+                >
+                  {cat.label}
+                </Text>
+              </View>
+            );
+          })}
         </View>
-
-        <Text style={[docStyles.fieldLabel, { marginTop: 12 }]}>Motivation</Text>
-        <EditableField
-          value={formData.motivation}
-          onChangeText={(t) => updateForm('motivation', t)}
-          placeholder="Pourquoi souhaitez-vous travailler via notre agence ?"
-          fieldStyle={docStyles.fieldBlock}
-          multiline
-        />
       </View>
 
       {/* ── Documents associés ─────────────────── */}
@@ -1847,6 +1890,43 @@ export default function FicheInscriptionScreen() {
         )}
       </View>
     );
+  };
+
+  // ── Emploi recherché : choix « Autre » ──
+  // Le metier saisi est stocke DIRECTEMENT dans categorie_emploi, pas dans un
+  // champ separe : ce champ est un texte libre, et tous ses lecteurs
+  // (getCategorieLabel, recherche, impression, contrat) affichent une valeur
+  // inconnue telle quelle. Donc aucun changement de schema PocketBase n'est
+  // necessaire, et le metier apparait partout correctement.
+  // categorieEstLibre distingue « autre » (declencheur, saisie en cours) d'un
+  // metier deja saisi.
+  const categorieEstLibre = (v: string) => !!v && v !== 'autre' && !CATEGORIES_EMPLOI.some((c) => c.value === v);
+  const [showAutreEmploi, setShowAutreEmploi] = useState(
+    categorieEstLibre(formData.categorie_emploi) || formData.categorie_emploi === 'autre',
+  );
+  useEffect(() => {
+    if (categorieEstLibre(formData.categorie_emploi)) setShowAutreEmploi(true);
+  }, [formData.categorie_emploi]);
+  const [autreTexte, setAutreTexte] = useState(
+    categorieEstLibre(formData.categorie_emploi) ? formData.categorie_emploi : '',
+  );
+  const [showAutreModal, setShowAutreModal] = useState(false);
+  const ouvrirSaisieAutre = () => {
+    if (!fieldUnlocked('categorie_emploi')) return;
+    setAutreTexte(categorieEstLibre(formData.categorie_emploi) ? formData.categorie_emploi : '');
+    setShowAutreModal(true);
+  };
+  const validerAutre = () => {
+    const metier = autreTexte.trim();
+    if (!metier) return;
+    updateForm('categorie_emploi', metier);
+    setShowAutreModal(false);
+    setShowAutreEmploi(true);
+  };
+  const choisirCategorie = (value: string) => {
+    if (!fieldUnlocked('categorie_emploi')) return;
+    updateForm('categorie_emploi', value);
+    setShowAutreEmploi(false);
   };
 
   return (
@@ -2109,6 +2189,46 @@ export default function FicheInscriptionScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={docStyles.pinConfirm} onPress={confirmDeleteDocument}>
                 <Text style={docStyles.pinConfirmText}>Supprimer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modale : saisie du métier quand « Autre » est choisi ── */}
+      <Modal
+        visible={showAutreModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAutreModal(false)}
+      >
+        <View style={docStyles.modalBackdrop}>
+          <View style={docStyles.pinSheet}>
+            <Icon name="briefcase-outline" size={28} color={Colors.primary} />
+            <Text style={docStyles.pinTitle}>Métier recherché</Text>
+            <Text style={docStyles.pinSubtitle}>
+              Le poste n'est pas dans la liste : écrivez-le.
+            </Text>
+            <TextInput
+              style={docStyles.pinInput}
+              value={autreTexte}
+              onChangeText={setAutreTexte}
+              placeholder="Ex. Coiffeuse,tailleur…"
+              placeholderTextColor="#9c8b7e"
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={validerAutre}
+            />
+            <View style={docStyles.pinActions}>
+              <TouchableOpacity style={docStyles.pinCancel} onPress={() => setShowAutreModal(false)}>
+                <Text style={docStyles.pinCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[docStyles.pinConfirm, !autreTexte.trim() && { opacity: 0.45 }]}
+                onPress={validerAutre}
+                disabled={!autreTexte.trim()}
+              >
+                <Text style={docStyles.pinConfirmText}>Valider</Text>
               </TouchableOpacity>
             </View>
           </View>

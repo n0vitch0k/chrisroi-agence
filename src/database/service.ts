@@ -663,12 +663,15 @@ export const createEmploye = async (employe: any): Promise<string> => {
     nationalite: employe.nationalite || '',
     situation_matrimoniale: employe.situation_matrimoniale || 'celibataire',
     religion: employe.religion || '',
+    // ethnie manquait ici : le champ existe dans le formulaire et le PDF
+    // papier, mais n'etait jamais envoye a PocketBase, donc toujours vide en
+    // base. Meme cause que l impression vide.
+    ethnie: employe.ethnie || '',
     niveau_etude: employe.niveau_etude || '',
     a_deja_travaille: !!employe.a_deja_travaille,
     experience_details: employe.experience_details || '',
     stages_effectues: employe.stages_effectues || '',
     formations: employe.formations || '',
-    motivation: employe.motivation || '',
     categorie_emploi: employe.categorie_emploi,
     photo_uri: employe.photo_uri || '',
     statut: 'disponible',
