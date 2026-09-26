@@ -204,6 +204,7 @@ export default function EmployeDetailScreen() {
         niveau_etude: employe.niveau_etude,
         deja_travaille: employe.a_deja_travaille,
         experience_details: employe.experience_details,
+        contacts_anciens_patrons: (employe.experiences || []).map((e: any) => e.contact).filter(Boolean),
         allergie_sante: employe.allergie_sante,
         intervention_chirurgicale: employe.intervention_chirurgicale,
         photo: photoUrl,

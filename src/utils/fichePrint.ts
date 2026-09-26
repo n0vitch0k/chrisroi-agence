@@ -34,6 +34,9 @@ export interface FichePapierData {
   niveau_etude?: string;
   deja_travaille?: boolean;
   experience_details?: string;
+  // Contacts des anciens patrons (section Expérience du formulaire) :
+  // imprimés sur la ligne papier « Si oui, contact ancien patron ».
+  contacts_anciens_patrons?: string[];
   allergie_sante?: string;
   intervention_chirurgicale?: string;
   // Photo : soit une URI simple (URL distante / file local), soit un data-URI
@@ -134,6 +137,15 @@ export function buildFichePapierHtml(data: FichePapierData): string {
 
   const photo = photoHtml(d.photo, d.photoDataUri);
 
+  // Ligne papier « A déjà travaillé : Oui / Non. Si oui, contact ancien patron » :
+  // les contacts viennent des expériences saisies dans le formulaire numérique.
+  const patronContacts = (d.contacts_anciens_patrons || []).filter(Boolean).join(' · ');
+  const travailleTxt = !d.deja_travaille
+    ? 'Non'
+    : 'Oui'
+      + (patronContacts ? ' — contact ancien patron : ' + escapeHtml(patronContacts) : '')
+      + (d.experience_details ? ' — ' + escapeHtml(d.experience_details) : '');
+
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -206,7 +218,7 @@ export function buildFichePapierHtml(data: FichePapierData): string {
           <div class="field"><dt>Ethnie</dt><dd>${escapeHtml(d.ethnie)}</dd></div>
           <div class="field"><dt>Emploi recherché</dt><dd>${escapeHtml(d.categorie_emploi)}</dd></div>
           <div class="field"><dt>Niveau d'études</dt><dd>${escapeHtml(d.niveau_etude)}</dd></div>
-          <div class="field full"><dt>Avez-vous déjà travaillé ? Si oui, précisez</dt><dd>${d.deja_travaille ? 'Oui — ' + escapeHtml(d.experience_details) : 'Non'}</dd></div>
+          <div class="field full"><dt>Avez-vous déjà travaillé ? Si oui, précisez</dt><dd>${travailleTxt}</dd></div>
           <div class="field full"><dt>Avez-vous des allergies ou des problèmes de santé ? Si oui, précisez</dt><dd>${escapeHtml(d.allergie_sante)}</dd></div>
           <div class="field full"><dt>Avez-vous déjà subi une ou plusieurs interventions chirurgicales ? Si oui, précisez</dt><dd>${escapeHtml(d.intervention_chirurgicale)}</dd></div>
         </dl>

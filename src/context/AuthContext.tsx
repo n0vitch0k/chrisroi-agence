@@ -1,7 +1,8 @@
 // ─── Contexte d'authentification ───────────────────────────
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { UserInfo } from '../types/navigation';
-import { initDatabase } from '../database/service';
+import { initDatabase, logout as pbLogout } from '../database/service';
+import { getPocketBase } from '../database/pocketbase';
 
 const SESSION_KEY = 'chrisroi_user_v1';
 
@@ -9,14 +10,14 @@ const SESSION_KEY = 'chrisroi_user_v1';
 // Evite d'exposer nom/prénom à un script tiers si XSS sur la version web.
 interface MinimalSession {
   id: string;
-  email: string;
+  username: string;
   role: string;
 }
 
 const toMinimal = (u: any): MinimalSession => ({
   id: u.id,
-  email: u.email,
-  role: u.role || 'admin',
+  username: u.username,
+  role: u.role || 'agent',
 });
 
 interface AuthContextType {
@@ -34,45 +35,42 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserInfo | null>(() => {
-    try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      // Accepte l'ancien format (nom/prenom) ET le nouveau minimal — fallback sécurisé.
-      return {
-        id: parsed.id,
-        email: parsed.email || '',
-        role: parsed.role || 'admin',
-        nom: parsed.nom || '',
-        prenom: parsed.prenom || '',
-      };
-    } catch { return null; }
-  });
+  // Sécurité : aucun utilisateur restauré avant vérification du token PB.
+  // Sans token valide, l'app affiche Login (plus d'auto-connexion admin).
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
       try {
-        const seededUser = await initDatabase();
-        if (seededUser) {
-          setUser(seededUser);
-          try { localStorage.setItem(SESSION_KEY, JSON.stringify({
-            id: seededUser.id,
-            email: seededUser.email,
-            role: seededUser.role,
-          })); } catch {}
-        } else {
-          // initDatabase retourne null → auth échouée → nettoyer session stale
-          // sinon l'UI restaure un user mort depuis localStorage et skip le login.
-          setUser(null);
-          try { localStorage.removeItem(SESSION_KEY); } catch {}
-        }
+        await initDatabase();
+        // Restaure la session locale UNIQUEMENT si le token PB est valide
+        // et correspond au même utilisateur. Sinon → Login.
+        try {
+          const raw = localStorage.getItem(SESSION_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const pb = getPocketBase();
+            const valid = (pb.authStore as any)?.isValid;
+            const model = pb.authStore.model as any;
+            if (valid && model && model.id === parsed.id) {
+              setUser({
+                id: parsed.id,
+                username: parsed.username || model.username || '',
+                role: parsed.role || model.role || 'agent',
+                nom: parsed.nom || model.nom || '',
+                prenom: parsed.prenom || model.prenom || '',
+              });
+            } else {
+              try { localStorage.removeItem(SESSION_KEY); } catch {}
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
+        } catch { setUser(null); }
       } catch (error) {
         console.error('Failed to initialize database:', error);
-        // Erreur (réseau, PB down) → idem, ne pas garder une session fantôme
-        setUser(null);
-        try { localStorage.removeItem(SESSION_KEY); } catch {}
       } finally {
         setIsLoading(false);
       }
@@ -82,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const onLogin = useCallback((loggedUser: UserInfo) => {
     setUser(loggedUser);
-    // Stocke uniquement {id, email, role} en localStorage. Les champs nom/prénom
+    // Stocke uniquement {id, username, role} en localStorage. Les champs nom/prénom
     // restent en mémoire (state) mais pas exposés à un éventuel XSS.
     try { localStorage.setItem(SESSION_KEY, JSON.stringify(toMinimal(loggedUser))); } catch {}
   }, []);
@@ -90,6 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const onLogout = useCallback(() => {
     setUser(null);
     try { localStorage.removeItem(SESSION_KEY); } catch {}
+    // Vide aussi le token PocketBase, sinon les appels API resteraient authentifiés.
+    try { void pbLogout(); } catch {}
   }, []);
 
   return (
