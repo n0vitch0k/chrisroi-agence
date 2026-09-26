@@ -214,6 +214,11 @@ export default function ContratDocumentScreen() {
   const [formData, setFormData] = useState<any>({ ...EMPTY_FORM, format_document: route.params?.format_document || 'prestation' });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Verrouillage après création, sur le modèle de la fiche d'inscription :
+  // une fois le contrat créé, le formulaire passe en lecture-seule et le
+  // bouton de création est désactivé. Pour ré-éditer, repasser par
+  // « Modifier » sur l'écran Détail (isEditing=true, le verrou ne s'active pas).
+  const [locked, setLocked] = useState(false);
   const [showEmployePicker, setShowEmployePicker] = useState(false);
   const [showEmployeurPicker, setShowEmployeurPicker] = useState(false);
   const [searchEmploye, setSearchEmploye] = useState('');
@@ -236,7 +241,11 @@ export default function ContratDocumentScreen() {
 
   // C1 verrouillage
   const [unlockedFields, setUnlockedFields] = useState<Set<string>>(new Set());
-  const fieldUnlocked = (key: string) => !isEditing || unlockedFields.has(key);
+  // `locked` (verrou global apres creation) passe AVANT `isEditing` : une fois le
+  // contrat cree, aucun champ n'est editable, meme si l'ecran est ouvert en
+  // edition. Reouvrir par « Modifier » sur l ecran Detail, qui remonte avec un
+  // contratId, redonne locked=false a l initialisation.
+  const fieldUnlocked = (key: string) => !locked && (!isEditing || unlockedFields.has(key));
   const toggleFieldLock = (key: string) =>
     setUnlockedFields((prev) => {
       const next = new Set(prev);
@@ -314,6 +323,10 @@ export default function ContratDocumentScreen() {
   useEffect(() => {
     if (!contratId) return;
     setIsEditing(true);
+    // Un contrat rouvert depuis l ecran Detail (donc via « Modifier ») est
+    // entierement editable : le verrou global ne concerne que la session de
+    // creation. Sans ce reset, un contrat cree puis modifie resterait verrouille.
+    setLocked(false);
     (async () => {
       try {
         const contrat = await getContratById(contratId);
@@ -448,6 +461,7 @@ export default function ContratDocumentScreen() {
         format_document: formatDoc,
       };
       let id = contratId;
+      const wasCreating = !(isEditing && contratId);
       if (isEditing && contratId) {
         await updateContrat(contratId, payload);
       } else {
@@ -455,6 +469,12 @@ export default function ContratDocumentScreen() {
         setIsEditing(true);
         // @ts-ignore navigation
         navigation.setParams?.({ id });
+      }
+      // Verrouillage fort après création, comme sur la fiche d'inscription.
+      // En édition (ouvert via « Modifier »), le verrou ne s'active jamais.
+      if (wasCreating) {
+        setLocked(true);
+        setPendingDocuments([]);
       }
       // Upload pending annexes si création
       if (pendingDocuments.length > 0 && id) {
@@ -800,7 +820,7 @@ export default function ContratDocumentScreen() {
       <View style={digitalStyles.sectionCard}>
         <View style={digitalStyles.sectionHead}>
           <Text style={digitalStyles.sectionTitle}>Client</Text>
-          <TouchableOpacity onPress={() => setShowEmployeurPicker(true)} style={digitalStyles.pickBtn}>
+          <TouchableOpacity onPress={() => setShowEmployeurPicker(true)} disabled={locked} style={digitalStyles.pickBtn}>
             <Icon name="account-search" size={16} color={Colors.primary} /><Text style={digitalStyles.pickBtnText}>{selectedEmployeur ? 'Changer' : 'Choisir un client'}</Text>
           </TouchableOpacity>
         </View>
@@ -819,7 +839,7 @@ export default function ContratDocumentScreen() {
       <View style={digitalStyles.sectionCard}>
         <View style={digitalStyles.sectionHead}>
           <Text style={digitalStyles.sectionTitle}>Employé mis en relation</Text>
-          <TouchableOpacity onPress={() => setShowEmployePicker(true)} style={digitalStyles.pickBtn}>
+          <TouchableOpacity onPress={() => setShowEmployePicker(true)} disabled={locked} style={digitalStyles.pickBtn}>
             <Icon name="account-search" size={16} color={Colors.primary} /><Text style={digitalStyles.pickBtnText}>{selectedEmploye ? 'Changer' : 'Choisir un employé'}</Text>
           </TouchableOpacity>
         </View>
@@ -938,7 +958,7 @@ export default function ContratDocumentScreen() {
 
       {/* Actions */}
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-        <SafeButton onPress={handleSave} loading={loading} mode="contained" style={{ flex: 1 }}>{isEditing ? "Enregistrer" : "Créer le contrat"}</SafeButton>
+        <SafeButton onPress={handleSave} loading={loading} mode="contained" disabled={locked} style={{ flex: 1 }}>{locked ? "Contrat créé" : isEditing ? "Enregistrer" : "Créer le contrat"}</SafeButton>
         <SafeButton onPress={handlePrint} mode="outlined" style={{ flex: 1 }}><Icon name="file-pdf-box" size={18} color={Colors.primary} /><Text style={{ color: Colors.primary, fontWeight: "600", marginLeft: 6 }}>Imprimer PDF</Text></SafeButton>
       </View>
       <Text style={digitalStyles.helpText}>{formatDoc === 'agence' ? 'Le PDF reprend la fiche recto-verso Employé / Employeur (2 pages) avec photo et contacts d\u2019urgence. Tous les champs ci-dessus sont verrouillés après création (C1).' : 'Le PDF reprend fidèlement les 10 articles (3 pages) avec en-tête/pied répétés. Tous les champs ci-dessus sont verrouillés après création (C1).'}</Text>
