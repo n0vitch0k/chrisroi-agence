@@ -27,6 +27,7 @@ import {
   finalizeScanPage,
   defaultScanCorners,
   buildOcrBase64,
+  resetScanTrace,
   type PreparedScanSource,
   type ScanCorner,
   type ProcessedScanPage,
@@ -125,6 +126,8 @@ export default function ScanScreen({ navigation }: Props) {
     if (remaining <= 0) return;
     setProcessing(true);
     setScanState((previous) => ({ ...previous, error: null }));
+    // Journal de timings : a lire dans la console Metro (Expo Go) ou logcat.
+    resetScanTrace();
 
     const total = Math.min(assets.length, remaining);
     const processed: PageCapture[] = [];
@@ -264,6 +267,7 @@ export default function ScanScreen({ navigation }: Props) {
     const page = pages[editingIndex];
     if (!page) return;
     setProgress({ step: 'Redressement de la page', done: 0, total: 1 });
+    resetScanTrace();
     try {
       const result = await finalizeScanPage(page, corners);
       const next = pages.map((current, index) => (

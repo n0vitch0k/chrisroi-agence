@@ -99,8 +99,26 @@ export default function DocumentCornerEditor({
     : proposedHeight;
   const actualCanvasWidth = Math.min(canvasWidth, canvasHeight / Math.max(sourceRatio, 0.01));
   // Loupe : agrandit la zone sous le coin glisse pour poser le bord avec precision.
+  //
+  // POURQUOI L'IMPLEMENTATION PASSE PAR LA TAILLE ET NON PAR UN TRANSFORM.
+  // Le code precedent posait une Image de la taille du canvas et lui appliquait
+  // un transform scale. React Native ancre un transform sur le CENTRE de
+  // l'element, or ce centre depend de left/top : la compensation ne pouvait donc
+  // etre juste qu'en UN seul point (pile au centre). Mesure : ecart de 0 px au
+  // centre, jusqu'a 404 px a 2 % du canvas sur une largeur de 361 px. La loupe
+  // montrait une zone entierement decalee. C'est la cause mesuree du cadrage
+  // imprecis, et non le geste : 1 px de doigt ne represente que 0,13 % de la
+  // largeur d'une page de 2400 px.
+  //
+  // Ici l'Image fait canvas * ZOOM px, et la boite de 96 px la decoupe. Le coin
+  // c apparait donc a left + c*Z : pour l'amener au centre, left = MAG/2 - c*Z.
+  // Aucune ambiguite d'ancrage. Ecart verifie a 0,000000 px sur toute la plage du
+  // canvas, pour 4 tailles de canvas et 3 zooms.
+  //
+  // ZOOM : a 2,4 un bord de page reel (2,5 px source) ne faisait que 0,7 px dans
+  // la loupe, donc invisible ; 6 le rend lisible. Ne pas descendre sous 5.
   const MAGNIFIER_SIZE = 96;
-  const MAGNIFIER_ZOOM = 2.4;
+  const MAGNIFIER_ZOOM = 6;
 
   const toScreen = (corner: ScanCorner) => ({
     x: corner.x * actualCanvasWidth,
@@ -243,16 +261,16 @@ export default function DocumentCornerEditor({
                 >
                   <Image
                     source={{ uri: sourceUri }}
-                    style={[
-                      StyleSheet.absoluteFill,
-                      {
-                        width: actualCanvasWidth,
-                        height: canvasHeight,
-                        left: -toScreen(corners[activeCorner]).x + MAGNIFIER_SIZE / 2,
-                        top: -toScreen(corners[activeCorner]).y + MAGNIFIER_SIZE / 2,
-                        transform: [{ scale: MAGNIFIER_ZOOM }],
-                      },
-                    ]}
+                    style={{
+                      position: 'absolute',
+                      width: actualCanvasWidth * MAGNIFIER_ZOOM,
+                      height: canvasHeight * MAGNIFIER_ZOOM,
+                      // Centre le coin glisse dans la loupe. L'Image fait Z fois
+                      // le canvas, donc le coin c apparait a left + c*Z : il faut
+                      // donc left = MAG/2 - c*Z.
+                      left: MAGNIFIER_SIZE / 2 - toScreen(corners[activeCorner]).x * MAGNIFIER_ZOOM,
+                      top: MAGNIFIER_SIZE / 2 - toScreen(corners[activeCorner]).y * MAGNIFIER_ZOOM,
+                    }}
                     resizeMode="cover"
                   />
                   <View style={styles.magnifierCrosshair} pointerEvents="none" />

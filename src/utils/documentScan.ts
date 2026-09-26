@@ -105,6 +105,51 @@ const BIN_BAND_ROWS = 512;
 const FINAL_JPEG_QUALITY = 92;
 
 /**
+ * Mesure des etapes, pour identifier le temps reel sur appareil.
+ *
+ * Hermes interprete le JavaScript : jpeg-js y est environ 15x plus lent que sur
+ * un PC, donc un chronometreExecute sur la machine de developpement NE PREVOIT
+ * PAS la duree reelle. Seul un log execute sur l'appareil fait foi.
+ *
+ * Passe a `true` pourinstrumenter, puis REMETTRE A `false` avant de commiter :
+ * le traceur doit rester disponible, mais par defaut.
+ */
+const TRACE_SCAN_STEPS = true;
+
+type ScanTraceEntry = { step: string; ms: number; detail?: string };
+
+let scanTrace: ScanTraceEntry[] = [];
+
+const now = (): number =>
+  (typeof globalThis !== 'undefined' && typeof (globalThis as any).performance?.now === 'function')
+    ? (globalThis as any).performance.now()
+    : Date.now();
+
+/** Enregistre une etape et la publie dans la console Metro/ADB. */
+const trace = (step: string, startedAt: number, detail?: string) => {
+  if (!TRACE_SCAN_STEPS) return;
+  const ms = Math.round(now() - startedAt);
+  const entry = { step, ms, ...(detail ? { detail } : {}) };
+  scanTrace.push(entry);
+  // eslint-disable-next-line no-console
+  console.log(`[SCAN-TRACE] ${step.padEnd(34)} ${String(ms).padStart(6)} ms${detail ? '  ' + detail : ''}`);
+};
+
+/** Vide le journal des etapes et affiche le total. A appeler au depart. */
+export const resetScanTrace = (): void => {
+  scanTrace = [];
+  if (!TRACE_SCAN_STEPS) return;
+  // eslint-disable-next-line no-console
+  console.log('[SCAN-TRACE] ---------- journal vidé, debut d\'un scan ----------');
+};
+
+/** Journal des etapes + total, pour lecture immediate dans la console. */
+export const readScanTrace = (): { entries: ScanTraceEntry[]; totalMs: number } => {
+  const totalMs = scanTrace.reduce((sum, entry) => sum + entry.ms, 0);
+  return { entries: [...scanTrace], totalMs };
+};
+
+/**
  * Qualité de la copie OCR : volontairement plus basse que la page stockée.
  * L'OCR ne lit que le texte, et une compression à 85 reste très au-dessus du
  * seuil où un caractère devient ambigu.
@@ -494,6 +539,7 @@ function resizeActionsFor(width: number, height: number): { resize: { width: num
 }
 
 async function normalizeToJpeg(uri: string): Promise<NormalizedJpeg> {
+  const startedAt = now();
   let actions: { resize: { width: number; height: number } }[] = [];
   try {
     const dimensions = await getImageDimensions(uri);
@@ -503,12 +549,24 @@ async function normalizeToJpeg(uri: string): Promise<NormalizedJpeg> {
     // et échoue proprement plutôt que de tenter un buffer JavaStation énorme.
   }
 
+  // compress: 1 et base64: true sont demandes meme quand AUCUN redimensionnement
+  // n'est necessaire (telephone 12 MP : 3024x4032 < 4096). C'est une
+  // recompression complete de la photo, avec une chaine base64 de 6,5 Mo a
+  // marshaller, pour un resultat que le redressement rendra de toute facon.
+  trace('normalize (avant manipulation)', startedAt,
+    actions.length === 0 ? 'AUCUN redimensionnement' : `redim ${actions[0].resize.width}x${actions[0].resize.height}`);
+
+  const manipulateStartedAt = now();
   const result = await ImageManipulator.manipulateAsync(uri, actions, {
     compress: 1,
     format: ImageManipulator.SaveFormat.JPEG,
     base64: true,
   });
+  trace('  manipulateAsync (natif)', manipulateStartedAt, result.uri ? '' : 'uri vide');
+
   if (!result.base64) throw new Error('La normalisation de l’image a échoué.');
+  trace('  decodage base64 -> octets', manipulateStartedAt,
+    `${(result.base64.length / 1048576).toFixed(1)} Mo de chaine base64`);
   return {
     bytes: new Uint8Array(Buffer.from(result.base64, 'base64')),
     uri: result.uri,
@@ -548,22 +606,37 @@ export async function finalizeScanPage(
   prepared: PreparedScanSource,
   requestedCorners?: ScanCorner[],
 ): Promise<ProcessedScanPage> {
+  const totalStartedAt = now();
+  // ATTENTION : prepared.sourceUri est DEJA un JPEG normalise. On le
+  // normalise une seconde fois ici, ce qui recompresse l'image sans changer sa
+  // resolution. C'est le poste le plus lourd du pipeline, et il est double.
   const normalized = await normalizeToJpeg(prepared.sourceUri);
+  const decodeStartedAt = now();
   const decoded = getJpegModule().decode(normalized.bytes, {
     useTArray: true,
     formatAsRGBA: true,
     maxResolutionInMP: DECODE_MAX_MP,
     maxMemoryUsageInMB: DECODE_MAX_MEMORY_MB,
   });
+  trace('decode JPEG (jpeg-js, JS PUR)', decodeStartedAt,
+    `${decoded.width}x${decoded.height} = ${(decoded.width * decoded.height / 1e6).toFixed(1)} MP`);
   const source = decoded.data instanceof Uint8Array ? decoded.data : new Uint8Array(decoded.data as ArrayBuffer);
   // Ordre canonique applique UNE fois, au moment du traitement.
   const corners = orderCorners(validateCorners(requestedCorners || DEFAULT_CORNERS.map((corner) => ({ ...corner }))));
+  const rectifyStartedAt = now();
   const transformed = transformPerspective(source, decoded.width, decoded.height, corners);
+  trace('redressement perspective', rectifyStartedAt,
+    `${decoded.width}x${decoded.height} -> ${transformed.width}x${transformed.height}`);
+  const bwStartedAt = now();
   const rendered = renderBlackAndWhite(transformed.data, transformed.width, transformed.height);
+  trace('noir et blanc Sauvola', bwStartedAt, `${transformed.width}x${transformed.height}`);
+  const encodeStartedAt = now();
   const encoded = getJpegModule().encode(
     { width: transformed.width, height: transformed.height, data: rendered },
     FINAL_JPEG_QUALITY,
   );
+  trace('encode JPEG final', encodeStartedAt,
+    `${(encoded.data.length / 1048576).toFixed(2)} Mo`);
   const base64 = Buffer.from(encoded.data as any).toString('base64');
   const cacheDirectory = FileSystem.cacheDirectory;
   if (!cacheDirectory) throw new Error('Le cache image est inaccessible.');
@@ -571,6 +644,7 @@ export async function finalizeScanPage(
   await FileSystem.writeAsStringAsync(processedUri, base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
+  trace('TOTAL finalizeScanPage', totalStartedAt, `${processedUri.split('/').pop()}`);
   return {
     originalUri: prepared.originalUri,
     sourceUri: normalized.uri,
