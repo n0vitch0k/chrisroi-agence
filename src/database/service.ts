@@ -1698,13 +1698,24 @@ export const getServerUrlAlias = (): string => getPocketBaseUrl();
  * le calendrier et le Suivi des commissions utilisent la même fonction.
  */
 export function getCommissionDueDate(contrat: any): string | null {
-  if (contrat.date_debut) {
-    const d = new Date(contrat.date_debut);
-    d.setMonth(d.getMonth() + 1);
-    return d.toISOString().substring(0, 10);
-  }
-  // fallback : date_contrat + 1 mois
-  const d = new Date(contrat.date_contrat);
+  // Repli en cascade : date_debut -> date_contrat -> date de création du
+  // record. Les deux premières protections ne réistaient qu'à la CRÉATION
+  // (createContrat) : un contrat créé avant ce correctif garde des chaînes
+  // vides, et new Date('') -> Invalid Date -> .toISOString() lève
+  // « RangeError: Date value out of bounds », ce qui faisait tomber tout
+  // l'écran Suivi (le throw survient dans le rendu, donc même les contrats
+  // sains n'étaient plus peints).
+  //
+  // On retombe donc sur `created`, la date réelle du contrat — c'est la même
+  // règle que celle appliquée à la création (« date vide = date de création »).
+  const source = contrat?.date_debut || contrat?.date_contrat || contrat?.created;
+  if (!source) return null; // aucune date exploitable → pas d'échéance
+
+  const d = new Date(source);
+  // Une valeur illisible (texte corrompu, date aberrante) ne doit pas non plus
+  // faire tomber l'écran : isNaN avant d'appeler setMonth/toISOString.
+  if (isNaN(d.getTime())) return null;
+
   d.setMonth(d.getMonth() + 1);
   return d.toISOString().substring(0, 10);
 }
