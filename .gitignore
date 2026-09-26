@@ -67,7 +67,10 @@ yarn-error.*
 /setup_*.js
 /index.js
 
-# PocketBase runtime (fichiers générés au démarrage, non du code)
+# Sauvegarde migration SDK 57 (6,7 Mo, copie jetable de l'etat pre-migration)
+.migration_backup_57/
+
+# PocketBase runtime (fichiers generes au demarrage, non du code)
 pocketbase/pb_data/*.db-wal
 pocketbase/pb_data/*.db-shm
 pocketbase/pb_data/*.db.backup
