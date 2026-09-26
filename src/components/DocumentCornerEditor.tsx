@@ -120,6 +120,21 @@ export default function DocumentCornerEditor({
   const MAGNIFIER_SIZE = 96;
   const MAGNIFIER_ZOOM = 6;
 
+  // Reticule de coin.
+  //
+  // POURQUOI SI FIN. Mesure (probe 35/37) : une erreur de coin de 300 px source
+  // ne coupe AUCUNE ligne de texte et ne laisse que 0,9 % de bordure. La
+  // precision du geste n est donc pas le probleme - l obstacle VISUEL l est.
+  // Les anciens disques pleins de 15 px recouvraient precisement le bord que
+  // l utilisateur cherche a voir. D ou ces choix : traits de 1 a 1,5 px, et
+  // surtout un CENTRE LAISSE VIDE - le coin reel de la page reste visible au
+  // travers du reticule. Seul element plein : un point de 1,6 px, qui est la
+  // position exacte.
+  const IDLE_RING = 10;     // rayon de l anneau creux au repos
+  const ARM_INNER = 4;      // debut des branches du reticule actif
+  const ARM_OUTER = 15;     // fin des branches
+  const CENTER_DOT = 1.6;   // rayon du point central
+
   const toScreen = (corner: ScanCorner) => ({
     x: corner.x * actualCanvasWidth,
     y: corner.y * canvasHeight,
@@ -282,31 +297,64 @@ export default function DocumentCornerEditor({
                     const point = toScreen(corner);
                     return `${point.x},${point.y}`;
                   }).join(' ')}
-                  fill="rgba(196,90,42,0.16)"
+                  fill="rgba(196,90,42,0.10)"
                   stroke={Colors.primary}
-                  strokeWidth={3}
+                  strokeWidth={1.25}
                 />
                 {corners.map((corner, index) => {
                   const point = toScreen(corner);
+                  const isActive = activeCorner === index;
+                  // Direction du retrait : chaque reticule ouvre vers l interieur
+                  // du document, donc les branches ne chevauchent jamais la page.
+                  const sx = index === 0 || index === 3 ? 1 : -1;
+                  const sy = index < 2 ? 1 : -1;
+                  if (isActive) {
+                    // Reticule actif : quatre fines branches, centre vide.
+                    return (
+                      <React.Fragment key={`corner-${index}`}>
+                        <Line x1={point.x + sx * ARM_INNER} y1={point.y} x2={point.x + sx * ARM_OUTER} y2={point.y} stroke={Colors.warning} strokeWidth={1.5} strokeLinecap="round" />
+                        <Line x1={point.x} y1={point.y + sy * ARM_INNER} x2={point.x} y2={point.y + sy * ARM_OUTER} stroke={Colors.warning} strokeWidth={1.5} strokeLinecap="round" />
+                        <Line x1={point.x - sx * ARM_INNER} y1={point.y} x2={point.x - sx * ARM_OUTER} y2={point.y} stroke={Colors.warning} strokeWidth={1.5} strokeLinecap="round" />
+                        <Line x1={point.x} y1={point.y - sy * ARM_INNER} x2={point.x} y2={point.y - sy * ARM_OUTER} stroke={Colors.warning} strokeWidth={1.5} strokeLinecap="round" />
+                        <Circle cx={point.x} cy={point.y} r={CENTER_DOT} fill={Colors.warning} />
+                      </React.Fragment>
+                    );
+                  }
+                  // Au repos : anneau creux. Aucune surface pleine, le bord reste
+                  // lisible au travers.
                   return (
-                    <React.Fragment key={`corner-${index}`}>
-                      <Circle
-                        cx={point.x}
-                        cy={point.y}
-                        r={activeCorner === index ? 18 : 15}
-                        fill={activeCorner === index ? Colors.warning : Colors.primary}
-                        stroke={Colors.surface}
-                        strokeWidth={3}
-                      />
-                      <Line
-                        x1={point.x}
-                        y1={point.y}
-                        x2={point.x + (index === 0 ? 1 : index === 1 ? -1 : index === 2 ? -1 : 1) * 10}
-                        y2={point.y + (index < 2 ? 1 : -1) * 10}
-                        stroke={Colors.surface}
-                        strokeWidth={2}
-                      />
-                    </React.Fragment>
+                    <Circle
+                      key={`corner-${index}`}
+                      cx={point.x}
+                      cy={point.y}
+                      r={IDLE_RING}
+                      fill="none"
+                      stroke={Colors.primary}
+                      strokeWidth={1.25}
+                      opacity={0.92}
+                    />
+                  );
+                })}
+                {/* Prolonge les deux cotes du document depuis chaque coin : la
+                    position exacte se lit sur la ligne, pas sous un disque. */}
+                {corners.map((corner, index) => {
+                  const point = toScreen(corner);
+                  const next = toScreen(corners[(index + 1) % 4]);
+                  const length = Math.hypot(next.x - point.x, next.y - point.y) || 1;
+                  const ux = (next.x - point.x) / length;
+                  const uy = (next.y - point.y) / length;
+                  return (
+                    <Line
+                      key={`edge-${index}`}
+                      x1={point.x + ux * ARM_OUTER}
+                      y1={point.y + uy * ARM_OUTER}
+                      x2={point.x + ux * 44}
+                      y2={point.y + uy * 44}
+                      stroke={Colors.warning}
+                      strokeWidth={activeCorner === index ? 1.75 : 1}
+                      opacity={activeCorner === index ? 0.95 : 0.42}
+                      strokeLinecap="round"
+                    />
                   );
                 })}
               </Svg>
