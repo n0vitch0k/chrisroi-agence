@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   Platform,
+  KeyboardAvoidingView,
   TouchableOpacity,
   Modal,
   PanResponder,
@@ -1849,6 +1850,15 @@ export default function FicheInscriptionScreen() {
   };
 
   return (
+    // Evitement du clavier : sans ca, le bas du formulaire passe sous le
+    // clavier Android et le bouton d'enregistrement devient injoignable.
+    // 'height' sur Android (le systeme ne rogne pas la fenetre avec 'padding'),
+    // 'padding' sur iOS.
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
     <View style={{ flex: 1 }}>
       <DocumentScanCaptureModal
         visible={showDocumentScan}
@@ -2105,6 +2115,7 @@ export default function FicheInscriptionScreen() {
         </View>
       </Modal>
     </View>
+    </KeyboardAvoidingView>
   );
 };
 

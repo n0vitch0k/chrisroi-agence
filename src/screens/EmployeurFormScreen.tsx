@@ -418,7 +418,13 @@ export default function EmployeurFormScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      // Sur Android, 'padding' ne fonctionne pas : le systeme ne reduit pas la
+      // fenetre, il passe par-dessus. 'height' retrecit reellement la zone
+      // visible, ce qui laisse le ScrollView defiler jusqu'au champ saisi.
+      // EmployeurFormScreen avait `behavior={undefined}` sur Android, donc
+      // aucun evitement : le bas du formulaire etait masque par le clavier.
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
     >
       <ScrollView
         style={styles.scrollView}

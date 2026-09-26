@@ -22,7 +22,7 @@ import {
   createFinContratAlertes,
   createCommissionDueAlertes,
 } from '../database/service';
-import { Colors, Shadows } from '../theme';
+import { Colors, Shadows, Radius } from '../theme';
 import { FORMATS_CONTRAT } from '../utils/constants';
 
 // Génération auto des alertes une seule fois par session (au premier passage
@@ -67,11 +67,11 @@ const QuickAction = ({
     <View style={[styles.quickIcon, { backgroundColor: iconBg }]}>
       <Text style={[styles.quickIconText, { color: iconColor }]}>{icon}</Text>
     </View>
-    <Text style={styles.quickTitle}>{title}</Text>
-    <Text style={styles.quickSub}>{sub}</Text>
+    <Text style={styles.quickTitle} numberOfLines={2}>{title}</Text>
+    <Text style={styles.quickSub} numberOfLines={1}>{sub}</Text>
     {badgeText && badgeBg && badgeColor && (
       <View style={[styles.quickBadge, { backgroundColor: badgeBg }]}>
-        <Text style={[styles.quickBadgeText, { color: badgeColor }]}>{badgeText}</Text>
+        <Text style={[styles.quickBadgeText, { color: badgeColor }]} numberOfLines={1}>{badgeText}</Text>
       </View>
     )}
   </TouchableOpacity>
@@ -423,10 +423,21 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
+    // Pilule comme tous les autres badges (StatusBadge, modalEventBadge,
+    // userRoleBadge). borderRadius 8 sur un texte de 10 px de haut rendait un
+    // rectangle, et ca eliminait la ligne de base commune a toute la carte :
+    // d ou l aspect « casse ». flexShrink + maxWidth empechent le texte de
+    // déborder sur une carte a 48 % (ou 23,5 % en large) du contenu.
+    borderRadius: Radius.pill,
     marginTop: 8,
+    flexShrink: 1,
+    maxWidth: '100%',
   },
-  quickBadgeText: { fontSize: 10, fontWeight: '600' },
+  quickBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
 
   // ── Dossier Card (V1) ──
   dossierCard: {

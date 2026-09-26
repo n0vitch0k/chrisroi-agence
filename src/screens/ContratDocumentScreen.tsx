@@ -12,6 +12,7 @@ import {
   Modal,
   ScrollView,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { ContratDocumentNavigationProp } from '../types/navigation';
@@ -966,6 +967,15 @@ export default function ContratDocumentScreen() {
   );
 
   return (
+    // Evitement du clavier : meme correction que sur EmployeurForm et la
+    // fiche. Sur Android, 'padding' n'evite rien (le systeme passe par-dessus) :
+    // il faut 'height', qui retrecit la zone visible et laisse le ScrollView
+    // defiler jusqu'au champ saisi.
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
       <AppHeader title={isEditing ? (formatDoc === 'agence' ? 'Contrat Agence' : 'Contrat de prestation') : 'Nouveau contrat'} showBack />
       {/* Tabs */}
@@ -1009,6 +1019,7 @@ export default function ContratDocumentScreen() {
 
       <DocumentViewerOverlay viewerDoc={docViewer.doc} onClose={docViewer.close} onDownload={docViewer.download} downloading={docViewer.downloading} />
     </View>
+    </KeyboardAvoidingView>
   );
 }
 
