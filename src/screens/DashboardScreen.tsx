@@ -34,7 +34,7 @@ const M = { ...Colors, shadow: Shadows.card.shadowColor } as const;
 
 // ─── Types ──────────────────────────────────────────────────────
 interface DashboardScreenProps {
-  user: { id: string; nom: string; prenom: string; email: string; role: string };
+  user: { id: string; nom: string; prenom: string; username: string; role: string };
 }
 
 // ─── Composant : QuickAction (maquette V1) ──────────────────────
