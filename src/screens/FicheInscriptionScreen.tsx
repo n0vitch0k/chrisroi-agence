@@ -1920,6 +1920,18 @@ export default function FicheInscriptionScreen() {
   const validerAutre = () => {
     const metier = autreTexte.trim();
     if (!metier) return;
+    // Refuser "autre" insensible à la casse (c'est le déclencheur, pas un métier)
+    if (metier.toLowerCase() === 'autre') return;
+    // Si le texte correspond à une catégorie connue, traiter comme un choix normal
+    const categorieConnue = CATEGORIES_EMPLOI.find(
+      (c) => c.value === metier.toLowerCase() || c.label === metier
+    );
+    if (categorieConnue) {
+      updateForm('categorie_emploi', categorieConnue.value);
+      setShowAutreModal(false);
+      setShowAutreEmploi(false);
+      return;
+    }
     updateForm('categorie_emploi', metier);
     setShowAutreModal(false);
     setShowAutreEmploi(true);
@@ -1928,6 +1940,7 @@ export default function FicheInscriptionScreen() {
     if (!fieldUnlocked('categorie_emploi')) return;
     updateForm('categorie_emploi', value);
     setShowAutreEmploi(false);
+    setAutreTexte('');
   };
 
   return (
@@ -2652,7 +2665,8 @@ const docStyles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sourceSheet: {
     backgroundColor: '#FFF',
