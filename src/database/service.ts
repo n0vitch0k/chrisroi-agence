@@ -4,6 +4,7 @@
 
 import { getPocketBase, getPocketBaseUrl, hydratePocketBaseUrl } from './pocketbase';
 import { getSetting, setSetting } from './localSettings';
+import { localDayKey } from '../utils/cahierDates';
 import { cacheDirectory, copyAsync, getInfoAsync, uploadAsync, FileSystemUploadType } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
@@ -414,6 +415,146 @@ export const getEntityHistory = async (entiteType: string, entiteId: string): Pr
       description: r.description,
       created: r.created,
     }));
+  } catch {
+    return [];
+  }
+};
+
+
+// ============== CAHIER (notes d'appels) ==============
+// Notes libres horodatées partagées par tout le personnel de l'agence.
+// Aucune liaison employé/employeur : ce sont des notes de Couloir, pas des
+// fiches. Collection `cahier_notes` (schéma : voir App.tsx / doc).
+//
+// Règles de date appliquées ici (cf utils/cahierDates) :
+// - filtre jour → clé LOCALE « yyyy-mm-dd » comparée à la clé locale de
+//   l'enregistrement, jamais à toISOString() ;
+// - le push des bornes au serveur utilise le format PocketBase à ESPACE.
+
+export interface CahierNote {
+  id: string;
+  titre: string;
+  contenu: string;
+  /** Clé locale « yyyy-mm-dd » du rappel (vide = pas de rappel). */
+  rappel: string;
+  author: string;
+  author_id: string;
+  created: string;
+  updated: string;
+}
+
+const trim = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
+/** Charge les notes. Les filtres de plage sont poussés au serveur quand ils
+ *  sont fournis (indispensable pour retrouver une date ancienne au-delà des
+ *  500 derniers records) ; le reste est filtré côté client. */
+export const getCahierNotes = async (filters: {
+  dateDebut?: string;
+  dateFin?: string;
+} = {}): Promise<CahierNote[]> => {
+  try {
+    const pb = getPb();
+    const parts: string[] = [];
+    if (filters.dateDebut) parts.push(`created >= "${filters.dateDebut}"`);
+    if (filters.dateFin) parts.push(`created <= "${filters.dateFin}"`);
+
+    const result = parts.length
+      ? await pb.collection('cahier_notes').getList(1, 500, { filter: parts.join(' && ') })
+      : await pb.collection('cahier_notes').getList(1, 500);
+
+    // Tri client : le sort serveur provoke un 400 sur pb2 (même piège que
+    // journal_actions) et de toute façon on filtre par jour ensuite.
+    return (result.items as any[])
+      .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
+      .map((r: any) => ({
+        id: r.id,
+        titre: trim(r.titre),
+        contenu: trim(r.contenu),
+        rappel: trim(r.rappel),
+        author: trim(r.author) || '—',
+        author_id: trim(r.author_id),
+        created: r.created || '',
+        updated: r.updated || '',
+      }));
+  } catch (err: any) {
+    // 404 = collection absente (schéma non appliqué sur pb2). On ne casse pas
+    // l'écran : l'utilisateur voit une liste vide, pas un crash.
+    console.error('[cahier] getCahierNotes:', err?.status, err?.message);
+    return [];
+  }
+};
+
+/** Crée une note. Le contenu est obligatoire ; titre et rappel optionnels. */
+export const createCahierNote = async (note: {
+  titre?: string;
+  contenu: string;
+  rappel?: string | null;
+}): Promise<string> => {
+  const pb = getPb();
+  const user = getCurrentUser();
+  const contenu = trim(note.contenu);
+  if (!contenu) throw new Error('Le contenu de la note est obligatoire.');
+
+  const record = await pb.collection('cahier_notes').create({
+    titre: trim(note.titre),
+    contenu,
+    // Rappel stocké en clé locale : le jour choisi par l'utilisateur est le
+    // jour voulu, sans dérive de fuseau.
+    rappel: trim(note.rappel),
+    author: user ? `${user.prenom || ''} ${user.nom || ''}`.trim() || user.username : '',
+    author_id: user?.id || '',
+  });
+  await logAction({
+    actionType: 'creation_note_cahier',
+    entiteType: 'cahier_note',
+    entiteId: record.id,
+    description: `Note de cahier : ${contenu.slice(0, 60)}`,
+  });
+  return record.id;
+};
+
+/** Met à jour une note. Le rappel est effacé si l'utilisateur le vide. */
+export const updateCahierNote = async (
+  id: string,
+  note: { titre?: string; contenu: string; rappel?: string | null },
+): Promise<void> => {
+  const pb = getPb();
+  const contenu = trim(note.contenu);
+  if (!contenu) throw new Error('Le contenu de la note est obligatoire.');
+
+  await pb.collection('cahier_notes').update(id, {
+    titre: trim(note.titre),
+    contenu,
+    rappel: trim(note.rappel),
+  });
+  await logAction({
+    actionType: 'modification_note_cahier',
+    entiteType: 'cahier_note',
+    entiteId: id,
+    description: `Note de cahier modifiée : ${contenu.slice(0, 60)}`,
+  });
+};
+
+/** Supprime définitivement une note. */
+export const deleteCahierNote = async (id: string): Promise<void> => {
+  const pb = getPb();
+  await pb.collection('cahier_notes').delete(id);
+  await logAction({
+    actionType: 'suppression_note_cahier',
+    entiteType: 'cahier_note',
+    entiteId: id,
+    description: 'Note de cahier supprimée',
+  });
+};
+
+/** Notes dont le rappel est aujourd'hui ou dépassé (pour les badges).
+ *  Volontairement sans `getPb()` : la liste complète est déjà chargée par
+ *  l'écran, un second accès réseau n'apporterait rien. */
+export const getCahierRappelsDue = async (): Promise<CahierNote[]> => {
+  try {
+    const all = await getCahierNotes();
+    const today = localDayKey(new Date());
+    return all.filter((n) => n.rappel && n.rappel <= today);
   } catch {
     return [];
   }

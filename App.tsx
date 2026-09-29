@@ -38,6 +38,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import ScanResultScreen from './src/screens/ScanResultScreen';
 import JournalScreen from './src/screens/JournalScreen';
+import CahierScreen from './src/screens/CahierScreen';
 import AnimatedSplash from './src/components/AnimatedSplash';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -301,6 +302,11 @@ function AppContent() {
               <RootStack.Screen
                 name="JournalModal"
                 component={JournalScreen}
+                options={{ headerShown: false }}
+              />
+              <RootStack.Screen
+                name="CahierModal"
+                component={CahierScreen}
                 options={{ headerShown: false }}
               />
               <RootStack.Screen

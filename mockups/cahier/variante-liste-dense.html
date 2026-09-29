@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cahier — Liste dense</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #fdf8f3;
+    color: #3d3530;
+    line-height: 1.5;
+    padding: 20px;
+  }
+  .container { max-width: 800px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    background: #c45a2a;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .header h1 { color: #fff; font-size: 22px; font-weight: 700; }
+  .header p { color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 4px; }
+
+  /* Barre de recherche */
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .search-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1.5px solid #eedec9;
+    border-radius: 12px;
+    font-size: 14px;
+    background: #fff;
+    outline: none;
+  }
+  .search-input:focus { border-color: #c45a2a; }
+  .search-input::placeholder { color: #b8a99e; }
+
+  /* Filtres */
+  .filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 8px 14px;
+    border: 1.5px solid #eedec9;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a7d72;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: #c45a2a; color: #c45a2a; }
+  .filter-btn.active {
+    background: #c45a2a;
+    border-color: #c45a2a;
+    color: #fff;
+  }
+
+  /* Bouton nouvelle note */
+  .new-note-btn {
+    width: 100%;
+    padding: 14px;
+    border: 2px dashed #c45a2a;
+    border-radius: 12px;
+    background: transparent;
+    color: #c45a2a;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: all 0.2s;
+  }
+  .new-note-btn:hover { background: #fdf3e8; }
+
+  /* Liste de notes */
+  .notes-list { display: flex; flex-direction: column; gap: 10px; }
+  .note-card {
+    background: #fff;
+    border: 1px solid #eedec9;
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .note-card:hover {
+    border-color: #c45a2a;
+    box-shadow: 0 4px 12px rgba(196,90,42,0.1);
+  }
+  .note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .note-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #3d3530;
+    flex: 1;
+  }
+  .note-date {
+    font-size: 11px;
+    color: #b8a99e;
+    white-space: nowrap;
+    margin-left: 12px;
+  }
+  .note-content {
+    font-size: 13px;
+    color: #6b5f57;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .note-footer {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    align-items: center;
+  }
+  .note-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .badge-rappel {
+    background: #fff3cd;
+    color: #856404;
+  }
+  .badge-urgent {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  .note-author {
+    font-size: 11px;
+    color: #b8a99e;
+    margin-left: auto;
+  }
+
+  /* Surlignage recherche */
+  mark {
+    background: #fff3b0;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  /* Modal note */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-card h2 { font-size: 18px; margin-bottom: 16px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a7d72;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid #eedec9;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: #c45a2a; }
+  .form-group textarea { min-height: 120px; resize: vertical; }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: #c45a2a; color: #fff; }
+  .btn-primary:hover { background: #a84a22; }
+  .btn-secondary { background: #f5ebe0; color: #8a7d72; }
+  .btn-secondary:hover { background: #eedec9; }
+  .btn-danger { background: #f8d7da; color: #721c24; }
+  .btn-danger:hover { background: #f5c6cb; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #b8a99e;
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-state h3 { font-size: 16px; margin-bottom: 8px; }
+  .empty-state p { font-size: 13px; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .header { padding: 18px; }
+    .header h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>📓 Cahier de notes</h1>
+    <p>Appels entrants, demandes, renseignements — notez tout, retrouvez tout.</p>
+  </div>
+
+  <!-- Recherche -->
+  <div class="search-bar">
+    <input type="text" class="search-input" id="searchInput" placeholder="Rechercher dans les notes…">
+  </div>
+
+  <!-- Filtres -->
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">Toutes</button>
+    <button class="filter-btn" data-filter="today">Aujourd'hui</button>
+    <button class="filter-btn" data-filter="week">7 jours</button>
+    <button class="filter-btn" data-filter="month">30 jours</button>
+    <button class="filter-btn" data-filter="rappel">Rappels</button>
+  </div>
+
+  <!-- Nouvelle note -->
+  <button class="new-note-btn" onclick="openModal()">+ Nouvelle note</button>
+
+  <!-- Liste -->
+  <div class="notes-list" id="notesList"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+    <div class="modal-card">
+      <h2 id="modalTitle">Nouvelle note</h2>
+      <div class="form-group">
+        <label>Titre (optionnel)</label>
+        <input type="text" id="noteTitle" placeholder="Ex. Appel M. Koné">
+      </div>
+      <div class="form-group">
+        <label>Contenu</label>
+        <textarea id="noteContent" placeholder="Notez ici…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Date de rappel (optionnel)</label>
+        <input type="date" id="noteRappel">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="deleteBtn" style="display:none" onclick="deleteNote()">Supprimer</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="saveNote()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Données de démonstration
+let notes = [
+  {
+    id: 1,
+    title: 'Appel M. Koné',
+    content: 'Cherche une femme de ménage pour 3 jours/semaine. Disponible immédiatement. Téléphone : 07 08 09 10 11. Préfère une personne expérimentée.',
+    date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    rappel: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    author: 'Awa'
+  },
+  {
+    id: 2,
+    title: 'Demande de renseignements',
+    content: 'Mme Diallo appelle pour savoir si nous avons des chauffeurs disponibles. Elle en a besoin pour un événement le mois prochain.',
+    date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    rappel: null,
+    author: 'Awa'
+  },
+  {
+    id: 3,
+    title: 'Candidature spontanée',
+    content: 'M. Traoré, 25 ans, cherche un poste de jardinier. Expérience 3 ans. Disponible dès que possible.',
+    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    rappel: null,
+    author: 'Moussa'
+  },
+  {
+    id: 4,
+    title: 'Suivi Mme Koné',
+    content: 'Rappeler Mme Koné pour confirmer le rendez-vous de demain. Elle avait des questions sur les horaires.',
+    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    rappel: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    author: 'Awa'
+  },
+  {
+    id: 5,
+    title: 'Demande urgente',
+    content: 'Entreprise cherche un majordome pour début de mois. Urgent — contacter rapidement.',
+    date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    rappel: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    author: 'Moussa'
+  }
+];
+
+let currentFilter = 'all';
+let editingId = null;
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  
+  if (hours < 1) return "À l'instant";
+  if (hours < 24) return `Il y a ${hours}h`;
+  if (days === 1) return 'Hier';
+  if (days < 7) return `Il y a ${days} jours`;
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function highlightText(text, search) {
+  if (!search) return text;
+  const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<mark>$1</mark>');
+}
+
+function renderNotes() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const list = document.getElementById('notesList');
+  
+  let filtered = notes;
+  
+  // Filtre date
+  if (currentFilter !== 'all') {
+    const now = new Date();
+    filtered = filtered.filter(n => {
+      const noteDate = new Date(n.date);
+      if (currentFilter === 'today') {
+        return noteDate.toDateString() === now.toDateString();
+      } else if (currentFilter === 'week') {
+        return (now - noteDate) < 7 * 24 * 60 * 60 * 1000;
+      } else if (currentFilter === 'month') {
+        return (now - noteDate) < 30 * 24 * 60 * 60 * 1000;
+      } else if (currentFilter === 'rappel') {
+        return n.rappel && new Date(n.rappel) <= now;
+      }
+      return true;
+    });
+  }
+  
+  // Recherche
+  if (search) {
+    filtered = filtered.filter(n => 
+      n.title.toLowerCase().includes(search) || 
+      n.content.toLowerCase().includes(search)
+    );
+  }
+  
+  // Tri par date décroissante
+  filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📝</div>
+        <h3>Aucune note</h3>
+        <p>Commencez par ajouter une note</p>
+      </div>
+    `;
+    return;
+  }
+  
+  list.innerHTML = filtered.map(note => {
+    const isRappel = note.rappel && new Date(note.rappel) <= new Date();
+    const isUrgent = note.rappel && new Date(note.rappel) < new Date();
+    return `
+      <div class="note-card" onclick="openModal(${note.id})">
+        <div class="note-header">
+          <div class="note-title">${highlightText(note.title || 'Sans titre', search)}</div>
+          <div class="note-date">${formatDate(note.date)}</div>
+        </div>
+        <div class="note-content">${highlightText(note.content, search)}</div>
+        <div class="note-footer">
+          ${isUrgent ? '<span class="note-badge badge-urgent">⚠️ En retard</span>' : ''}
+          ${isRappel && !isUrgent ? '<span class="note-badge badge-rappel">📅 Aujourd\'hui</span>' : ''}
+          <span class="note-author">par ${note.author}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openModal(id = null) {
+  editingId = id;
+  const overlay = document.getElementById('modalOverlay');
+  const title = document.getElementById('modalTitle');
+  const deleteBtn = document.getElementById('deleteBtn');
+  
+  if (id) {
+    const note = notes.find(n => n.id === id);
+    title.textContent = 'Modifier la note';
+    document.getElementById('noteTitle').value = note.title;
+    document.getElementById('noteContent').value = note.content;
+    document.getElementById('noteRappel').value = note.rappel || '';
+    deleteBtn.style.display = 'block';
+  } else {
+    title.textContent = 'Nouvelle note';
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteContent').value = '';
+    document.getElementById('noteRappel').value = '';
+    deleteBtn.style.display = 'none';
+  }
+  
+  overlay.classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('visible');
+  editingId = null;
+}
+
+function closeModalOnOverlay(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function saveNote() {
+  const title = document.getElementById('noteTitle').value.trim();
+  const content = document.getElementById('noteContent').value.trim();
+  const rappel = document.getElementById('noteRappel').value;
+  
+  if (!content) {
+    alert('Le contenu est obligatoire');
+    return;
+  }
+  
+  if (editingId) {
+    const note = notes.find(n => n.id === editingId);
+    note.title = title;
+    note.content = content;
+    note.rappel = rappel || null;
+  } else {
+    notes.push({
+      id: Date.now(),
+      title,
+      content,
+      rappel: rappel || null,
+      date: new Date().toISOString(),
+      author: 'Vous'
+    });
+  }
+  
+  closeModal();
+  renderNotes();
+}
+
+function deleteNote() {
+  if (confirm('Supprimer cette note ?')) {
+    notes = notes.filter(n => n.id !== editingId);
+    closeModal();
+    renderNotes();
+  }
+}
+
+// Event listeners
+document.getElementById('searchInput').addEventListener('input', renderNotes);
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderNotes();
+  });
+});
+
+// Initial render
+renderNotes();
+</script>
+</body>
+</html>

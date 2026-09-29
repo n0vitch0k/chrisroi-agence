@@ -21,6 +21,8 @@ export type RootStackParamList = {
   ContratDocumentModal: { id?: string; employe_id?: string; origin?: OriginInfo } | undefined;
   FicheInscriptionModal: { id?: string; origin?: OriginInfo } | undefined;
   JournalModal: undefined;
+  /** Notes d'appels / renseignements — partagées par tout le personnel. */
+  CahierModal: undefined;
   Scan: undefined;
   /** Détail ouvert depuis une modale/onglet externe : pile dédiée, back = retour à l'appelant. */
   DetailModal: NavigatorScreenParams<EmployesStackParamList>;
@@ -172,4 +174,5 @@ export type SuiviListNavigationProp = CompositeNavigationProp<
 // Modales (root stack direct)
 export type AlertesModalNavigationProp = NativeStackNavigationProp<RootStackParamList, 'AlertesModal'>;
 export type JournalModalNavigationProp = NativeStackNavigationProp<RootStackParamList, 'JournalModal'>;
+export type CahierModalNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CahierModal'>;
 export type SettingsModalNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SettingsModal'>;

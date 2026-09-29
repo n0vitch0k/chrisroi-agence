@@ -21,9 +21,11 @@ import {
   getAllContrats,
   createFinContratAlertes,
   createCommissionDueAlertes,
+  getCahierNotes,
 } from '../database/service';
 import { Colors, Shadows, Radius } from '../theme';
 import { FORMATS_CONTRAT } from '../utils/constants';
+import { localDayKey } from '../utils/cahierDates';
 
 // Génération auto des alertes une seule fois par session (au premier passage
 // sur le Dashboard, donc à chaque ouverture de l'app).
@@ -47,6 +49,7 @@ const QuickAction = ({
   badgeText,
   badgeBg,
   badgeColor,
+  alertCount = 0,
   onPress,
 }: {
   icon: string;
@@ -57,6 +60,8 @@ const QuickAction = ({
   badgeText?: string;
   badgeBg?: string;
   badgeColor?: string;
+  /** Rappels en retard (cahier) — pastille absolue en haut à droite. */
+  alertCount?: number;
   onPress: () => void;
 }) => {
   // Chromebook/large : 4 cartes par ligne au lieu de 2
@@ -72,6 +77,14 @@ const QuickAction = ({
     {badgeText && badgeBg && badgeColor && (
       <View style={[styles.quickBadge, { backgroundColor: badgeBg }]}>
         <Text style={[styles.quickBadgeText, { color: badgeColor }]} numberOfLines={1}>{badgeText}</Text>
+      </View>
+    )}
+    {/* Pastille de rappel en retard, absolue : ne doit pas pousser la carte
+        (elle doit rester alignée avec les 4 autres de la grille). */}
+    {alertCount > 0 && (
+      <View style={styles.quickAlert}>
+        <Icon name="bell-alert" size={11} color="#fff" />
+        <Text style={styles.quickAlertText}>{alertCount}</Text>
       </View>
     )}
   </TouchableOpacity>
@@ -118,6 +131,7 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [registreCounts, setRegistreCounts] = useState({ fiches: 0, contrats: 0, employeurs: 0 });
+  const [rappelsCahier, setRappelsCahier] = useState(0);
   const [showFormatModal, setShowFormatModal] = useState(false);
 
   const goNewContrat = (format: string) => {
@@ -127,16 +141,22 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
 
   const loadData = useCallback(async () => {
     try {
-      const [employesData, employeursData, contratsData] = await Promise.all([
+      const [employesData, employeursData, contratsData, notes] = await Promise.all([
         getAllEmployes(),
         getAllEmployeurs(),
         getAllContrats(),
+        getCahierNotes(),
       ]);
       setRegistreCounts({
         fiches: (employesData || []).length,
         contrats: (contratsData || []).length,
         employeurs: (employeursData || []).length,
       });
+      // Pastille de rappel : « rappel du jour ou dépassé », pas « rappel à
+      // venir dans la semaine » — sinon le badge serait tout le temps rouge
+      // et l'agent ne le regarderait plus.
+      const today = localDayKey(new Date());
+      setRappelsCahier((notes || []).filter((n) => n.rappel && n.rappel <= today).length);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -246,6 +266,18 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
             badgeBg="#d8ecec"
             badgeColor="#2a7a7a"
             onPress={() => navigateTab('EmployesStack', { screen: 'EmployeurForm' })}
+          />
+          {/* Cahier : notes d'appels. 5e carte → sur téléphone elle passe
+              seule sur une 2e ligne (largeur 48 %), sur large les 5 se
+              répartissent en 4 + 1 centrée par flexWrap. */}
+          <QuickAction
+            icon="📓"
+            iconBg="#f0e6f0"
+            iconColor="#8b5a8b"
+            title="Cahier"
+            sub="Notes d'appels"
+            alertCount={rappelsCahier}
+            onPress={() => navigateRoot('CahierModal')}
           />
         </View>
 
@@ -438,6 +470,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flexShrink: 1,
   },
+  // Pastille de rappel : absolue pour ne pas déformer la hauteur de la carte
+  // (elle doit rester alignée avec les autres de la même ligne).
+  quickAlert: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#b85454',
+    borderRadius: Radius.pill,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  quickAlertText: { color: '#fff', fontSize: 10, fontWeight: '700' },
 
   // ── Dossier Card (V1) ──
   dossierCard: {

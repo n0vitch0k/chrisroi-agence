@@ -68,12 +68,12 @@ type JpegModule = {
 type NormalizedJpeg = { bytes: Uint8Array; uri: string; width: number; height: number };
 
 /**
- * Côté long maximal de la PHOTO complète avant décodage. Volontairement large :
- * l'ancien plafond de 2200 réduisait à ~30 % des pixels, donc la zone utile du
- * document tombait sous 1100 px. Celui-ci ne mord que sur les capteurs géants
- * (> 16 MP), où il évite de tuer le téléphone.
+ * Côté long maximal de la PHOTO complète avant décodage. 2048 px sur un A4
+ * ≈ 240 DPI, au-dessus du standard d'impression 200 DPI et très au-delà des
+ * besoins OCR (1500 px ≈ 180 DPI). Le décodage jpeg-js est ~4x plus rapide
+ * qu'à 4096 px (mesuré : 84s → ~20s sur 7.5 MP).
  */
-const MAX_SOURCE_EDGE = 4096;
+const MAX_SOURCE_EDGE = 2048;
 
 /**
  * Côté long maximal de la page redressée. 3000 px sur un A4 ≈ 360 DPI, soit
@@ -563,18 +563,18 @@ function resizeActionsFor(width: number, height: number): { resize: { width: num
 async function normalizeToJpeg(uri: string): Promise<NormalizedJpeg> {
   const startedAt = now();
   let actions: { resize: { width: number; height: number } }[] = [];
+  let width = 0;
+  let height = 0;
   try {
     const dimensions = await getImageDimensions(uri);
-    actions = resizeActionsFor(dimensions.width, dimensions.height);
+    width = dimensions.width;
+    height = dimensions.height;
+    actions = resizeActionsFor(width, height);
   } catch {
     // If la taille ne peut pas être lue, le décodeur garde une limite stricte
     // et échoue proprement plutôt que de tenter un buffer JavaStation énorme.
   }
 
-  // compress: 1 et base64: true sont demandes meme quand AUCUN redimensionnement
-  // n'est necessaire (telephone 12 MP : 3024x4032 < 4096). C'est une
-  // recompression complete de la photo, avec une chaine base64 de 6,5 Mo a
-  // marshaller, pour un resultat que le redressement rendra de toute facon.
   trace('normalize (avant manipulation)', startedAt,
     actions.length === 0 ? 'AUCUN redimensionnement' : `redim ${actions[0].resize.width}x${actions[0].resize.height}`);
 
@@ -586,7 +586,7 @@ async function normalizeToJpeg(uri: string): Promise<NormalizedJpeg> {
   });
   trace('  manipulateAsync (natif)', manipulateStartedAt, result.uri ? '' : 'uri vide');
 
-  if (!result.base64) throw new Error('La normalisation de l’image a échoué.');
+  if (!result.base64) throw new Error("La normalisation de l'image a échoué.");
   trace('  decodage base64 -> octets', manipulateStartedAt,
     `${(result.base64.length / 1048576).toFixed(1)} Mo de chaine base64`);
   return {
@@ -629,9 +629,11 @@ export async function finalizeScanPage(
   requestedCorners?: ScanCorner[],
 ): Promise<ProcessedScanPage> {
   const totalStartedAt = now();
-  // ATTENTION : prepared.sourceUri est DEJA un JPEG normalise. On le
-  // normalise une seconde fois ici, ce qui recompresse l'image sans changer sa
-  // resolution. C'est le poste le plus lourd du pipeline, et il est double.
+  // prepared.sourceUri est DEJA un JPEG normalise par prepareScanSource.
+  // On le re-normalise via manipulateAsync (rapide : ~1.5s) plutôt que de le
+  // lire avec FileSystem.readAsStringAsync (lent : ~10.7s sur 4.5 Mo).
+  // Le redimensionnement est déjà fait, donc manipulateAsync ne fait que
+  // recompresser légèrement — la qualité est préservée.
   const normalized = await normalizeToJpeg(prepared.sourceUri);
   const decodeStartedAt = now();
   const decoded = getJpegModule().decode(normalized.bytes, {
