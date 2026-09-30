@@ -89,3 +89,24 @@ eas_build*.txt
 WhatsApp Image*
 pocketbase/pb_data/storage/
 Cdev
+
+# ─── Regle 2026-09-30 (nettoyage) ───────────────────────────────────────
+# NE JAMAIS versionner une base PocketBase : elle contient les comptes et les
+# hashes de mots de passe. Les donnees vivent sur le VPS (pb2), pas dans git.
+/pb_data/
+/pocketbase/pb_data/
+*.db
+*.db-wal
+*.db-shm
+
+# Sauvegardes de migration (regenerees)
+/.migration_backup_*/
+
+# Copies de config et artefacts jetables
+*.bak
+*.bak_*
+README.md.bak*
+
+# Modeles de contrat Word : reference documentaire, pas une entree du build
+/*.docx
+/mockups/

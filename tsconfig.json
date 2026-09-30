@@ -7,5 +7,24 @@
       "@/*": ["src/*"]
     },
     "skipLibCheck": true
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "App.tsx",
+    "index.ts"
+  ],
+  "//": "Les migrations PocketBase deployment/ sont du JS destine a PocketBase, pas du TypeScript de l app. Leurs /// <reference> pointent vers un types.d.ts local absent, ce qui produisait 41 erreurs TS6053 sans rapport avec le code de l app. Ce n etaient pas des bugs : juste du bruit qui masquait les verifications.",
+  "exclude": [
+    "node_modules",
+    "deployment",
+    "pocketbase",
+    "pb_data",
+    ".migration_backup_57",
+    "mockups",
+    "android",
+    "ios",
+    "dist",
+    "web-build"
+  ]
 }
