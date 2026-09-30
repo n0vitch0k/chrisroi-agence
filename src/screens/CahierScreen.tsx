@@ -17,11 +17,13 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 
 import {
-  getCahierNotes,
+  getCahierPage,
   createCahierNote,
   updateCahierNote,
   deleteCahierNote,
   type CahierNote,
+  type CahierTag,
+  type CahierFilters,
 } from '../database/service';
 import { Colors, Spacing, Radius, Shadows } from '../theme';
 import AppHeader from '../components/AppHeader';
@@ -37,6 +39,7 @@ import {
 } from '../utils/cahierDates';
 import { planifierRappel, annulerRappel, demanderPermissionRappel } from '../utils/cahierNotifications';
 import MonthCalendar from '../components/MonthCalendar';
+import ActionSheet from '../components/ActionSheet';
 
 const M = Colors;
 
@@ -49,6 +52,15 @@ const FILTRES: { key: Filtre; label: string }[] = [
   { key: 'week', label: '7 jours' },
   { key: 'month', label: '30 jours' },
   { key: 'rappel', label: 'Rappels' },
+];
+
+// ─── Types de note ──────────────────────────────────────────────
+// Ce sont des TYPES de note — la personne concernée par l'appel — et pas des
+// métiers. Le filtre « Serveuse / Plongeur / Homme ménage » n'existe pas dans
+// l'app, volontairement.
+const TYPES_NOTE: { key: CahierTag; label: string; icon: any }[] = [
+  { key: 'employe', label: 'Employé', icon: 'account-outline' },
+  { key: 'employeur', label: 'Employeur', icon: 'domain' },
 ];
 
 // ─── Surlignage « au feutre » ────────────────────────────────────
@@ -96,30 +108,95 @@ function BadgeRappel({ state, compact }: { state: 'retard' | 'aujourdhui' | 'fut
   );
 }
 
+// ─── Plaque de type ─────────────────────────────────────────────
+// Employé = vert olive (la couleur du thème pour les candidats).
+// Employeur = sarcelle (la couleur « information / contact » du thème).
+function BadgeTag({ tag }: { tag: 'employe' | 'employeur' }) {
+  const estEmploye = tag === 'employe';
+  return (
+    <View
+      style={[
+        styles.badge,
+        { backgroundColor: estEmploye ? M.successDim : M.infoDim },
+      ]}
+    >
+      <Icon
+        name={estEmploye ? 'account-outline' : 'domain'}
+        size={12}
+        color={estEmploye ? M.successDark : M.infoDark}
+      />
+      <Text
+        style={[
+          styles.badgeText,
+          { color: estEmploye ? M.successDark : M.infoDark },
+        ]}
+      >
+        {estEmploye ? 'Employé' : 'Employeur'}
+      </Text>
+    </View>
+  );
+}
+
 // ─── Carte de note ──────────────────────────────────────────────
+// Un tap ouvre la LECTURE (NoteDetail), pas le formulaire. Les actions
+// (modifier / supprimer) vivent uniquement dans les trois points : c'est le
+// seul endroit où l'on peut détruire une note, donc pas de double
+// confirmation à traverser.
 function NoteCard({
   note,
   recherche,
   onPress,
+  onMenu,
 }: {
   note: CahierNote;
   recherche: string;
   onPress: () => void;
+  onMenu: () => void;
 }) {
   const state = rappelState(note.rappel);
   const relatif = formatRelative(note.created);
+  // La plaque se place AVANT le badge de rappel : le type est la
+  // classification la plus large, le rappel n'est qu'un état.
+  const type = note.tag_employe ? 'employe' : note.tag_employeur ? 'employeur' : null;
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.cardHead}>
         <Text style={styles.cardTitle} numberOfLines={2}>
           {note.titre ? surligner(note.titre, recherche) : 'Sans titre'}
         </Text>
+        <TouchableOpacity
+          onPress={onMenu}
+          hitSlop={10}
+          style={styles.menuBtn}
+          accessibilityRole="button"
+          accessibilityLabel={`Actions de la note ${note.titre || 'sans titre'}`}
+        >
+          <Icon name="dots-vertical" size={20} color={M.textTertiary} />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.cardHeadLigne}>
         <Text style={styles.cardDate}>{relatif ?? formatAbsolute(note.created)}</Text>
       </View>
       <Text style={styles.cardBody} numberOfLines={4}>
         {surligner(note.contenu, recherche)}
       </Text>
+      {/* Nom de la personne concernée : la plaque indique le TYPE, le nom
+          dit QUI. Sans le nom, un filtre « Employé » sur 40 notes ne sert
+          à rien. */}
+      {type && (note.tag_employe || note.tag_employeur) ? (
+        <View style={styles.tagNom}>
+          <Icon
+            name={type === 'employe' ? 'account-outline' : 'domain'}
+            size={12}
+            color={M.textTertiary}
+          />
+          <Text style={styles.tagNomText} numberOfLines={1}>
+            {note.tag_employe || note.tag_employeur}
+          </Text>
+        </View>
+      ) : null}
       <View style={styles.cardFoot}>
+        {type && <BadgeTag tag={type} />}
         {state && <BadgeRappel state={state} compact />}
         <View style={styles.authorPill}>
           <Text style={styles.authorText} numberOfLines={1}>
@@ -128,6 +205,72 @@ function NoteCard({
         </View>
       </View>
     </TouchableOpacity>
+  );
+}
+
+// ─── Vue lecture ─────────────────────────────────────────────────
+// Ouverte par un tap sur la carte. Lecture seule : pas de champ éditable,
+// pas de bouton « Modifier », pas de « Enregistrer ». C'est l'écran où l'on
+// lit une note d'appel en entier — le contenu n'est plus tronqué à 4 lignes
+// comme sur la carte.
+function NoteDetail({
+  note,
+  visible,
+  onClose,
+}: {
+  note: CahierNote | null;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const state = rappelState(note?.rappel);
+  const type: 'employe' | 'employeur' | null =
+    note?.tag_employe ? 'employe' : note?.tag_employeur ? 'employeur' : null;
+  return (
+    <Modal visible={visible && !!note} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={styles.lectureCard}>
+          <View style={styles.modalHead}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.lectureTitre} numberOfLines={3}>
+                {note?.titre || 'Sans titre'}
+              </Text>
+              <Text style={styles.lectureMeta}>
+                {note ? `${note.author} · ${formatAbsolute(note.created)}` : ''}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={10}>
+              <Icon name="close" size={24} color={M.textTertiary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.lectureBody}
+            contentContainerStyle={styles.lectureBodyContent}
+          >
+            <View style={styles.lectureBadges}>
+              {type && <BadgeTag tag={type} />}
+              {state && <BadgeRappel state={state} />}
+            </View>
+            {type && (note?.tag_employe || note?.tag_employeur) ? (
+              <Text style={styles.lectureTagNom}>
+                {note?.tag_employe || note?.tag_employeur}
+              </Text>
+            ) : null}
+            {/* La note peut être longue (compte rendu d'appel) : pas de
+                numberOfLines ici. Le ScrollView prend le reste de la hauteur. */}
+            <Text style={styles.lectureTexte}>{note?.contenu}</Text>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -153,6 +296,17 @@ export default function CahierScreen() {
   const [filtre, setFiltre] = useState<Filtre>('all');
   const [jour, setJour] = useState<string | null>(null);
   const [recherche, setRecherche] = useState('');
+  // Type de note affiché : 'employe' | 'employeur' | '' = les deux.
+  // C'est un TYPE de note (personne concernée), pas un métier.
+  const [tag, setTag] = useState<CahierTag>('');
+  // Pagination serveur : page courante + nombre de pages connues.
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  // Recherche débattue : on n'envoie rien au serveur tant que l'utilisateur
+  // n'arrête pas de taper (350 ms), sinon chaque lettre déclencherait une
+  // requête réseau.
+  const [rechercheDifferee, setRechercheDifferee] = useState('');
 
   // Modale d'édition
   const [modalVisible, setModalVisible] = useState(false);
@@ -160,6 +314,11 @@ export default function CahierScreen() {
   const [titre, setTitre] = useState('');
   const [contenu, setContenu] = useState('');
   const [rappel, setRappel] = useState<string | null>(null);
+  // Tag saisi dans le formulaire. Deux champs Distincts : le schéma accepte
+  // les deux, mais l'interface propose un choix unique par défaut (demande
+  // explicite) — un second tag s'obtient en editant la note.
+  const [tagForm, setTagForm] = useState<CahierTag>('');
+  const [nomTag, setNomTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   // Mémorise la date de rappel AVANT édition : sans elle on ne peut pas
@@ -171,107 +330,109 @@ export default function CahierScreen() {
   // Calendrier du filtre de date (barre du haut) : indispensable pour
   // retrouver une note de plus de 7 jours.
   const [calendrierFiltreVisible, setCalendrierFiltreVisible] = useState(false);
+  // Vue lecture : ouverte par un tap sur la carte. Lecture seule, aucun
+  // raccourci vers la modification (demandé explicitement).
+  const [lectureId, setLectureId] = useState<string | null>(null);
+  // Feuille d'actions : ouverte par les trois points de la carte.
+  const [menuId, setMenuId] = useState<string | null>(null);
 
-  const charger = useCallback(async () => {
-    try {
-      // Bornes poussées au serveur pour les raccourcis et le jour choisi :
-      // sans ça, un jour ancien au-delà des 500 derniers records est invisible.
-      let filtres: { dateDebut?: string; dateFin?: string } = {};
-      if (jour) {
-        filtres = dayRange(jour);
-      } else if (filtre === 'today') {
-        filtres = dayRange(localDayKey(new Date()));
-      } else if (filtre === 'week') {
-        filtres = recentRange(7);
-      } else if (filtre === 'month') {
-        filtres = recentRange(30);
-      }
-      setNotes(await getCahierNotes(filtres));
-    } catch (e: any) {
-      console.error('[cahier] chargement:', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  // Debounce de la recherche : évite une requête par lettre.
+  useEffect(() => {
+    const t = setTimeout(() => setRechercheDifferee(recherche), 350);
+    return () => clearTimeout(t);
+  }, [recherche]);
+
+  // Les filtres serveur (plage de dates) : le jour précis prime sur le
+  // raccourci, comme dans la maquette.
+  const filtresServeur = useMemo<CahierFilters>(() => {
+    let f: CahierFilters = {};
+    if (jour) {
+      f = dayRange(jour);
+    } else if (filtre === 'today') {
+      f = dayRange(localDayKey(new Date()));
+    } else if (filtre === 'week') {
+      f = recentRange(7);
+    } else if (filtre === 'month') {
+      f = recentRange(30);
     }
-  }, [filtre, jour]);
+    return { ...f, tag, recherche: rechercheDifferee };
+  }, [filtre, jour, tag, rechercheDifferee]);
+
+  const charger = useCallback(
+    async (pageCible = 1) => {
+      try {
+        const res = await getCahierPage(filtresServeur, pageCible, 50);
+        setNotes(res.notes);
+        setPage(res.page);
+        setTotalPages(res.totalPages);
+        setTotalItems(res.totalItems);
+      } catch (e: any) {
+        console.error('[cahier] chargement:', e);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [filtresServeur],
+  );
 
   useFocusEffect(
     useCallback(() => {
-      charger();
+      charger(1);
     }, [charger]),
   );
 
-  // ── Filtrage + recherche (côté client) ──
+  // ── Filtrage résiduel (côté client) ──
+  // Le filtre « Rappels » reste côté client : il porte sur le champ `rappel`,
+  // pas sur une plage de dates, et le serveur n'a pas d'index dessus. Tout le
+  // reste (plage, type, recherche) est déjà fait par le serveur.
   const visibles = useMemo(() => {
-    const q = recherche.trim().toLowerCase();
+    if (filtre !== 'rappel') return notes;
     const today = localDayKey(new Date());
-    let list = notes;
-
-    // Le filtre « jour précis » prime sur le raccourci, comme dans la maquette.
-    if (jour) {
-      list = list.filter((n) => localDayKey(n.created) === jour);
-    } else if (filtre === 'today') {
-      list = list.filter((n) => localDayKey(n.created) === today);
-    } else if (filtre === 'rappel') {
-      list = list.filter((n) => n.rappel && n.rappel <= today);
-    }
-
-    if (q) {
-      list = list.filter(
-        (n) =>
-          n.titre.toLowerCase().includes(q) ||
-          n.contenu.toLowerCase().includes(q) ||
-          n.author.toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [notes, filtre, jour, recherche]);
+    return notes.filter((n) => n.rappel && n.rappel <= today);
+  }, [notes, filtre]);
 
   const rappelsDus = useMemo(
     () => notes.filter((n) => n.rappel && n.rappel <= localDayKey(new Date())).length,
     [notes],
   );
+  // La semaine est un compteur GLOBAL, pas celui de la page affichée : sinon
+  // le chiffre changerait en feuilletant, ce qui serait faux.
   const semaine = useMemo(() => {
+    if (filtre === 'week' || filtre === 'today' || jour) return notes.length;
     const debut = recentRange(7).dateDebut;
     return notes.filter((n) => n.created >= debut).length;
-  }, [notes]);
+  }, [notes, filtre, jour]);
 
   const ouvrirCreation = () => {
     setEditingId(null);
     setTitre('');
     setContenu('');
     setRappel(null);
+    setTagForm('');
+    setNomTag('');
     setErreur(null);
     rappelPrecedent.current = null;
     setModalVisible(true);
   };
 
+  // Un tap sur la carte ouvre la lecture. Aucune confirmation ici : lire une
+  // note n'écrit rien et ne détruit rien.
+  const ouvrirLecture = (note: CahierNote) => setLectureId(note.id);
+
   const ouvrirEdition = (note: CahierNote) => {
-    // Confirmation demandee explicitement : un tap sur une carte ne doit pas
-    // ouvrir directement le formulaire. On n'affiche le titre de la note dans
-    // l'alerte que si elle en a un, sinon l'utilisateur ne sait pas laquelle
-    // il va modifier.
-    Alert.alert(
-      'Modifier cette note ?',
-      note.titre
-        ? `« ${note.titre} »`
-        : (note.contenu.slice(0, 60) + (note.contenu.length > 60 ? '…' : '')),
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Modifier',
-          onPress: () => {
-            setEditingId(note.id);
-            setTitre(note.titre);
-            setContenu(note.contenu);
-            setRappel(note.rappel || null);
-            setErreur(null);
-            rappelPrecedent.current = note.rappel || null;
-            setModalVisible(true);
-          },
-        },
-      ],
-    );
+    setEditingId(note.id);
+    setTitre(note.titre);
+    setContenu(note.contenu);
+    setRappel(note.rappel || null);
+    // Une note peut avoir les deux tags (le schéma l'autorise) : on affiche le
+    // premier trouvé, et son nom avec lui.
+    const type: CahierTag = note.tag_employe ? 'employe' : note.tag_employeur ? 'employeur' : '';
+    setTagForm(type);
+    setNomTag(note.tag_employe || note.tag_employeur || '');
+    setErreur(null);
+    rappelPrecedent.current = note.rappel || null;
+    setModalVisible(true);
   };
 
   const enregistrer = async () => {
@@ -282,8 +443,14 @@ export default function CahierScreen() {
     setSaving(true);
     setErreur(null);
     try {
+      // Choix unique : le nom saisi part sur LE champ du type choisi.
+      const nom = nomTag.trim();
+      const tags = {
+        tag_employe: tagForm === 'employe' ? nom : '',
+        tag_employeur: tagForm === 'employeur' ? nom : '',
+      };
       if (editingId) {
-        await updateCahierNote(editingId, { titre, contenu, rappel });
+        await updateCahierNote(editingId, { titre, contenu, rappel, ...tags });
         if (rappel) {
           if (!rappelPrecedent.current) await demanderPermissionRappel();
           const r = await planifierRappel(editingId, rappel, contenu.trim());
@@ -292,7 +459,7 @@ export default function CahierScreen() {
           await annulerRappel(editingId);
         }
       } else {
-        const id = await createCahierNote({ titre, contenu, rappel });
+        const id = await createCahierNote({ titre, contenu, rappel, ...tags });
         if (rappel) {
           await demanderPermissionRappel();
           const r = await planifierRappel(id, rappel, contenu.trim());
@@ -300,7 +467,9 @@ export default function CahierScreen() {
         }
       }
       setModalVisible(false);
-      await charger();
+      // Retour page 1 : apres un filtre ou une creation, l'utilisateur doit
+      // voir le debut de la liste, pas une page ou sa note n'apparait pas.
+      await charger(1);
     } catch (e: any) {
       console.error('[cahier] enregistrement:', e);
       setErreur(
@@ -313,31 +482,40 @@ export default function CahierScreen() {
     }
   };
 
-  const supprimer = () => {
-    if (!editingId) return;
-    Alert.alert('Supprimer la note', 'Cette action est définitive.', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Supprimer',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await annulerRappel(editingId);
-            await deleteCahierNote(editingId);
-            setModalVisible(false);
-            await charger();
-          } catch (e: any) {
-            console.error('[cahier] suppression:', e);
-            setErreur(e?.message || 'La suppression a échoué.');
-          }
-        },
-      },
-    ]);
+  // Suppression : uniquement depuis la feuille d'actions. La confirmation
+  // native reste — c'est la seule action destructive de l'écran, et elle est
+  // désormais joignable en un seul geste (pas d'ouverture du formulaire avant).
+  const supprimerNote = async (note: CahierNote) => {
+    try {
+      await annulerRappel(note.id);
+      await deleteCahierNote(note.id);
+      // La note disparaît aussi de la vue lecture si elle y était ouverte.
+      setLectureId((id) => (id === note.id ? null : id));
+      // Si on vient de vider la DERNIERE page, on recule d'une page plutôt que
+      // d'afficher une page vide : le total baisse de 1, donc la page 3 peut
+      // ne plus exister.
+      await charger(page > 1 && visibles.length <= 1 ? page - 1 : page);
+    } catch (e: any) {
+      console.error('[cahier] suppression:', e);
+      Alert.alert('Suppression impossible', e?.message || "La suppression a échoué.");
+    }
   };
 
   const reponseVide = loading
     ? null
-    : visibleVide(visibles, recherche, filtre, jour);
+    : visibleVide(visibles, recherche, filtre, jour, tag);
+
+  // La note affichée dans la vue lecture / la feuille d'actions. On relit le
+  // tableau courant plutôt que de garder une copie dans l'état : après une
+  // suppression ou un rechargement, la référence reste la bonne.
+  const noteLue = useMemo(
+    () => (lectureId ? notes.find((n) => n.id === lectureId) || null : null),
+    [lectureId, notes],
+  );
+  const noteDuMenu = useMemo(
+    () => (menuId ? notes.find((n) => n.id === menuId) || null : null),
+    [menuId, notes],
+  );
 
   return (
     <View style={styles.container}>
@@ -414,6 +592,45 @@ export default function CahierScreen() {
         ))}
       </ScrollView>
 
+      {/* Filtre par TYPE de note. Séparé de la barre de périodes : Employé /
+          Employeur classent la note par personne concernée, ce n'est pas une
+          durée. Un seul actif à la fois (l'appui redonne « tous »). */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterBar}
+        contentContainerStyle={styles.filterBarContent}
+      >
+        {TYPES_NOTE.map((t) => {
+          const actif = tag === t.key;
+          return (
+            <TouchableOpacity
+              key={t.key || 'tous'}
+              onPress={() => setTag(actif ? '' : t.key)}
+              style={[
+                styles.chip,
+                actif && styles.chipActive,
+                // Le filtre Employé doit se lire comme une catégorie précise,
+                // pas comme le bouton principal du filtre.
+                actif && t.key === 'employe' && { backgroundColor: M.success, borderColor: M.success },
+                actif && t.key === 'employeur' && { backgroundColor: M.info, borderColor: M.info },
+              ]}
+              activeOpacity={0.7}
+            >
+              <Icon
+                name={t.icon}
+                size={13}
+                color={actif ? '#fff' : M.textSecondary}
+                style={{ marginRight: 5 }}
+              />
+              <Text style={[styles.chipText, actif && styles.chipTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       {/* Filtre date précise — raccourcis + calendrier complet pour n'importe
           quelle date, y compris ancienne. Sans le calendrier, la barre ne
           descendait qu'à J-7 : impossible de retrouver une note du mois passé. */}
@@ -466,7 +683,15 @@ export default function CahierScreen() {
       <ScrollView
         style={styles.list}
         contentContainerStyle={[styles.listContent, { maxWidth: large ? 1100 : undefined }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); charger(); }} tintColor={M.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            // Tirer vers le bas recharge la PAGE COURANTE : l'utilisateur est
+            // en train de lire cette page, pas de revenir au début.
+            onRefresh={() => { setRefreshing(true); charger(page); }}
+            tintColor={M.primary}
+          />
+        }
         keyboardShouldPersistTaps="handled"
       >
         {reponseVide || visibles.length === 0 ? (
@@ -481,11 +706,47 @@ export default function CahierScreen() {
           <View style={[styles.grid, large && styles.gridWide]}>
             {visibles.map((n) => (
               <View key={n.id} style={large ? styles.gridItemWide : styles.gridItem}>
-                <NoteCard note={n} recherche={recherche.trim()} onPress={() => ouvrirEdition(n)} />
+                <NoteCard
+                  note={n}
+                  recherche={recherche.trim()}
+                  onPress={() => ouvrirLecture(n)}
+                  onMenu={() => setMenuId(n.id)}
+                />
               </View>
             ))}
           </View>
         )}
+
+        {totalPages > 1 ? (
+          <View style={styles.pagination}>
+            <TouchableOpacity
+              onPress={() => page > 1 && !refreshing && charger(page - 1)}
+              disabled={page <= 1 || refreshing}
+              style={[styles.pageBtn, page <= 1 && styles.pageBtnOff]}
+              activeOpacity={0.7}
+              accessibilityLabel="Page précédente"
+            >
+              <Icon name="chevron-left" size={20} color={page <= 1 ? M.textTertiary : M.primary} />
+            </TouchableOpacity>
+            <Text style={styles.pageTexte}>
+              Page {page} sur {totalPages}
+              {totalItems > 0 ? ` · ${totalItems} note${totalItems > 1 ? 's' : ''}` : ''}
+            </Text>
+            <TouchableOpacity
+              onPress={() => page < totalPages && !refreshing && charger(page + 1)}
+              disabled={page >= totalPages || refreshing}
+              style={[styles.pageBtn, page >= totalPages && styles.pageBtnOff]}
+              activeOpacity={0.7}
+              accessibilityLabel="Page suivante"
+            >
+              <Icon name="chevron-right" size={20} color={page >= totalPages ? M.textTertiary : M.primary} />
+            </TouchableOpacity>
+          </View>
+        ) : totalItems > 0 ? (
+          <Text style={styles.totalFoot}>
+            {totalItems} note{totalItems > 1 ? 's' : ''} au total
+          </Text>
+        ) : null}
 
         <TouchableOpacity style={styles.newBtn} onPress={ouvrirCreation} activeOpacity={0.8}>
           <Icon name="plus" size={20} color={M.primary} />
@@ -534,6 +795,51 @@ export default function CahierScreen() {
                 multiline
                 textAlignVertical="top"
               />
+
+              <Text style={styles.label}>Concerne (optionnel)</Text>
+              <View style={styles.tagChoices}>
+                {TYPES_NOTE.map((t) => {
+                  const actif = tagForm === t.key;
+                  return (
+                    <TouchableOpacity
+                      key={t.key}
+                      onPress={() => setTagForm(actif ? '' : t.key)}
+                      style={[
+                        styles.tagChip,
+                        actif && t.key === 'employe' && styles.tagChipEmploye,
+                        actif && t.key === 'employeur' && styles.tagChipEmployeur,
+                      ]}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={actif ? `Retirer le tag ${t.label}` : `Taguer comme ${t.label}`}
+                    >
+                      <Icon
+                        name={t.icon}
+                        size={14}
+                        color={actif ? '#fff' : M.textSecondary}
+                      />
+                      <Text
+                        style={[styles.tagChipText, actif && { color: '#fff', fontWeight: '700' }]}
+                      >
+                        {t.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {/* Le nom n'apparait QUE si un type est choisi : sans type, un
+                  nom seul ne serait pas rattachable. */}
+              {tagForm ? (
+                <TextInput
+                  style={styles.input}
+                  placeholder={tagForm === 'employe' ? 'Ex. Kouassi Ange' : 'Ex. Konan & Fils'}
+                  placeholderTextColor={M.textTertiary}
+                  value={nomTag}
+                  onChangeText={setNomTag}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              ) : null}
 
               <Text style={styles.label}>Date de rappel (optionnel)</Text>
               <View style={styles.rappelRow}>
@@ -585,13 +891,6 @@ export default function CahierScreen() {
             </ScrollView>
 
             <View style={styles.modalActions}>
-              {editingId ? (
-                <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={supprimer} disabled={saving}>
-                  <Text style={styles.btnDangerText}>Supprimer</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={{ flex: 1 }} />
-              )}
               <TouchableOpacity
                 style={[styles.btn, styles.btnSecondary]}
                 onPress={() => setModalVisible(false)}
@@ -631,26 +930,87 @@ export default function CahierScreen() {
         onClose={() => setCalendrierFiltreVisible(false)}
         titre="Filtrer par date"
       />
+
+      {/* Vue lecture — ouverte par un tap sur la carte. */}
+      <NoteDetail
+        note={noteLue}
+        visible={!!lectureId}
+        onClose={() => setLectureId(null)}
+      />
+
+      {/* Trois points — l'unique accès à Modifier et Supprimer. */}
+      <ActionSheet
+        visible={!!menuId}
+        titre={noteDuMenu?.titre || 'Note sans titre'}
+        sousTitre={
+          noteDuMenu
+            ? `${noteDuMenu.author} · ${formatAbsolute(noteDuMenu.created)}`
+            : undefined
+        }
+        actions={[
+          { label: 'Modifier', icon: 'pencil-outline', onPress: () => { if (noteDuMenu) ouvrirEdition(noteDuMenu); } },
+          {
+            label: 'Supprimer',
+            icon: 'trash-can-outline',
+            tone: 'danger',
+            onPress: () => {
+              if (!noteDuMenu) return;
+              Alert.alert(
+                'Supprimer la note ?',
+                noteDuMenu.titre
+                  ? `« ${noteDuMenu.titre} » sera définitivement supprimée.`
+                  : 'Cette note sera définitivement supprimée.',
+                [
+                  { text: 'Annuler', style: 'cancel' },
+                  { text: 'Supprimer', style: 'destructive', onPress: () => { supprimerNote(noteDuMenu); } },
+                ],
+              );
+            },
+          },
+        ]}
+        onClose={() => setMenuId(null)}
+      />
     </View>
   );
 }
 
-/** Message d'état vide, adapté au motif filtré. */
+/** Message d'état vide, adapté au motif filtré. L'ordre compte : on part du
+ *  filtre le plus restrictif, parce que c'est lui que l'utilisateur a choisi. */
 function visibleVide(
   list: CahierNote[],
   recherche: string,
   filtre: Filtre,
   jour: string | null,
+  tag: CahierTag,
 ): { titre: string; sousTitre: string } | null {
   if (list.length > 0) return null;
+  const labelTag = tag === 'employe' ? 'employé' : 'employeur';
+
   if (recherche.trim()) {
-    return { titre: 'Aucun résultat', sousTitre: `Aucune note ne contient « ${recherche.trim()} ».` };
+    const q = recherche.trim();
+    // Recherche + filtre de type : ne pas dire « aucun résultat » tout court,
+    // le résultat existe peut-être sous l'autre type.
+    if (tag) {
+      return {
+        titre: 'Aucun résultat',
+        sousTitre: `Aucune note « ${q} » ne concerne un ${labelTag}.`,
+      };
+    }
+    return { titre: 'Aucun résultat', sousTitre: `Aucune note ne contient « ${q} ».` };
   }
   if (jour) {
     return { titre: 'Aucune note ce jour-là', sousTitre: `Rien n'a été noté le ${dayLabel(jour).toLowerCase()}.` };
   }
   if (filtre === 'rappel') {
     return { titre: 'Aucun rappel', sousTitre: "Aucun rappel n'est dû aujourd'hui." };
+  }
+  if (tag) {
+    // Le cas trompeur : il y a des notes, aucune de ce type. « Aucune note »
+    // ferait croire que le cahier est vide.
+    return {
+      titre: `Aucune note ${labelTag}`,
+      sousTitre: `Le cahier contient des notes, mais aucune ne concerne un ${labelTag}.`,
+    };
   }
   if (filtre === 'all') {
     return { titre: 'Aucune note', sousTitre: 'Notez votre premier appel ou renseignement.' };
@@ -910,6 +1270,91 @@ const styles = StyleSheet.create({
   btnPrimaryText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   btnSecondary: { backgroundColor: M.bg },
   btnSecondaryText: { color: M.textSecondary, fontSize: 14, fontWeight: '600' },
-  btnDanger: { backgroundColor: M.dangerLight },
-  btnDangerText: { color: M.danger, fontSize: 14, fontWeight: '700' },
+  // btnDanger / btnDangerText ne sont plus utilisés : la suppression est
+  // passée dans la feuille d'actions, qui porte son propre style danger.
+
+  // ── Vue lecture ──
+  // Carte centrée mais plus haute que la modale d'édition : une note d'appel
+  // peut faire plusieurs écrans.
+  lectureCard: {
+    width: '100%',
+    maxWidth: 560,
+    maxHeight: '88%',
+    backgroundColor: M.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    ...Shadows.elevated,
+  },
+  lectureTitre: { fontSize: 18, fontWeight: '800', color: M.textPrimary, lineHeight: 25 },
+  lectureMeta: { fontSize: 12, color: M.textTertiary, marginTop: 3 },
+  lectureBody: { flexGrow: 0, marginTop: Spacing.xs },
+  lectureBodyContent: { paddingBottom: Spacing.sm },
+  lectureTexte: { fontSize: 15, color: M.textPrimary, lineHeight: 23 },
+
+  // ── Trois points sur la carte ──
+  menuBtn: { padding: 2, marginTop: -2, marginRight: -2 },
+  cardHeadLigne: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+
+  // ── Nom de la personne concernée ──
+  tagNom: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+  tagNomText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: M.textSecondary,
+    textTransform: 'capitalize',
+  },
+
+  // ── Tags dans le formulaire ──
+  tagChoices: { flexDirection: 'row', gap: 8, marginBottom: 2 },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
+    borderWidth: 1.5,
+    borderColor: M.border,
+    backgroundColor: M.surface,
+  },
+  tagChipEmploye: { backgroundColor: M.success, borderColor: M.success },
+  tagChipEmployeur: { backgroundColor: M.info, borderColor: M.info },
+  tagChipText: { fontSize: 13, fontWeight: '600', color: M.textSecondary },
+
+  // ── Vue lecture : badges ──
+  lectureBadges: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: Spacing.sm },
+  lectureTagNom: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: M.textSecondary,
+    textTransform: 'capitalize',
+    marginBottom: Spacing.md,
+  },
+
+  // ── Pagination ──
+  pagination: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.lg,
+    marginTop: Spacing.lg,
+  },
+  pageBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: M.primaryDim,
+  },
+  // Grise : la page est hors borne, le bouton ne fait rien.
+  pageBtnOff: { backgroundColor: M.bg },
+  pageTexte: { fontSize: 13, fontWeight: '600', color: M.textSecondary },
+  totalFoot: {
+    fontSize: 12,
+    color: M.textTertiary,
+    textAlign: 'center',
+    marginTop: Spacing.lg,
+  },
 });

@@ -21,11 +21,10 @@ import {
   getAllContrats,
   createFinContratAlertes,
   createCommissionDueAlertes,
-  getCahierNotes,
+  countCahierRappelsDue,
 } from '../database/service';
 import { Colors, Shadows, Radius } from '../theme';
 import { FORMATS_CONTRAT } from '../utils/constants';
-import { localDayKey } from '../utils/cahierDates';
 
 // Génération auto des alertes une seule fois par session (au premier passage
 // sur le Dashboard, donc à chaque ouverture de l'app).
@@ -141,11 +140,11 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
 
   const loadData = useCallback(async () => {
     try {
-      const [employesData, employeursData, contratsData, notes] = await Promise.all([
+      const [employesData, employeursData, contratsData, rappelsCahierData] = await Promise.all([
         getAllEmployes(),
         getAllEmployeurs(),
         getAllContrats(),
-        getCahierNotes(),
+        countCahierRappelsDue(),
       ]);
       setRegistreCounts({
         fiches: (employesData || []).length,
@@ -154,9 +153,9 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
       });
       // Pastille de rappel : « rappel du jour ou dépassé », pas « rappel à
       // venir dans la semaine » — sinon le badge serait tout le temps rouge
-      // et l'agent ne le regarderait plus.
-      const today = localDayKey(new Date());
-      setRappelsCahier((notes || []).filter((n) => n.rappel && n.rappel <= today).length);
+      // et l'agent ne le regarderait plus. Le compte vient du serveur (COUNT),
+      // pas d'un chargement complet du cahier.
+      setRappelsCahier(rappelsCahierData || 0);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {

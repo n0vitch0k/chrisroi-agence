@@ -439,56 +439,136 @@ export interface CahierNote {
   rappel: string;
   author: string;
   author_id: string;
+  /** Type de note : 'employe' | 'employeur' | '' (vide = non classé).
+   *  Ce sont des TYPES de note (personne concernée), pas des métiers. */
+  tag_employe: string;
+  tag_employeur: string;
   created: string;
   updated: string;
 }
 
 const trim = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 
-/** Charge les notes. Les filtres de plage sont poussés au serveur quand ils
- *  sont fournis (indispensable pour retrouver une date ancienne au-delà des
- *  500 derniers records) ; le reste est filtré côté client. */
-export const getCahierNotes = async (filters: {
+export type CahierTag = 'employe' | 'employeur' | '';
+
+export interface CahierFilters {
   dateDebut?: string;
   dateFin?: string;
-} = {}): Promise<CahierNote[]> => {
+  /** Type de note à garder : 'employe', 'employeur', ou '' = les deux. */
+  tag?: CahierTag;
+  /** Recherche plein texte, poussée AU SERVEUR (c'est ce qui rend la
+   *  pagination honnête : la page 2 d'une recherche est déjà filtrée). */
+  recherche?: string;
+}
+
+const mapNote = (r: any): CahierNote => ({
+  id: r.id,
+  titre: trim(r.titre),
+  contenu: trim(r.contenu),
+  rappel: trim(r.rappel),
+  author: trim(r.author) || '—',
+  author_id: trim(r.author_id),
+  tag_employe: trim(r.tag_employe),
+  tag_employeur: trim(r.tag_employeur),
+  created: r.created || '',
+  updated: r.updated || '',
+});
+
+/** Construit le filtre PocketBase. Tout est ÉCHAPPÉ : une apostrophe dans un
+ *  nom (O'Brien) casserait la requête, donc on Double chaque guillemet. */
+const echapper = (v: string): string => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+export const buildCahierFilter = (f: CahierFilters): string => {
+  const parts: string[] = [];
+  if (f.dateDebut) parts.push(`created >= "${echapper(f.dateDebut)}"`);
+  if (f.dateFin) parts.push(`created <= "${echapper(f.dateFin)}"`);
+  if (f.tag === 'employe') parts.push('tag_employe != ""');
+  if (f.tag === 'employeur') parts.push('tag_employeur != ""');
+
+  const q = f.recherche?.trim();
+  if (q) {
+    // `~` = contient. Sur plusieurs champs, on veut « ET » : un mot cherché
+    // doit être présent dans AU MOINS un champ de chaque note, pas dans tous.
+    const s = echapper(q);
+    parts.push(`(titre ~ "${s}" || contenu ~ "${s}" || author ~ "${s}" || tag_employe ~ "${s}" || tag_employeur ~ "${s}")`);
+  }
+  return parts.join(' && ');
+};
+
+/** Une page de notes, triée du plus récent au plus ancien. */
+export interface CahierPage {
+  notes: CahierNote[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  /** Page suivante à demander, ou 0 si on est au bout. */
+  suite: number;
+}
+
+/** Charge UNE page de notes. Tous les filtres partent au serveur, donc chaque
+ *  page est déjà filtrée : c'est ce qui permet de paginer sans que la
+ *  recherche rate des résultats (le piège du tout-filtrer-côté-client).
+ *  Le tri serveur `-created` fonctionne sur pb2 (vérifié : 200). */
+export const getCahierPage = async (
+  filters: CahierFilters = {},
+  page = 1,
+  perPage = 50,
+): Promise<CahierPage> => {
   try {
     const pb = getPb();
-    const parts: string[] = [];
-    if (filters.dateDebut) parts.push(`created >= "${filters.dateDebut}"`);
-    if (filters.dateFin) parts.push(`created <= "${filters.dateFin}"`);
-
-    const result = parts.length
-      ? await pb.collection('cahier_notes').getList(1, 500, { filter: parts.join(' && ') })
-      : await pb.collection('cahier_notes').getList(1, 500);
-
-    // Tri client : le sort serveur provoke un 400 sur pb2 (même piège que
-    // journal_actions) et de toute façon on filtre par jour ensuite.
-    return (result.items as any[])
-      .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
-      .map((r: any) => ({
-        id: r.id,
-        titre: trim(r.titre),
-        contenu: trim(r.contenu),
-        rappel: trim(r.rappel),
-        author: trim(r.author) || '—',
-        author_id: trim(r.author_id),
-        created: r.created || '',
-        updated: r.updated || '',
-      }));
+    const filter = buildCahierFilter(filters);
+    const result = await pb.collection('cahier_notes').getList(page, perPage, {
+      filter: filter || undefined,
+      sort: '-created',
+    });
+    const totalItems = (result as any).totalItems ?? result.items.length;
+    const totalPages = (result as any).totalPages ?? 1;
+    return {
+      notes: (result.items as any[]).map(mapNote),
+      page: (result as any).page ?? page,
+      totalPages,
+      totalItems,
+      suite: page < totalPages ? page + 1 : 0,
+    };
   } catch (err: any) {
     // 404 = collection absente (schéma non appliqué sur pb2). On ne casse pas
     // l'écran : l'utilisateur voit une liste vide, pas un crash.
-    console.error('[cahier] getCahierNotes:', err?.status, err?.message);
-    return [];
+    console.error('[cahier] getCahierPage:', err?.status, err?.message);
+    return { notes: [], page: 1, totalPages: 0, totalItems: 0, suite: 0 };
   }
 };
 
-/** Crée une note. Le contenu est obligatoire ; titre et rappel optionnels. */
+/** Charge TOUTES les notes correspondant aux filtres, en itérant les pages
+ *  serveur.
+ *
+ *  ATTENTION : plus appelé par l'app (l'écran Cahier pagine avec
+ *  getCahierPage, le Dashboard compte avec countCahierRappelsDue). On le garde
+ *  parce que c'est la seule façon de récupérer l'intégralité du cahier — utile
+ *  pour un export ou un diagnostic, et ça coûte une requête par tranche de
+ *  200. Ne pas l'utiliser pour un simple comptage. */
+export const getCahierNotes = async (filters: CahierFilters = {}): Promise<CahierNote[]> => {
+  const toutes: CahierNote[] = [];
+  let page = 1;
+  let totalPages = 1;
+  // Garde-fou : si le serveur renvoie une page vide, on sort. Sans cela une
+  // boucle infinie consommerait le réseau pour rien.
+  do {
+    const p = await getCahierPage(filters, page, 200);
+    toutes.push(...p.notes);
+    totalPages = p.totalPages;
+    if (p.notes.length === 0) break;
+    page = p.suite || page + 1;
+  } while (page > 0 && page <= totalPages);
+  return toutes;
+};
+
+/** Crée une note. Le contenu est obligatoire ; titre, rappel et tag optionnels. */
 export const createCahierNote = async (note: {
   titre?: string;
   contenu: string;
   rappel?: string | null;
+  tag_employe?: string | null;
+  tag_employeur?: string | null;
 }): Promise<string> => {
   const pb = getPb();
   const user = getCurrentUser();
@@ -501,6 +581,11 @@ export const createCahierNote = async (note: {
     // Rappel stocké en clé locale : le jour choisi par l'utilisateur est le
     // jour voulu, sans dérive de fuseau.
     rappel: trim(note.rappel),
+    // Tags mutuellement exclusifs par défaut (choix unique dans le formulaire),
+    // mais le schéma accepte les deux : une note peut concerner un candidat ET
+    // son employeur, c'est le cas d'usage « dossier de placement ».
+    tag_employe: trim(note.tag_employe),
+    tag_employeur: trim(note.tag_employeur),
     author: user ? `${user.prenom || ''} ${user.nom || ''}`.trim() || user.username : '',
     author_id: user?.id || '',
   });
@@ -516,7 +601,13 @@ export const createCahierNote = async (note: {
 /** Met à jour une note. Le rappel est effacé si l'utilisateur le vide. */
 export const updateCahierNote = async (
   id: string,
-  note: { titre?: string; contenu: string; rappel?: string | null },
+  note: {
+    titre?: string;
+    contenu: string;
+    rappel?: string | null;
+    tag_employe?: string | null;
+    tag_employeur?: string | null;
+  },
 ): Promise<void> => {
   const pb = getPb();
   const contenu = trim(note.contenu);
@@ -526,6 +617,8 @@ export const updateCahierNote = async (
     titre: trim(note.titre),
     contenu,
     rappel: trim(note.rappel),
+    tag_employe: trim(note.tag_employe),
+    tag_employeur: trim(note.tag_employeur),
   });
   await logAction({
     actionType: 'modification_note_cahier',
@@ -547,16 +640,26 @@ export const deleteCahierNote = async (id: string): Promise<void> => {
   });
 };
 
-/** Notes dont le rappel est aujourd'hui ou dépassé (pour les badges).
- *  Volontairement sans `getPb()` : la liste complète est déjà chargée par
- *  l'écran, un second accès réseau n'apporterait rien. */
-export const getCahierRappelsDue = async (): Promise<CahierNote[]> => {
+/** NOMBRE de notes dont le rappel est aujourd'hui ou dépassé (pour les badges
+ *  du Dashboard). Un simple COUNT côté serveur : le Dashboard n'a besoin que
+ *  du chiffre, pas des notes. Charger toutes les notes pour compter était le
+ *  coût que le plafond de 500 masquait — sur un gros cahier, ça téléchargait
+ *  le cahier entier à chaque ouverture du Dashboard. */
+export const countCahierRappelsDue = async (): Promise<number> => {
   try {
-    const all = await getCahierNotes();
+    const pb = getPb();
     const today = localDayKey(new Date());
-    return all.filter((n) => n.rappel && n.rappel <= today);
-  } catch {
-    return [];
+    // `rappel != ""` exclut les notes sans rappel ; `rappel <= today` ne garde
+    // que les rappels dus. Le format de `rappel` est une clé locale
+    // « yyyy-mm-dd » : la comparaison texte est donc un tri chronologique
+    // correct, sans conversion de fuseau.
+    const res = await pb.collection('cahier_notes').getList(1, 1, {
+      filter: `rappel != "" && rappel <= "${today}"`,
+    });
+    return (res as any).totalItems ?? 0;
+  } catch (e) {
+    console.error('[cahier] countCahierRappelsDue:', e);
+    return 0;
   }
 };
 
