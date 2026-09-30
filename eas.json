@@ -3,21 +3,25 @@
     "version": ">= 20.0.0",
     "appVersionSource": "local"
   },
+  "//abiFilters": "Un APK embarque par defaut 4 architectures : arm64-v8a, armeabi-v7a, x86 et x86_64. Le meme libreactnative.so y est compile 4 fois (6,7 Mo a chaque fois), soit 82,9 Mo de code natif pour 98,6 Mo d'APK. Un APK doit fonctionner sur n'importe quel appareil, donc il embarque tout. Or nous ne visons que des telephones arm64 recents : x86/x86_64 ne servent qu'aux emulateurs, armeabi-v7a est mort (pre-2015). Livrer arm64 seul fait tomber l'APK de 98,6 Mo a ~38 Mo. Contrepartie : plus d'installation sur emulateur ni sur telephone de moins de 2015.",
   "build": {
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "abiFilters": ["arm64-v8a"]
       }
     },
     "preview": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "abiFilters": ["arm64-v8a"]
       }
     },
     "development": {
       "developmentClient": true,
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "abiFilters": ["arm64-v8a"]
       }
     }
   },
