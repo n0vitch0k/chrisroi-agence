@@ -16,9 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  getAllEmployes,
-  getAllEmployeurs,
-  getAllContrats,
+  getRegistreCounts,
   createFinContratAlertes,
   createCommissionDueAlertes,
   countCahierRappelsDue,
@@ -139,30 +137,28 @@ export default function DashboardScreen({ user }: DashboardScreenProps) {
   };
 
   const loadData = useCallback(async () => {
-    try {
-      const [employesData, employeursData, contratsData, rappelsCahierData] = await Promise.all([
-        getAllEmployes(),
-        getAllEmployeurs(),
-        getAllContrats(),
-        countCahierRappelsDue(),
-      ]);
-      setRegistreCounts({
-        fiches: (employesData || []).length,
-        contrats: (contratsData || []).length,
-        employeurs: (employeursData || []).length,
-      });
-      // Pastille de rappel : « rappel du jour ou dépassé », pas « rappel à
-      // venir dans la semaine » — sinon le badge serait tout le temps rouge
-      // et l'agent ne le regarderait plus. Le compte vient du serveur (COUNT),
-      // pas d'un chargement complet du cahier.
-      setRappelsCahier(rappelsCahierData || 0);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+      try {
+        // PERF (05/10) : le registre n'a besoin que de TROIS NOMBRES. On ne
+        // télécharge plus les 41 fiches + 28 employeurs + 22 contrats avec
+        // leur `expand` (~91 ko et 3 tableaux en mémoire) pour en faire un
+        // `.length` : getRegistreCounts() demande 3 lignes de 24 octets.
+        const [counts, rappelsCahierData] = await Promise.all([
+          getRegistreCounts(),
+          countCahierRappelsDue(),
+        ]);
+        setRegistreCounts(counts);
+        // Pastille de rappel : « rappel du jour ou dépassé », pas « rappel à
+        // venir dans la semaine » — sinon le badge serait tout le temps rouge
+        // et l'agent ne le regarderait plus. Le compte vient du serveur (COUNT),
+        // pas d'un chargement complet du cahier.
+        setRappelsCahier(rappelsCahierData || 0);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }, []);
 
   useEffect(() => {
     loadData();

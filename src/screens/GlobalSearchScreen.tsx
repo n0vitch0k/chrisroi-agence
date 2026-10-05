@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   RefreshControl,
   TouchableOpacity,
   TextInput,
@@ -74,7 +75,19 @@ type SearchResult = {
   statut?: string;
   isEnPoste?: boolean;
   format?: string;
+  /** Texte de recherche pré-concaténé en minuscules (filtre client, sans réseau). */
+  search?: string;
 };
+
+/**
+ * Ligne de la liste virtualisée : soit un en-tête de section, soit une rangée
+ * de 1 ou 2 cartes. Aplatir sections + cartes en lignes permet d'utiliser un
+ * simple FlatList (SectionList n'accepte pas numColumns) tout en gardant les
+ * en-têtes pleine largeur et la grille 2 colonnes du grand écran.
+ */
+type DossierRow =
+  | { kind: 'header'; key: string; title: string; count: number }
+  | { kind: 'cards'; key: string; items: SearchResult[]; card: 'employe' | 'generic' };
 
 // ─── Filtres statut ─────────────────────────────────────────
 const STATUT_FILTERS: { key: StatutFilter; label: string; dot: string; dotBg: string; textColor: string; bg: string }[] = [
@@ -148,15 +161,17 @@ export default function GlobalSearchScreen() {
   const { width } = useWindowDimensions();
   const wide = width >= 900;
 
-  // Sync le typeFilter quand la navbar change la section
-  useFocusEffect(useCallback(() => {
-    const sec = (route.params?.section as DossierSection) || 'all';
-    setTypeFilter(sec);
-    setRefreshing(true);
-    loadResults();
-  }, [route.params?.section]));
+  // Sync le typeFilter quand la navbar change la section. Unique useFocusEffect :
+  // avant il y en avait DEUX qui appelaient chacun loadResults(), donc chaque
+  // focus d'onglet déclenchait 2 rechargements (6 requêtes) pour rien. Le
+  // rechargement est fait plus bas, par un seul effet dépendant de la section.
 
   // ─── Chargement des données ───────────────────────────────
+  // PERF (05/10) : `query` était dans les dépendances de ce useCallback,
+  // ce qui re-déclenchait le rechargement À CHAQUE FRAPPE — 3 requêtes et
+  // 91 ko retéléchargés par caractère saisi, alors que la recherche est
+  // 100 % côté client (le filtre est appliqué en mémoire plus bas).
+  // Ici on charge les données UNE FOIS ; `query` n'intervient plus.
   const loadResults = useCallback(async () => {
     try {
       const [employesData, employeursData, contratsData] = await Promise.all([
@@ -165,13 +180,13 @@ export default function GlobalSearchScreen() {
         getAllContrats(),
       ]);
       setEmployes(employesData || []);
-      const normalized = query.trim().toLowerCase();
       const next: SearchResult[] = [];
 
       (employesData || []).forEach((item: any) => {
-        const text = [item.nom, item.prenom, item.telephone, getCategorieLabel(item.categorie_emploi)]
+        // `search` est stocké en minuscules : la recherche se fait ensuite par
+        // simple `.includes()` en mémoire (useMemo), sans rechargement réseau.
+        const search = [item.nom, item.prenom, item.telephone, getCategorieLabel(item.categorie_emploi)]
           .filter(Boolean).join(' ').toLowerCase();
-        if (normalized && !text.includes(normalized)) return;
         const isEnPoste = item.statut === 'en_poste';
         next.push({
           id: `employe-${item.id}`,
@@ -195,13 +210,13 @@ export default function GlobalSearchScreen() {
           categorie: getCategorieLabel(item.categorie_emploi),
           statut: item.statut,
           isEnPoste,
+          search,
         });
       });
 
       (employeursData || []).forEach((item: any) => {
-        const text = [item.nom_complet, item.nom_contact, item.prenom_contact, item.telephone, item.type_besoin]
+        const search = [item.nom_complet, item.nom_contact, item.prenom_contact, item.telephone, item.type_besoin]
           .filter(Boolean).join(' ').toLowerCase();
-        if (normalized && !text.includes(normalized)) return;
         next.push({
           id: `employeur-${item.id}`,
           type: 'employeur',
@@ -216,14 +231,14 @@ export default function GlobalSearchScreen() {
           avatarStyle: 'purple',
           // Ouvre la fiche détail employeur (lecture), comme EmployeDetail côté employé.
           onPress: () => navigation.navigate('EmployesStack' as any, { screen: 'EmployeurDetail', params: { id: item.id } }),
+          search,
         });
       });
 
       (contratsData || []).forEach((item: any) => {
         const remaining = daysRemaining(item.date_fin);
-        const text = [item.numero_dossier, item.employe_nom, item.employe_prenom, item.nom_complet, item.poste]
+        const search = [item.numero_dossier, item.employe_nom, item.employe_prenom, item.nom_complet, item.poste]
           .filter(Boolean).join(' ').toLowerCase();
-        if (normalized && !text.includes(normalized)) return;
         next.push({
           id: `contrat-${item.id}`,
           type: 'contrat',
@@ -238,6 +253,7 @@ export default function GlobalSearchScreen() {
           icon: (item.format_document || 'prestation') === 'agence' ? '📋' : '📄',
           avatarStyle: 'orange',
           onPress: () => navigation.navigate('EmployesStack' as any, { screen: 'ContratDetail', params: { id: item.id } }),
+          search,
         });
       });
 
@@ -247,18 +263,37 @@ export default function GlobalSearchScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [navigation, query]);
+  }, [navigation]);
 
   useFocusEffect(useCallback(() => {
+    // Un seul point d'entrée au focus : on synchronise la section demandée
+    // par la navbar PUIS on charge une seule fois.
+    const sec = (route.params?.section as DossierSection) || 'all';
+    setTypeFilter(sec);
     setRefreshing(true);
     loadResults();
-  }, [loadResults]));
+  }, [loadResults, route.params?.section]));
 
   const onRefresh = () => { setRefreshing(true); loadResults(); };
 
   // ─── Filtrage ─────────────────────────────────────────────
+  // PERF (05/10) : la recherche textuelle se fait ICI, en mémoire, et plus
+  // dans loadResults. Conséquence : taper dans la barre de recherche ne
+  // déclenche plus aucune requête (avant : 3 requêtes + 91 ko par caractère).
+  // Le filtre est strictement identique (mêmes champs, même `.includes` sur la
+  // même chaîne en minuscules) — seul le moment du filtrage change.
+  //
+  // searchResults = résultats de la recherche texte seule (c'est CE que les
+  // compteurs des puces affichaient avant, via `results` déjà filtré).
+  const searchResults = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return normalized
+      ? results.filter((item) => (item.search || '').includes(normalized))
+      : results;
+  }, [results, query]);
+
   const filteredResults = useMemo(() => {
-    let items = results;
+    let items = searchResults;
     if (typeFilter === 'prestation' || typeFilter === 'agence') {
       items = items.filter((item) => item.type === 'contrat' && (item.format || 'prestation') === typeFilter);
     } else if (typeFilter !== 'all') {
@@ -276,18 +311,28 @@ export default function GlobalSearchScreen() {
       return [...filteredEmployes, ...otherItems];
     }
     return items;
-  }, [results, typeFilter, statutFilter]);
+  }, [searchResults, typeFilter, statutFilter]);
 
-  // Comptages
-  const countByType = (type: string) =>
-    type === 'all' ? results.length :
-    type === 'prestation' ? results.filter((i) => i.type === 'contrat' && (i.format || 'prestation') === 'prestation').length :
-    type === 'agence' ? results.filter((i) => i.type === 'contrat' && (i.format || 'prestation') === 'agence').length :
-    results.filter((i) => i.type === type).length;
+  // Comptages — mémoïsés : ils étaient recalculés à chaque rendu (3 `.filter`
+  // par puce, 5 puces). Bases inchangées : `searchResults` pour les types
+  // (équivalent de l'ancien `results` déjà filtré par la recherche), et la
+  // liste `employes` complète pour les statuts.
+  const countByType = useMemo(() => {
+    const cache: Record<string, number> = {
+      all: searchResults.length,
+      prestation: searchResults.filter((i) => i.type === 'contrat' && (i.format || 'prestation') === 'prestation').length,
+      agence: searchResults.filter((i) => i.type === 'contrat' && (i.format || 'prestation') === 'agence').length,
+    };
+    return (type: string) =>
+      cache[type] !== undefined
+        ? cache[type]
+        : searchResults.filter((i) => i.type === type).length;
+  }, [searchResults]);
 
-  const countByStatut = (s: string) =>
-    s === 'en_poste' ? employes.filter((e) => e.statut === 'en_poste').length :
-    employes.filter((e) => e.statut !== 'en_poste').length;
+  const countByStatut = useMemo(() => {
+    const enPoste = employes.filter((e) => e.statut === 'en_poste').length;
+    return (s: string) => (s === 'en_poste' ? enPoste : employes.length - enPoste);
+  }, [employes]);
 
   // ─── Rendu carte employé ──────────────────────────────────
   // Avatar carte employé : photo serveur si dispo, initiales sinon
@@ -409,13 +454,70 @@ export default function GlobalSearchScreen() {
   );
 
   // ─── Regroupement par sections ────────────────────────────
-  const employeResults = filteredResults.filter((i) => i.type === 'employe');
-  const employeurResults = filteredResults.filter((i) => i.type === 'employeur');
-  const contratResults = filteredResults.filter((i) => i.type === 'contrat');
+  const employeResults = useMemo(() => filteredResults.filter((i) => i.type === 'employe'), [filteredResults]);
+  const employeurResults = useMemo(() => filteredResults.filter((i) => i.type === 'employeur'), [filteredResults]);
+  const contratResults = useMemo(() => filteredResults.filter((i) => i.type === 'contrat'), [filteredResults]);
   const showContratSection = typeFilter === 'all' || typeFilter === 'contrat' || typeFilter === 'prestation' || typeFilter === 'agence';
   const contratSectionTitle = typeFilter === 'prestation' ? '📄 Contrats Prestation' : typeFilter === 'agence' ? '📋 Contrats Agence' : '📄 Contrats';
   const showStatutFilters = typeFilter === 'employe' || typeFilter === 'all';
   const showSections = typeFilter === 'all';
+
+  // ─── Rangées virtualisées ──────────────────────────────────
+  // PERF (05/10) : le contenu était un ScrollView qui montait TOUTES les
+  // cartes d'un coup (41 employés + 28 employeurs + 22 contrats = 91 cartes,
+  // chacune avec son Image) → travail de layout/mémoire au scroll, surtout
+  // sur appareil d'entrée de gamme.
+  //
+  // On aplatit en RANGÉES : un en-tête de section (pleine largeur) puis les
+  // cartes, groupées par 2 sur grand écran (Chromebook) comme le faisait le
+  // `flexWrap` d'origine. FlatList virtualise ensuite rangée par rangée.
+  //
+  // Pourquoi des rangées et pas `numColumns` sur la liste : `numColumns`
+  // n'existe pas sur SectionList, et l'aplatir en rangées nous laisse garder
+  // les DEUX affichages d'origine — en-têtes pleine largeur ET grille 2
+  // colonnes — sans sacrifier la virtualisation.
+  //
+  // `card` est stocké comme type ('employe' | 'generic') et non comme
+  // fonction : les renderers sont recréés à chaque rendu (ils capturent
+  // `photoViewer`/`wide`), les garder dans les dépendances du useMemo
+  // invaliderait le cache à chaque fois.
+  const rows = useMemo<DossierRow[]>(() => {
+    const perRow = wide ? 2 : 1;
+    const out: DossierRow[] = [];
+
+    const pushSection = (
+      key: string,
+      title: string | null,
+      data: SearchResult[],
+      card: 'employe' | 'generic',
+    ) => {
+      if (data.length === 0) return;
+      if (title) out.push({ kind: 'header', key: `${key}-h`, title, count: data.length });
+      for (let i = 0; i < data.length; i += perRow) {
+        out.push({ kind: 'cards', key: `${key}-${i}`, items: data.slice(i, i + perRow), card });
+      }
+    };
+
+    if (typeFilter === 'all' || typeFilter === 'employe') {
+      pushSection('emp', showSections ? '👤 Employés' : null, employeResults, 'employe');
+    }
+    if (typeFilter === 'all' || typeFilter === 'employeur') {
+      pushSection('emp2', showSections ? '🏢 Employeurs' : null, employeurResults, 'generic');
+    }
+    if (showContratSection) {
+      pushSection('ctr', showSections ? contratSectionTitle : null, contratResults, 'generic');
+    }
+    return out;
+  }, [
+    wide,
+    typeFilter,
+    showSections,
+    showContratSection,
+    contratSectionTitle,
+    employeResults,
+    employeurResults,
+    contratResults,
+  ]);
 
   return (
     <View style={styles.container}>
@@ -477,77 +579,49 @@ export default function GlobalSearchScreen() {
       </View>
       </View>
 
-      {/* ─── Contenu scrollable ── */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={M.primary} />}
-      >
-        {/* Section Employés */}
-        {(typeFilter === 'all' || typeFilter === 'employe') && employeResults.length > 0 && (
-          <View style={styles.section}>
-            {showSections && (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>👤 Employés</Text>
-                <Text style={styles.sectionCount}>{employeResults.length}</Text>
-              </View>
-            )}
-            <View style={wide ? styles.cardGridWide : undefined}>
-            {employeResults.map((item) => (
-              <View key={item.id} style={wide ? styles.cardGridItem : undefined}>{renderEmployeCard(item)}</View>
-            ))}
-            </View>
-          </View>
-        )}
-
-        {/* Section Employeurs */}
-        {(typeFilter === 'all' || typeFilter === 'employeur') && employeurResults.length > 0 && (
-          <View style={styles.section}>
-            {showSections && (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>🏢 Employeurs</Text>
-                <Text style={styles.sectionCount}>{employeurResults.length}</Text>
-              </View>
-            )}
-            <View style={wide ? styles.cardGridWide : undefined}>
-            {employeurResults.map((item) => (
-              <View key={item.id} style={wide ? styles.cardGridItem : undefined}>{renderGenericCard(item)}</View>
-            ))}
-            </View>
-          </View>
-        )}
-
-        {/* Section Contrats */}
-        {showContratSection && contratResults.length > 0 && (
-          <View style={styles.section}>
-            {showSections && (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{contratSectionTitle}</Text>
-                <Text style={styles.sectionCount}>{contratResults.length}</Text>
-              </View>
-            )}
-            <View style={wide ? styles.cardGridWide : undefined}>
-            {contratResults.map((item) => (
-              <View key={item.id} style={wide ? styles.cardGridItem : undefined}>{renderGenericCard(item)}</View>
-            ))}
-            </View>
-          </View>
-        )}
-
-        {/* Empty */}
-        {filteredResults.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🔍</Text>
-            <Text style={styles.emptyTitle}>Aucun résultat</Text>
-            <Text style={styles.emptyText}>
-              {query ? 'Essayez de modifier votre recherche' : 'Recherchez un employé, un employeur ou un contrat'}
-            </Text>
-          </View>
-        )}
-
-        <View style={{ height: 80 }} />
-      </ScrollView>
-      <DocumentViewerOverlay viewerDoc={photoViewer.doc} onClose={photoViewer.close} onDownload={photoViewer.download} downloading={photoViewer.downloading} />
+      {/* ─── Contenu scrollable (virtualisé) ── */}
+            <FlatList
+              data={rows}
+              keyExtractor={(row) => row.key}
+              // Virtualisation : seules les rangées visibles sont montées. Les
+              // photos (Image) sont le coût dominant, d'où un windowSize serré.
+              initialNumToRender={6}
+              maxToRenderPerBatch={6}
+              windowSize={7}
+              removeClippedSubviews
+              contentContainerStyle={styles.scrollContent}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={M.primary} />}
+              renderItem={({ item: row }) => {
+                if (row.kind === 'header') {
+                  return (
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>{row.title}</Text>
+                      <Text style={styles.sectionCount}>{row.count}</Text>
+                    </View>
+                  );
+                }
+                return (
+                  <View style={styles.cardRow}>
+                    {row.items.map((item) => (
+                      <View key={item.id} style={wide ? styles.cardGridItem : undefined}>
+                        {row.card === 'employe' ? renderEmployeCard(item) : renderGenericCard(item)}
+                      </View>
+                    ))}
+                  </View>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={styles.empty}>
+                  <Text style={styles.emptyIcon}>🔍</Text>
+                  <Text style={styles.emptyTitle}>Aucun résultat</Text>
+                  <Text style={styles.emptyText}>
+                    {query ? 'Essayez de modifier votre recherche' : 'Recherchez un employé, un employeur ou un contrat'}
+                  </Text>
+                </View>
+              }
+              ListFooterComponent={<View style={{ height: 80 }} />}
+            />
+            <DocumentViewerOverlay viewerDoc={photoViewer.doc} onClose={photoViewer.close} onDownload={photoViewer.download} downloading={photoViewer.downloading} />
     </View>
   );
 }
@@ -669,12 +743,24 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: Spacing.lg,
   },
+  // Rangée de cartes : 1 colonne sur mobile, 2 sur grand écran. Le `gap`
+  // remplace le `gap: 12` du flexWrap d'origine (le conteneur n'est plus un
+  // View qui wrappe les cartes, mais une ligne de liste).
+  cardRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'stretch',
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.sm,
     paddingHorizontal: 4,
+    // Espace entre deux sections successives (le marginBottom de `section`
+    // ne s'applique plus : SectionList gère les en-têtes lui-même).
+    paddingTop: Spacing.sm,
+    backgroundColor: M.bg,
   },
   sectionTitle: {
     fontSize: 16,

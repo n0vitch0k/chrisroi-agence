@@ -1278,6 +1278,30 @@ export const getAllEmployeurs = async (): Promise<any[]> => {
   });
 };
 
+/**
+ * Compteurs du registre (fiches / contrats / employeurs).
+ *
+ * PERF (05/10) : le Dashboard faisait `getAllEmployes()` + `getAllEmployeurs()`
+ * + `getAllContrats()` (avec `expand`) pour n'en garder que `.length` — soit
+ * ~91 ko téléchargés et 3 gobjects construits en mémoire pour trois nombres.
+ * Ici on ne demande qu'une ligne de 24 octets : le serveur renvoie `totalItems`.
+ *
+ * Un `getList(1, 1, { fields: 'id' })` suffit : le corps ne sert qu'au COUNT.
+ */
+export const getRegistreCounts = async (): Promise<{ fiches: number; contrats: number; employeurs: number }> => {
+  const pb = getPb();
+  const [fiches, contrats, employeurs] = await Promise.all([
+    pb.collection('employes').getList(1, 1, { fields: 'id' }),
+    pb.collection('contrats').getList(1, 1, { fields: 'id' }),
+    pb.collection('employeurs').getList(1, 1, { fields: 'id' }),
+  ]);
+  return {
+    fiches: (fiches as any).totalItems ?? 0,
+    contrats: (contrats as any).totalItems ?? 0,
+    employeurs: (employeurs as any).totalItems ?? 0,
+  };
+};
+
 export const updateEmployeur = async (id: string, data: any): Promise<void> => {
   const pb = getPb();
   let changes: Array<{ field: string; oldValue: any; newValue: any }> = [];
@@ -1723,6 +1747,26 @@ export const marquerToutesAlertesLues = async (): Promise<void> => {
   );
 };
 
+// ─── Dédoublonnage des alertes — helper partagé ────────────────
+// PERF (05/10) : la déduplication faisait 1 requête `alertes` PAR CONTRAT,
+// en série dans la boucle. Avec 22 contrats impayés, cela veut dire 22
+// requêtes séquentielles ≈ 9,5 s À CHAQUE démarrage de l'app (RTT 129 ms),
+// sur le chemin critique du premier rendu de l'écran. Le même défaut existait
+// dans createFinContratAlertes.
+//
+// Correction : on charge UNE SEULE fois les alertes existantes du bon type et on
+// déduplique en mémoire avec un Set. Requêtes : 1+N devient 1 par type.
+// Sémantique identique : une alerte n'est créée que si aucune n'existe déjà
+// pour ce (contrat_id, type). `fields` évite de télécharger titre/message.
+const _idsAvecAlerte = async (type: string): Promise<Set<string>> => {
+  const pb = getPb();
+  const existing = await pb.collection('alertes').getFullList({
+    filter: `type = "${type}"`,
+    fields: 'contrat_id',
+  });
+  return new Set<string>(existing.map((a: any) => a.contrat_id).filter(Boolean));
+};
+
 // ─── Créer alertes fin de contrat (J-7 et J-3) ──────────────────
 // À appeler périodiquement (ex: au chargement Dashboard, ou via cron)
 export const createFinContratAlertes = async (): Promise<number> => {
@@ -1744,28 +1788,39 @@ export const createFinContratAlertes = async (): Promise<number> => {
     expand: 'employe_id,employeur_id',
   });
 
+  // UNE requête par type pour tout le dédoublonnage (au lieu d'une par
+  // contrat). Les deux types ont leur propre jeu : on espace les clés pour
+  // qu'un id ne masque pas l'autre type.
+  let dejaAlertees: Set<string>;
+  try {
+    dejaAlertees = await _idsAvecAlerte('fin_contrat_j7');
+    for (const id of await _idsAvecAlerte('fin_contrat_j3')) {
+      dejaAlertees.add(`j3_${id}`);
+    }
+  } catch (err) {
+    console.warn('[alertes] lecture des alertes fin de contrat impossible', err);
+    return 0;
+  }
+
   let created = 0;
   for (const contrat of contrats) {
     const daysUntil = Math.ceil((new Date(contrat.date_fin).getTime() - today.getTime()) / 86400000);
     const alerteType = daysUntil === 7 ? 'fin_contrat_j7' : 'fin_contrat_j3';
     const titre = daysUntil === 7 ? 'Fin de contrat dans 7 jours' : 'Fin de contrat dans 3 jours';
-    
-    // Vérifier si alerte existe déjà pour ce contrat et ce type
-    const existing = await pb.collection('alertes').getFullList({
-      filter: `contrat_id = "${contrat.id}" && type = "${alerteType}"`,
+    const cle = alerteType === 'fin_contrat_j7' ? contrat.id : `j3_${contrat.id}`;
+
+    if (dejaAlertees.has(cle)) continue;
+
+    await createAlerte({
+      type: alerteType,
+      titre,
+      message: `${contrat.expand?.employe_id?.prenom || ''} ${contrat.expand?.employe_id?.nom || ''} (${contrat.poste}) chez ${contrat.expand?.employeur_id?.nom_complet || ''} — Fin le ${new Date(contrat.date_fin).toLocaleDateString('fr-FR')}`,
+      contrat_id: contrat.id,
+      employe_id: contrat.employe_id,
+      employeur_id: contrat.employeur_id,
     });
-    
-    if (existing.length === 0) {
-      await createAlerte({
-        type: alerteType,
-        titre,
-        message: `${contrat.expand?.employe_id?.prenom || ''} ${contrat.expand?.employe_id?.nom || ''} (${contrat.poste}) chez ${contrat.expand?.employeur_id?.nom_complet || ''} — Fin le ${new Date(contrat.date_fin).toLocaleDateString('fr-FR')}`,
-        contrat_id: contrat.id,
-        employe_id: contrat.employe_id,
-        employeur_id: contrat.employeur_id,
-      });
-      created++;
-    }
+    dejaAlertees.add(cle);
+    created++;
   }
   return created;
 };
@@ -1780,16 +1835,21 @@ export const createCommissionDueAlertes = async (): Promise<number> => {
     filter: 'commission_agence > 0 && commission_payee = false',
     expand: 'employe_id,employeur_id',
   });
+  // UNE requête pour tout le dédoublonnage (au lieu d'une par contrat).
+  let dejaAlertees: Set<string>;
+  try {
+    dejaAlertees = await _idsAvecAlerte('commission_due');
+  } catch (err) {
+    console.warn('[alertes] lecture des alertes commission impossible', err);
+    return 0; // best effort : ne jamais créer d'alertes en doublon
+  }
   let created = 0;
   for (const contrat of contrats) {
     const dueStr = getCommissionDueDate(contrat);
     if (!dueStr) continue;
     // Échéance atteinte (même règle que le Suivi : relance dès le lendemain)
     if (Date.now() < new Date(dueStr + 'T23:59:59').getTime()) continue;
-    const existing = await pb.collection('alertes').getFullList({
-      filter: `contrat_id = "${contrat.id}" && type = "commission_due"`,
-    });
-    if (existing.length > 0) continue;
+    if (dejaAlertees.has(contrat.id)) continue;
     const employe = `${contrat.expand?.employe_id?.prenom || ''} ${contrat.expand?.employe_id?.nom || ''}`.trim() || 'Employé';
     const employeur = contrat.expand?.employeur_id?.nom_complet || '';
     const montant = `${Number(contrat.commission_agence || 0).toLocaleString('fr-FR')} FCFA`;
@@ -1802,6 +1862,7 @@ export const createCommissionDueAlertes = async (): Promise<number> => {
       employe_id: contrat.employe_id,
       employeur_id: contrat.employeur_id,
     });
+    dejaAlertees.add(contrat.id);
     created++;
   }
   return created;
