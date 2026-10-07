@@ -582,6 +582,7 @@ export default function GlobalSearchScreen() {
       {/* ─── Contenu scrollable (virtualisé) ── */}
             <FlatList
               data={rows}
+              style={styles.scrollView}
               keyExtractor={(row) => row.key}
               // Virtualisation : seules les rangées visibles sont montées. Les
               // photos (Image) sont le coût dominant, d'où un windowSize serré.
@@ -591,17 +592,17 @@ export default function GlobalSearchScreen() {
               removeClippedSubviews
               contentContainerStyle={styles.scrollContent}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={M.primary} />}
-              renderItem={({ item: row }) => {
+              renderItem={({ item: row, index }) => {
                 if (row.kind === 'header') {
                   return (
-                    <View style={styles.sectionHeader}>
+                    <View style={[styles.sectionHeader, index > 0 && styles.sectionHeaderSpaced]}>
                       <Text style={styles.sectionTitle}>{row.title}</Text>
                       <Text style={styles.sectionCount}>{row.count}</Text>
                     </View>
                   );
                 }
                 return (
-                  <View style={styles.cardRow}>
+                  <View style={[styles.cardRow, !wide && styles.cardRowStack]}>
                     {row.items.map((item) => (
                       <View key={item.id} style={wide ? styles.cardGridItem : undefined}>
                         {row.card === 'employe' ? renderEmployeCard(item) : renderGenericCard(item)}
@@ -743,12 +744,21 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: Spacing.lg,
   },
-  // Rangée de cartes : 1 colonne sur mobile, 2 sur grand écran. Le `gap`
-  // remplace le `gap: 12` du flexWrap d'origine (le conteneur n'est plus un
-  // View qui wrappe les cartes, mais une ligne de liste).
+  // Rangée de cartes : 2 colonnes sur grand écran. Sur mobile, `cardRowStack`
+  // repasse en colonne — indispensable : en `row`, la carte est étirée
+  // (alignItems: stretch) mais sa largeur est mesurée sur son contenu
+  // intrinsèque (avatar 56 + marges 32 + gap 14 = 102 dp) et le wrapper s'y
+  // rétracte au lieu d'occuper les 376 dp disponibles (mesuré avec
+  // yoga-layout, le moteur de layout de RN 0.86). En colonne, comme l'ancien
+  // <View> par défaut, la carte occupe toute la largeur.
   cardRow: {
     flexDirection: 'row',
     gap: 12,
+    alignItems: 'stretch',
+    justifyContent: 'center',
+  },
+  cardRowStack: {
+    flexDirection: 'column',
     alignItems: 'stretch',
   },
   sectionHeader: {
@@ -757,10 +767,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sm,
     paddingHorizontal: 4,
-    // Espace entre deux sections successives (le marginBottom de `section`
-    // ne s'applique plus : SectionList gère les en-têtes lui-même).
-    paddingTop: Spacing.sm,
     backgroundColor: M.bg,
+  },
+  // Espacement entre deux sections successives : l'ancien `styles.section`
+  // portait `marginBottom: Spacing.lg`, qui disparaît avec la liste
+  // virtualisée (il n'y a plus de conteneur de section). On le restitue sur
+  // l'en-tête, sauf sur le premier (déjà espacé par le padding du contenu).
+  sectionHeaderSpaced: {
+    paddingTop: Spacing.lg,
   },
   sectionTitle: {
     fontSize: 16,
