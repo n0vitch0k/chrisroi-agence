@@ -5,6 +5,7 @@
 import { getPocketBase, getPocketBaseUrl, hydratePocketBaseUrl } from './pocketbase';
 import { getSetting, setSetting } from './localSettings';
 import { localDayKey } from '../utils/cahierDates';
+import { planifierCommissionRappels, annulerCommissionRappels } from '../utils/commissionNotifications';
 import { cacheDirectory, copyAsync, getInfoAsync, uploadAsync, FileSystemUploadType } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
@@ -1493,6 +1494,12 @@ export const createContrat = async (contrat: any): Promise<string> => {
     });
   }
 
+  // Notifications locales de commission (J-7, J-3, J) — best effort, ne doit
+  // jamais faire échouer la création du contrat.
+  if (commission > 0) {
+    planifierCommissionRappels(createdContratId, record).catch(() => {});
+  }
+
   return createdContratId;
 };
 
@@ -1617,6 +1624,28 @@ export const updateContrat = async (id: string, data: any): Promise<void> => {
     description: `Contrat modifié`,
     details: changes.length ? { changes } : undefined,
   });
+
+  // Replanifier/annuler les notifications commission si l'échéance peut avoir
+  // bougé (date_debut, salaire → commission recalculée) — best effort.
+  try {
+    const commissionFinale = updateData.commission_agence;
+    const modifieEcheance =
+      updateData.date_debut !== undefined ||
+      updateData.salaire !== undefined ||
+      commissionFinale !== undefined;
+    if (modifieEcheance) {
+      if (typeof commissionFinale === 'number' && commissionFinale > 0) {
+        planifierCommissionRappels(id, {
+          date_debut: updateData.date_debut,
+          date_contrat: updateData.date_contrat,
+          commission_agence: commissionFinale,
+        }).catch(() => {});
+      } else {
+        // Commission tombée à 0 ou vidée : plus rien à rappeler.
+        annulerCommissionRappels(id).catch(() => {});
+      }
+    }
+  } catch { /* best effort */ }
 };
 
 export const terminerContrat = async (id: string): Promise<void> => {
@@ -1653,6 +1682,8 @@ export const deleteContrat = async (id: string): Promise<void> => {
     const alertes = await pb.collection('alertes').getFullList({ filter: `contrat_id = "${id}"` }).catch(() => []);
     await Promise.all((alertes || []).map((a: any) => pb.collection('alertes').delete(a.id).catch(() => null)));
   } catch { /* best effort */ }
+  // Contrat supprimé : plus de commission à rappeler — on annule les 3 notifs.
+  annulerCommissionRappels(id).catch(() => {});
   await pb.collection('contrats').delete(id);
   // L'employé redevient disponible, comme à la fin d'un contrat.
   if (employeId) {
@@ -1697,6 +1728,9 @@ export const marquerCommissionPayee = async (id: string, datePrelevement?: strin
     entiteId: id,
     description: `Commission encaissée pour le contrat`,
   });
+
+  // La commission est payée : les rappels n'ont plus lieu d'être.
+  annulerCommissionRappels(id).catch(() => {});
 };
 
 // ============== GESTION DES ALERTES ==============
