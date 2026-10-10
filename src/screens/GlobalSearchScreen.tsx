@@ -69,6 +69,8 @@ type SearchResult = {
   initials?: string;
   photoUrl?: string | null;
   photoFileName?: string | null;
+  /** URL haute résolution pour l'aperçu plein écran (photoUrl = vignette 100 px). */
+  photoFullUrl?: string | null;
   telephone?: string;
   lieu_residence?: string;
   categorie?: string;
@@ -203,7 +205,8 @@ export default function GlobalSearchScreen() {
           prenom: item.prenom,
           nom: item.nom,
           initials: `${item.prenom?.charAt(0) || ''}${item.nom?.charAt(0) || ''}`.toUpperCase(),
-          photoUrl: getEmployePhotoUrl(item.id, item.photo),
+          photoUrl: getEmployePhotoUrl(item.id, item.photo, 100),
+          photoFullUrl: getEmployePhotoUrl(item.id, item.photo),
           photoFileName: item.photo || null,
           telephone: item.telephone,
           lieu_residence: item.lieu_residence,
@@ -339,9 +342,10 @@ export default function GlobalSearchScreen() {
   // (miroir EmployeAvatar de l'écran détail, adapté au format carré 56).
   const photoViewer = useDocumentViewer();
   const openPhoto = (item: SearchResult) => {
-    if (!item.photoUrl) return;
+    const full = item.photoFullUrl || item.photoUrl;
+    if (!full) return;
     photoViewer.open({
-      uri: item.photoUrl,
+      uri: full,
       label: `${item.prenom || ''} ${item.nom || ''}`.trim() || 'Photo',
       fileName: item.photoFileName || null,
       mimeType: 'image/jpeg',

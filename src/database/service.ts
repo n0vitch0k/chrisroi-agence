@@ -2605,11 +2605,32 @@ export const uploadContratDocument = async (
 
 // ============== PHOTO D'IDENTITÉ EMPLOYÉ ==============
 
-/** Construit l'URL publique d'une photo d'employé stockée dans le file field `photo`. */
-export const getEmployePhotoUrl = (employeId: string, filename: string | null | undefined): string | null => {
+/** Construit l'URL publique d'une photo d'employé stockée dans le file field `photo`.
+ *
+ *  PERF (10/10) — vignettes serveur. Les listes (Dossiers) affichent des
+ *  avatars de 52×52 px mais téléchargeaient la photo ORIGINALE : mesuré sur
+ *  pb2, de 69 à 265 Ko par image, soit ~8 Mo pour 57 employés. Le paramètre
+ *  `thumb=WxH` de PocketBase renvoie la même image redimensionnée par le
+ *  serveur : 4 à 6 Ko (gain mesuré 94–98 %, jusqu'à 43× plus léger).
+ *
+ *  `size` :
+ *    - undefined / null  → URL d'origine, inchangée (aperçu plein écran,
+ *      impression de fiche/contrat : on veut la haute résolution).
+ *    - nombre (ex. 100)  → vignette carrée 100×100 px (`?thumb=100x100`).
+ *
+ *  Rétrocompatible : tous les appels existants sans `size` gardent l'URL
+ *  d'origine.
+ */
+export const getEmployePhotoUrl = (
+  employeId: string,
+  filename: string | null | undefined,
+  size?: number | null,
+): string | null => {
   if (!employeId || !filename) return null;
   const pbUrl = getPocketBaseUrl();
-  return `${pbUrl}/api/files/employes/${employeId}/${filename}`;
+  const base = `${pbUrl}/api/files/employes/${employeId}/${filename}`;
+  if (size && size > 0) return `${base}?thumb=${size}x${size}`;
+  return base;
 };
 
 /**
