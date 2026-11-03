@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journal des actions — maquette épurée v3 (avec spinner)</title>
+<style>
+  :root {
+    --bg: #fdf8f3; --bgElev: #fffaf5; --surface: #ffffff; --surfaceAlt: #fef7f0;
+    --primary: #c45a2a; --primaryDim: #fdebd8; --primaryDark: #a3481f;
+    --success: #5a7c3a; --successDim: #e8f0dc;
+    --info: #2a7a7a; --infoDim: #d8ecec;
+    --warning: #b8860b; --warningDim: #faf3d1;
+    --danger: #b85454; --dangerLight: #fdeaea;
+    --violet: #8b5a8b; --violetDim: #f0e6f0;
+    --text: #3d3530; --textSec: #8a7d72; --textTer: #b8a99e;
+    --border: #eedec9; --borderSoft: #f5ebe0;
+    --shadow: 0 1px 2px rgba(61,53,48,0.06), 0 6px 18px rgba(61,53,48,0.07);
+    --shadowElev: 0 8px 28px rgba(61,53,48,0.12);
+    --r: 10px; --rLg: 14px; --rXl: 20px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; overflow-x: hidden; }
+  body { min-height: 100vh; padding-bottom: 32px; }
+
+  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; }
+
+  /* ── Header ── */
+  .jr-header { position: static; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--borderSoft); padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+  .jr-back { width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: var(--surfaceAlt); color: var(--textSec); cursor: pointer; border: none; font-size: 20px; flex-shrink: 0; }
+  .jr-back:hover { background: var(--primaryDim); color: var(--primary); }
+  .jr-titlewrap { flex: 1; min-width: 0; }
+  .jr-title { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; }
+  .jr-subtitle { font-size: 11px; color: var(--textTer); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jr-badge { background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* ── Search + filter toggle row ── */
+  .jr-searchbar { margin: 12px 16px 0; display: flex; gap: 8px; align-items: center; }
+  .jr-search { position: relative; flex: 1; min-width: 0; }
+  .jr-search input { width: 100%; padding: 11px 12px 11px 38px; border: 1.5px solid var(--border); border-radius: var(--rLg); font-size: 14px; background: var(--surface); color: var(--text); outline: none; transition: border-color .15s, box-shadow .15s; }
+  .jr-search input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primaryDim); }
+  .jr-search .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--textTer); font-size: 16px; pointer-events: none; }
+  .jr-filterbtn { position: relative; padding: 11px 14px; border-radius: var(--rLg); border: 1.5px solid var(--border); background: var(--surface); color: var(--textSec); font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .jr-filterbtn:hover { border-color: var(--primary); color: var(--primary); }
+  .jr-filterbtn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .jr-filterbtn .badge { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); }
+
+  /* ── Active filter chips (removable) ── */
+  .jr-activefilters { margin: 8px 16px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .jr-activefilters:empty { display: none; }
+  .jr-afchip { padding: 4px 8px 4px 10px; border-radius: 999px; background: var(--primaryDim); color: var(--primaryDark); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--primaryFaded, #f6d9c2); }
+  .jr-afchip .x { cursor: pointer; font-size: 13px; opacity: .7; }
+  .jr-afchip .x:hover { opacity: 1; }
+
+  /* ── Date bar ── */
+  .jr-datebar { margin: 10px 16px 0; background: var(--surface); border-radius: var(--rLg); box-shadow: var(--shadow); padding: 8px 10px; display: flex; align-items: center; gap: 6px; }
+  .jr-datearrow { width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; background: var(--surfaceAlt); color: var(--primary); cursor: pointer; border: none; flex-shrink: 0; font-size: 18px; line-height: 1; }
+  .jr-datearrow:disabled { color: var(--textTer); cursor: default; background: transparent; }
+  .jr-datecenter { flex: 1; text-align: center; cursor: pointer; padding: 4px 6px; border-radius: var(--r); min-width: 0; }
+  .jr-datecenter:hover { background: var(--primaryDim); }
+  .jr-datelabel { font-size: 15px; font-weight: 700; color: var(--text); text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jr-datehint { font-size: 10px; color: var(--textTer); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jr-chip { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--textSec); white-space: nowrap; flex-shrink: 0; }
+  .jr-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* ── User filter (admin) ── */
+  .jr-usersection { margin: 10px 16px 0; }
+  .jr-usersectionlabel { font-size: 10px; font-weight: 700; color: var(--textTer); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .jr-userrow { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .jr-userrow::-webkit-scrollbar { display: none; }
+  .jr-uchip { padding: 5px 11px 5px 5px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--textSec); white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; }
+  .jr-uchip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .jr-uchip .ua { width: 20px; height: 20px; border-radius: 10px; background: var(--primaryDim); color: var(--primaryDark); font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .jr-uchip.active .ua { background: rgba(255,255,255,0.25); color: #fff; }
+
+  /* ── Filter drawer ── */
+  .jr-drawer { margin: 10px 16px 0; background: var(--surface); border-radius: var(--rLg); box-shadow: var(--shadow); padding: 12px 14px; display: none; }
+  .jr-drawer.open { display: block; }
+  .jr-filtergroup { margin-bottom: 10px; }
+  .jr-filtergroup:last-child { margin-bottom: 0; }
+  .jr-filtergrouplabel { font-size: 10px; font-weight: 700; color: var(--textTer); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .jr-filterrow { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .jr-filterrow::-webkit-scrollbar { display: none; }
+  .jr-fchip { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--textSec); white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; }
+  .jr-fchip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .jr-fchip .dot { display: inline-block; width: 6px; height: 6px; border-radius: 3px; }
+
+  /* ── List area ── */
+  .jr-listwrap { margin: 12px 16px 0; position: relative; min-height: 120px; }
+  .jr-list { display: flex; flex-direction: column; gap: 10px; }
+  .jr-loading { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 14px; color: var(--textSec); }
+  .jr-loading.show { display: flex; }
+  .jr-spinner { width: 38px; height: 38px; border: 3px solid var(--borderSoft); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+  .jr-loadingtext { font-size: 13px; font-weight: 600; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .jr-daygroup { }
+  .jr-dayheader { font-size: 12px; font-weight: 700; color: var(--textSec); text-transform: capitalize; margin: 4px 2px 6px; letter-spacing: 0.3px; }
+  .jr-card { background: var(--surface); border-radius: var(--rLg); box-shadow: var(--shadow); padding: 12px 14px; cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s; border: 1.5px solid transparent; }
+  .jr-card:hover { transform: translateY(-1px); box-shadow: var(--shadowElev); }
+  .jr-card.expanded { border-color: var(--primaryDim); }
+  .jr-cardrow { display: flex; align-items: center; gap: 10px; }
+  .jr-cardicon { width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .jr-cardcontent { flex: 1; min-width: 0; }
+  .jr-carddesc { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .jr-cardtime { font-size: 11px; color: var(--textTer); margin-top: 2px; }
+  .jr-cardchev { color: var(--textTer); font-size: 18px; transition: transform .2s; flex-shrink: 0; }
+  .jr-card.expanded .jr-cardchev { transform: rotate(180deg); }
+  .jr-details { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--borderSoft); display: none; }
+  .jr-card.expanded .jr-details { display: block; }
+  .jr-detailrow { display: flex; justify-content: space-between; font-size: 12px; color: var(--textSec); margin-bottom: 4px; gap: 8px; }
+  .jr-detailrow .k { font-weight: 600; color: var(--text); text-align: right; }
+  .jr-diff { background: var(--bg); border-radius: var(--r); padding: 8px 10px; margin-top: 6px; }
+  .jr-diffrow { margin-bottom: 6px; }
+  .jr-diffrow:last-child { margin-bottom: 0; }
+  .jr-difffield { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; text-transform: capitalize; }
+  .jr-diffvals { font-size: 12px; }
+  .jr-before { color: var(--danger); text-decoration: line-through; }
+  .jr-arrow { color: var(--textTer); margin: 0 4px; }
+  .jr-after { color: var(--success); font-weight: 700; }
+  .jr-openbtn { margin-top: 8px; width: 100%; padding: 10px; border-radius: var(--r); background: var(--primary); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; }
+  .jr-openbtn:hover { background: var(--primaryDark); }
+  .jr-openbtn.disabled { background: var(--borderSoft); color: var(--textSec); cursor: default; }
+
+  /* ── Load more ── */
+  .jr-loadmore { margin: 14px 16px 0; text-align: center; }
+  .jr-loadmore button { padding: 10px 18px; border-radius: var(--rLg); border: 1.5px solid var(--border); background: var(--surface); color: var(--textSec); font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .jr-loadmore button:hover { border-color: var(--primary); color: var(--primary); }
+  .jr-loadmore button:disabled { opacity: .5; cursor: default; }
+  .jr-loadinfo { font-size: 11px; color: var(--textTer); margin-top: 6px; }
+  .jr-empty { text-align: center; padding: 60px 20px; color: var(--textSec); }
+  .jr-empty .ico { font-size: 52px; opacity: 0.5; }
+  .jr-empty h3 { font-size: 16px; font-weight: 600; margin-top: 12px; color: var(--text); }
+  .jr-empty p { font-size: 13px; margin-top: 4px; }
+
+  /* ── Calendar overlay ── */
+  .jr-caloverlay { position: fixed; inset: 0; background: rgba(61,53,48,0.45); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .jr-caloverlay[hidden] { display: none; }
+  .jr-calcard { background: var(--surface); border-radius: var(--rXl); padding: 16px; width: 100%; max-width: 360px; box-shadow: var(--shadowElev); }
+  .jr-calhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .jr-caltitle { font-size: 16px; font-weight: 800; color: var(--text); }
+  .jr-calclose { width: 32px; height: 32px; border-radius: 16px; border: none; background: var(--surfaceAlt); color: var(--textSec); cursor: pointer; font-size: 18px; }
+  .jr-calmonthbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .jr-calmonthlabel { font-size: 14px; font-weight: 700; color: var(--text); text-transform: capitalize; }
+  .jr-calarrow { width: 32px; height: 32px; border-radius: 16px; border: none; background: var(--surfaceAlt); color: var(--primary); cursor: pointer; font-size: 16px; }
+  .jr-calgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .jr-calweekday { text-align: center; font-size: 10px; font-weight: 700; color: var(--textTer); padding: 6px 0; }
+  .jr-calday { aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text); cursor: pointer; border: none; background: transparent; position: relative; }
+  .jr-calday:hover { background: var(--primaryDim); }
+  .jr-calday.today { background: var(--primaryDim); color: var(--primaryDark); font-weight: 700; }
+  .jr-calday.selected { background: var(--primary); color: #fff; font-weight: 700; }
+  .jr-calday.othermonth { color: var(--textTer); opacity: 0.4; }
+  .jr-calday.hasdata::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 2px; background: var(--primary); }
+  .jr-calshortcuts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .jr-calshortcut { padding: 6px 12px; border-radius: 999px; background: var(--surfaceAlt); color: var(--textSec); font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
+  .jr-calshortcut:hover { background: var(--primaryDim); color: var(--primary); }
+  .jr-calclear { padding: 6px 12px; border-radius: 999px; background: transparent; color: var(--danger); font-size: 12px; font-weight: 600; cursor: pointer; border: none; margin-left: auto; }
+
+  @media (min-width: 560px) {
+    body { background: #e8ddd0; }
+    .app { max-width: 520px; margin: 0 auto; background: var(--bg); min-height: 100vh; box-shadow: var(--shadowElev); border-radius: 0 0 24px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="jr-header">
+  <button class="jr-back" aria-label="Retour">‹</button>
+  <div class="jr-titlewrap">
+    <div class="jr-title">Journal des actions</div>
+    <div class="jr-subtitle">Historique des opérations de l'agence</div>
+  </div>
+  <div class="jr-badge" id="todayBadge">12</div>
+</header>
+
+<!-- Search + filter toggle -->
+<div class="jr-searchbar">
+  <div class="jr-search">
+    <span class="ico">⌕</span>
+    <input type="text" id="searchInput" placeholder="Rechercher dans le journal…" />
+  </div>
+  <button class="jr-filterbtn" id="filterToggle">⚙ Filtres<span class="badge" id="filterBadge" hidden>0</span></button>
+</div>
+
+<!-- Active filters (removable) -->
+<div class="jr-activefilters" id="activeFilters"></div>
+
+<!-- Date bar -->
+<div class="jr-datebar">
+  <button class="jr-datearrow" id="prevDay" aria-label="Jour précédent">‹</button>
+  <div class="jr-datecenter" id="openCal">
+    <div class="jr-datelabel" id="dayLabel">Aujourd'hui</div>
+    <div class="jr-datehint" id="dayHint">Toucher pour choisir une date</div>
+  </div>
+  <button class="jr-datearrow" id="nextDay" aria-label="Jour suivant">›</button>
+  <button class="jr-chip" id="allDatesChip">Tout</button>
+</div>
+
+<!-- User filter (admin) -->
+<div class="jr-usersection" id="userSection">
+  <div class="jr-usersectionlabel">Utilisateur intervenu</div>
+  <div class="jr-userrow" id="userRow">
+    <button class="jr-uchip active" data-user="all">Tous les agents</button>
+    <button class="jr-uchip" data-user="agent manuella"><span class="ua">AM</span>Manuella</button>
+    <button class="jr-uchip" data-user="agent olivia"><span class="ua">AO</span>Olivia</button>
+    <button class="jr-uchip" data-user="maman rose"><span class="ua">MR</span>Maman Rose</button>
+    <button class="jr-uchip" data-user="agent assétou"><span class="ua">AA</span>Assétou</button>
+    <button class="jr-uchip" data-user="ChrisRoi Admin"><span class="ua">CR</span>Admin</button>
+  </div>
+</div>
+
+<!-- Filter drawer -->
+<div class="jr-drawer" id="drawer">
+  <div class="jr-filtergroup">
+    <div class="jr-filtergrouplabel">Période</div>
+    <div class="jr-filterrow" id="periodRow">
+      <button class="jr-fchip active" data-period="day">Jour choisi</button>
+      <button class="jr-fchip" data-period="7">7 jours</button>
+      <button class="jr-fchip" data-period="30">30 jours</button>
+      <button class="jr-fchip" data-period="all">Tout</button>
+    </div>
+  </div>
+  <div class="jr-filtergroup">
+    <div class="jr-filtergrouplabel">Famille</div>
+    <div class="jr-filterrow" id="familyRow">
+      <button class="jr-fchip active" data-fam="all">Tout</button>
+      <button class="jr-fchip" data-fam="fiche"><span class="dot" style="background:var(--success)"></span>Fiches</button>
+      <button class="jr-fchip" data-fam="contrat"><span class="dot" style="background:var(--info)"></span>Contrats</button>
+      <button class="jr-fchip" data-fam="employeur"><span class="dot" style="background:var(--violet)"></span>Employeurs</button>
+      <button class="jr-fchip" data-fam="compte"><span class="dot" style="background:var(--primary)"></span>Comptes</button>
+      <button class="jr-fchip" data-fam="connexion"><span class="dot" style="background:var(--primary)"></span>Connexions</button>
+    </div>
+  </div>
+  <div class="jr-filtergroup">
+    <div class="jr-filtergrouplabel">Type d'action</div>
+    <div class="jr-filterrow" id="typeRow">
+      <button class="jr-fchip active" data-type="all">Tout</button>
+      <button class="jr-fchip" data-type="creation_fiche">Création fiche</button>
+      <button class="jr-fchip" data-type="modification_contrat">Modif. contrat</button>
+      <button class="jr-fchip" data-type="creation_contrat">Création contrat</button>
+      <button class="jr-fchip" data-type="connexion">Connexion</button>
+      <button class="jr-fchip" data-type="suppression_contrat">Suppr. contrat</button>
+      <button class="jr-fchip" data-type="modification_fiche">Modif. fiche</button>
+      <button class="jr-fchip" data-type="suppression_fiche">Suppr. fiche</button>
+      <button class="jr-fchip" data-type="commission_payee">Commission payée</button>
+      <button class="jr-fchip" data-type="creation_employeur">Création employeur</button>
+      <button class="jr-fchip" data-type="modification_employeur">Modif. employeur</button>
+      <button class="jr-fchip" data-type="suppression_employeur">Suppr. employeur</button>
+      <button class="jr-fchip" data-type="creation_utilisateur">Création utilisateur</button>
+      <button class="jr-fchip" data-type="contrat_termine">Contrat terminé</button>
+      <button class="jr-fchip" data-type="modification_champ">Modif. champ</button>
+    </div>
+  </div>
+</div>
+
+<!-- List -->
+<div class="jr-listwrap">
+  <div class="jr-loading" id="loadingState">
+    <div class="jr-spinner"></div>
+    <div class="jr-loadingtext">Chargement du journal…</div>
+  </div>
+  <div class="jr-list" id="listContainer"></div>
+  <div class="jr-empty" id="emptyState" hidden>
+    <div class="ico">📋</div>
+    <h3>Aucune action</h3>
+    <p>Les actions apparaîtront ici au fil de l'activité.</p>
+  </div>
+</div>
+
+<!-- Load more -->
+<div class="jr-loadmore">
+  <button id="loadMoreBtn">Charger plus</button>
+  <div class="jr-loadinfo" id="loadInfo">8 sur 1 360 enregistrements</div>
+</div>
+
+</div><!-- /app -->
+
+<!-- Calendar overlay -->
+<div class="jr-caloverlay" id="calOverlay" hidden>
+  <div class="jr-calcard">
+    <div class="jr-calhead">
+      <div class="jr-caltitle">Choisir une date</div>
+      <button class="jr-calclose" id="calClose">✕</button>
+    </div>
+    <div class="jr-calmonthbar">
+      <button class="jr-calarrow" id="calPrev">‹</button>
+      <div class="jr-calmonthlabel" id="calMonthLabel">Octobre 2026</div>
+      <button class="jr-calarrow" id="calNext">›</button>
+    </div>
+    <div class="jr-calgrid" id="calWeekdays"></div>
+    <div class="jr-calgrid" id="calDays"></div>
+    <div class="jr-calshortcuts">
+      <button class="jr-calshortcut" data-day="today">Aujourd'hui</button>
+      <button class="jr-calshortcut" data-day="yesterday">Hier</button>
+      <button class="jr-calshortcut" data-day="week">Cette semaine</button>
+      <button class="jr-calclear" id="calClear">Effacer (tout)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE_ACTIONS = [
+  { id:'1', type:'connexion', user:'agent manuella', desc:'Connexion de agent manuella', created:'2026-10-30T17:52:52', entite:'user', eid:'' },
+  { id:'2', type:'modification_contrat', user:'agent manuella', desc:'Modification contrat — employé Jean Kouassi', created:'2026-10-30T17:43:05', entite:'contrat', eid:'c1', changes:[{field:'salaire',oldValue:'120000',newValue:'135000'},{field:'date_fin',oldValue:'2026-12-31',newValue:'2027-03-31'}] },
+  { id:'3', type:'creation_contrat', user:'agent olivia', desc:'Création contrat — employé Marie Touré', created:'2026-10-30T16:59:24', entite:'contrat', eid:'c2', changes:[{field:'salaire',oldValue:null,newValue:'95000'},{field:'poste',oldValue:null,newValue:'Serveuse'}] },
+  { id:'4', type:'creation_fiche', user:'agent manuella', desc:'Création fiche employé — Paul Bamba', created:'2026-10-30T15:12:10', entite:'employe', eid:'e1' },
+  { id:'5', type:'commission_payee', user:'agent manuella', desc:'Commission payée — contrat Marie Touré', created:'2026-10-30T14:30:00', entite:'contrat', eid:'c2', changes:[{field:'commission',oldValue:'non payée',newValue:'payée'}] },
+  { id:'6', type:'modification_fiche', user:'agent olivia', desc:'Modification fiche — employé Jean Kouassi', created:'2026-10-30T11:05:00', entite:'employe', eid:'e2', changes:[{field:'telephone',oldValue:'0700000000',newValue:'0711223344'}] },
+  { id:'7', type:'creation_employeur', user:'agent manuella', desc:'Création employeur — Hôtel Ivoire', created:'2026-10-30T09:40:00', entite:'employeur', eid:'em1' },
+  { id:'8', type:'connexion', user:'agent olivia', desc:'Connexion de agent olivia', created:'2026-10-30T08:15:00', entite:'user', eid:'' },
+  { id:'9', type:'modification_contrat', user:'maman rose', desc:'Modification contrat — employé Aïcha Koné', created:'2026-10-29T16:20:00', entite:'contrat', eid:'c3', changes:[{field:'statut',oldValue:'actif',newValue:'terminé'}] },
+  { id:'10', type:'contrat_termine', user:'maman rose', desc:'Contrat terminé — employé Aïcha Koné', created:'2026-10-29T16:22:00', entite:'contrat', eid:'c3' },
+  { id:'11', type:'suppression_contrat', user:'agent manuella', desc:'Suppression contrat — employé Koffi Yao', created:'2026-10-29T14:00:00', entite:'contrat', eid:'c4' },
+  { id:'12', type:'creation_fiche', user:'agent manuella', desc:'Création fiche employé — Koffi Yao', created:'2026-10-28T10:00:00', entite:'employe', eid:'e3' },
+  { id:'13', type:'modification_employeur', user:'agent olivia', desc:'Modification employeur — Restaurant Le Maquis', created:'2026-10-27T15:30:00', entite:'employeur', eid:'em2', changes:[{field:'adresse',oldValue:'Cocody',newValue:'Plateau'}] },
+  { id:'14', type:'suppression_employeur', user:'agent manuella', desc:'Suppression employeur — Bar Le Palmier', created:'2026-10-26T11:00:00', entite:'employeur', eid:'em3' },
+  { id:'15', type:'suppression_fiche', user:'agent olivia', desc:'Suppression fiche employé — Test Doublon', created:'2026-10-26T09:30:00', entite:'employe', eid:'e4' },
+  { id:'16', type:'creation_utilisateur', user:'ChrisRoi Admin', desc:'Création utilisateur — agent assétou', created:'2026-08-16T19:11:15', entite:'user', eid:'u1' },
+  { id:'17', type:'connexion', user:'agent assétou', desc:'Connexion de agent assétou', created:'2026-08-17T08:00:00', entite:'user', eid:'' },
+  { id:'18', type:'modification_champ', user:'agent manuella', desc:'Modification champ — employé Jean Kouassi', created:'2026-10-29T13:00:00', entite:'employe', eid:'e2', changes:[{field:'statut',oldValue:'en attente',newValue:'validé'}] },
+];
+// Démo : on étire la liste pour que l'écran défile comme une seule page
+// (pas de zone de liste contrainte / pas de scroll interne).
+const ACTIONS = [...BASE_ACTIONS];
+const _base = BASE_ACTIONS.slice();
+for (let i = 1; i <= 4; i++) {
+  _base.forEach((a, idx) => {
+    const d = new Date(a.created);
+    d.setDate(d.getDate() - i * 3);
+    ACTIONS.push({
+      ...a,
+      id: a.id + '-' + i,
+      created: d.toISOString().slice(0, 19),
+    });
+  });
+}
+
+const TYPE_META = {
+  creation_fiche:        { label:'Création fiche',        ico:'👤', color:'#5a7c3a', bg:'#e8f0dc', fam:'fiche' },
+  modification_fiche:    { label:'Modification fiche',    ico:'✏️', color:'#2a7a7a', bg:'#d8ecec', fam:'fiche' },
+  modification_champ:    { label:'Modification champ',    ico:'✏️', color:'#2a7a7a', bg:'#d8ecec', fam:'fiche' },
+  suppression_fiche:     { label:'Suppression fiche',     ico:'🗑️', color:'#b85454', bg:'#fdeaea', fam:'fiche' },
+  creation_contrat:      { label:'Création contrat',      ico:'📄', color:'#5a7c3a', bg:'#e8f0dc', fam:'contrat' },
+  modification_contrat:  { label:'Modification contrat',  ico:'📝', color:'#2a7a7a', bg:'#d8ecec', fam:'contrat' },
+  suppression_contrat:   { label:'Suppression contrat',   ico:'🗑️', color:'#b85454', bg:'#fdeaea', fam:'contrat' },
+  contrat_termine:       { label:'Contrat terminé',      ico:'⏹️', color:'#b8860b', bg:'#faf3d1', fam:'contrat' },
+  commission_payee:      { label:'Commission payée',      ico:'💰', color:'#5a7c3a', bg:'#e8f0dc', fam:'contrat' },
+  creation_employeur:    { label:'Création employeur',    ico:'💼', color:'#5a7c3a', bg:'#e8f0dc', fam:'employeur' },
+  modification_employeur:{ label:'Modification employeur',ico:'✏️', color:'#8b5a8b', bg:'#f0e6f0', fam:'employeur' },
+  suppression_employeur:  { label:'Suppression employeur',ico:'🗑️', color:'#b85454', bg:'#fdeaea', fam:'employeur' },
+  creation_utilisateur:  { label:'Création utilisateur',  ico:'👥', color:'#2a7a7a', bg:'#d8ecec', fam:'compte' },
+  connexion:             { label:'Connexion',             ico:'🔐', color:'#c45a2a', bg:'#fdebd8', fam:'connexion' },
+};
+const FAM_LABELS = { fiche:'Fiches', contrat:'Contrats', employeur:'Employeurs', compte:'Comptes', connexion:'Connexions' };
+
+let selectedDay = null;
+let periodFilter = 'day';
+let userFilter = 'all';
+let familyFilter = 'all';
+let typeFilter = 'all';
+let expandedId = null;
+let shownCount = 8;
+const TOTAL = 1360;
+const today = new Date();
+const todayKey = isoDay(today);
+let drawerOpen = false;
+let isLoading = true;
+let loadTimer = null;
+let loadMoreBusy = false;
+
+function isoDay(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function shiftDay(day,delta){ const [y,m,dd]=day.split('-').map(Number); const d=new Date(y,m-1,dd); d.setDate(d.getDate()+delta); return isoDay(d); }
+function parseDate(s){ const d=new Date(s); return isNaN(d.getTime())?null:d; }
+function formatAbs(s){ const d=parseDate(s); if(!d) return '-'; return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function formatRel(s){ const d=parseDate(s); if(!d) return '-'; const diff=Date.now()-d.getTime(); const m=Math.floor(diff/60000); if(m<1) return "À l'instant"; if(m<60) return `il y a ${m} min`; const h=Math.floor(m/60); if(h<24) return `il y a ${h}h`; const days=Math.floor(h/24); if(days===1) return 'Hier'; if(days<7) return `il y a ${days} j`; return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}); }
+function dayLabel(key){ if(!key) return 'Toutes dates'; if(key===todayKey) return "Aujourd'hui"; if(key===shiftDay(todayKey,-1)) return 'Hier'; const [y,m,dd]=key.split('-').map(Number); return new Date(y,m-1,dd).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'}); }
+function capitalize(s){ return (s||'').replace(/\b\w/g,c=>c.toUpperCase()); }
+
+function inPeriod(a){
+  if(periodFilter==='all') return true;
+  const d = parseDate(a.created); if(!d) return false;
+  const now = Date.now();
+  if(periodFilter==='day'){
+    return selectedDay ? a.created.startsWith(selectedDay) : d.toDateString()===today.toDateString();
+  }
+  const days = periodFilter==='7' ? 7 : 30;
+  return (now - d.getTime()) <= days*86400000;
+}
+
+function filteredActions(){
+  let list = ACTIONS.slice();
+  if(periodFilter==='day' && selectedDay){ list = list.filter(a => a.created.startsWith(selectedDay)); }
+  if(periodFilter!=='day' && periodFilter!=='all'){ list = list.filter(inPeriod); }
+  if(userFilter !== 'all'){ list = list.filter(a => a.user === userFilter); }
+  if(familyFilter !== 'all'){ list = list.filter(a => (TYPE_META[a.type]||{}).fam === familyFilter); }
+  if(typeFilter !== 'all'){ list = list.filter(a => a.type === typeFilter); }
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  if(q){ list = list.filter(a => (a.desc+' '+a.user).toLowerCase().includes(q)); }
+  list.sort((a,b)=> new Date(b.created)-new Date(a.created));
+  return list.slice(0, shownCount);
+}
+
+function setLoading(v){
+  isLoading = v;
+  document.getElementById('loadingState').classList.toggle('show', v);
+  document.getElementById('listContainer').style.display = v ? 'none' : '';
+  document.getElementById('emptyState').hidden = true;
+}
+
+function triggerLoad(){
+  setLoading(true);
+  clearTimeout(loadTimer);
+  loadTimer = setTimeout(()=>{ setLoading(false); renderList(); }, 650);
+}
+
+function renderList(){
+  const container = document.getElementById('listContainer');
+  const list = filteredActions();
+  if(list.length===0){
+    container.innerHTML='';
+    document.getElementById('emptyState').hidden=false;
+    document.getElementById('loadInfo').textContent = `0 sur ${TOTAL.toLocaleString('fr-FR')} enregistrements`;
+    return;
+  }
+  document.getElementById('emptyState').hidden=true;
+  const groups = {};
+  list.forEach(a=>{
+    const d = parseDate(a.created);
+    const key = d ? d.toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'2-digit'}) : 'Sans date';
+    (groups[key]=groups[key]||[]).push(a);
+  });
+  let html = '';
+  Object.entries(groups).forEach(([day, items])=>{
+    html += `<div class="jr-daygroup"><div class="jr-dayheader">${day}</div>`;
+    items.forEach(a=>{
+      const meta = TYPE_META[a.type] || {label:a.type, ico:'•', color:'#8a7d72', bg:'#f5ebe0', fam:'other'};
+      const open = expandedId===a.id;
+      const deleted = a.type.startsWith('suppression_');
+      html += `
+      <div class="jr-card ${open?'expanded':''}" data-id="${a.id}" onclick="toggleExpand('${a.id}')">
+        <div class="jr-cardrow">
+          <div class="jr-cardicon" style="background:${meta.bg};color:${meta.color}">${meta.ico}</div>
+          <div class="jr-cardcontent">
+            <div class="jr-carddesc">${meta.label} — ${a.desc.split('—')[1]||a.desc}</div>
+            <div class="jr-cardtime">${formatRel(a.created)} · ${capitalize(a.user)}</div>
+          </div>
+          <div class="jr-cardchev">⌃</div>
+        </div>
+        <div class="jr-details">
+          <div class="jr-detailrow"><span>Par</span><span class="k">${capitalize(a.user)}</span></div>
+          <div class="jr-detailrow"><span>Date</span><span class="k">${formatAbs(a.created)}</span></div>
+          <div class="jr-detailrow"><span>Entité</span><span class="k">${a.entite}${a.eid?' #'+a.eid:''}</span></div>
+          ${a.changes ? `<div class="jr-diff">${a.changes.map(c=>`
+            <div class="jr-diffrow">
+              <div class="jr-difffield">${c.field.replace(/_/g,' ')}</div>
+              <div class="jr-diffvals"><span class="jr-before">${c.oldValue==null?'—':c.oldValue}</span><span class="jr-arrow">→</span><span class="jr-after">${c.newValue==null?'—':c.newValue}</span></div>
+            </div>`).join('')}</div>` : ''}
+          ${!deleted
+            ? `<button class="jr-openbtn" onclick="event.stopPropagation()">Voir la fiche ${a.entite==='employe'?'employé':a.entite==='employeur'?'employeur':'contrat'} ›</button>`
+            : `<button class="jr-openbtn disabled" onclick="event.stopPropagation()">Fiche supprimée — accès impossible</button>`}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+  document.getElementById('loadInfo').textContent = `${Math.min(shownCount, list.length)} sur ${TOTAL.toLocaleString('fr-FR')} enregistrements`;
+  document.getElementById('dayHint').textContent = `Toucher pour choisir une date · ${list.length} action${list.length>1?'s':''} affichée${list.length>1?'s':''}`;
+}
+
+function toggleExpand(id){ expandedId = expandedId===id ? null : id; renderList(); }
+
+// ── Active filters UI ──
+function activeFilterCount(){
+  let n = 0;
+  if(selectedDay) n++;
+  else if(periodFilter !== 'day') n++; // period not default day? treat non-day period as filter
+  if(periodFilter !== 'day' && periodFilter !== 'all' && !selectedDay) n++; // already counted? adjust below
+  // simpler: count distinct non-default filters
+  return n;
+}
+function renderActiveFilters(){
+  const wrap = document.getElementById('activeFilters');
+  const chips = [];
+  const remove = (fn) => `<span class="x" onclick="${fn};event.stopPropagation()">×</span>`;
+  if(selectedDay){
+    chips.push(`<span class="jr-afchip">📅 ${dayLabel(selectedDay)} ${remove("clearDay()")}</span>`);
+  } else if(periodFilter && periodFilter !== 'day'){
+    const lbl = periodFilter==='7'?'7 jours':periodFilter==='30'?'30 jours':'Toutes dates';
+    chips.push(`<span class="jr-afchip">Période: ${lbl} ${remove("clearPeriod()")}</span>`);
+  }
+  if(userFilter !== 'all'){
+    chips.push(`<span class="jr-afchip">👤 ${capitalize(userFilter.split(' ')[1]||userFilter)} ${remove("clearUser()")}</span>`);
+  }
+  if(familyFilter !== 'all'){
+    chips.push(`<span class="jr-afchip">${FAM_LABELS[familyFilter]} ${remove("clearFamily()")}</span>`);
+  }
+  if(typeFilter !== 'all'){
+    const m = TYPE_META[typeFilter]; chips.push(`<span class="jr-afchip">${m?m.label:typeFilter} ${remove("clearType()")}</span>`);
+  }
+  const q = document.getElementById('searchInput').value.trim();
+  if(q){ chips.push(`<span class="jr-afchip">🔎 ${q} ${remove("clearSearch()")}</span>`); }
+  wrap.innerHTML = chips.join('');
+  // badge count
+  const badge = document.getElementById('filterBadge');
+  const cnt = chips.length;
+  if(cnt>0){ badge.hidden=false; badge.textContent = cnt; }
+  else badge.hidden = true;
+}
+function clearDay(){ selectedDay=null; periodFilter='day'; syncPeriodChips(); update(); triggerLoad(); renderActiveFilters(); }
+function clearPeriod(){ periodFilter='day'; selectedDay=null; syncPeriodChips(); update(); triggerLoad(); renderActiveFilters(); }
+function clearUser(){ userFilter='all'; document.querySelectorAll('#userRow .jr-uchip').forEach(x=>x.classList.remove('active')); document.querySelector('#userRow .jr-uchip[data-user="all"]').classList.add('active'); renderActiveFilters(); triggerLoad(); }
+function clearFamily(){ familyFilter='all'; document.querySelectorAll('#familyRow .jr-fchip').forEach(x=>x.classList.remove('active')); document.querySelector('#familyRow .jr-fchip[data-fam="all"]').classList.add('active'); renderActiveFilters(); triggerLoad(); }
+function clearType(){ typeFilter='all'; document.querySelectorAll('#typeRow .jr-fchip').forEach(x=>x.classList.remove('active')); document.querySelector('#typeRow .jr-fchip[data-type="all"]').classList.add('active'); renderActiveFilters(); triggerLoad(); }
+function clearSearch(){ document.getElementById('searchInput').value=''; renderActiveFilters(); renderList(); }
+
+// ── Calendar ──
+const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const JOURS = ['L','M','M','J','V','S','D'];
+let calMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+const dataDays = new Set(ACTIONS.map(a=>a.created.slice(0,10)));
+function renderCal(){
+  document.getElementById('calMonthLabel').textContent = `${MOIS_FR[calMonth.getMonth()]} ${calMonth.getFullYear()}`;
+  const wd = document.getElementById('calWeekdays');
+  wd.innerHTML = JOURS.map(j=>`<div class="jr-calweekday">${j}</div>`).join('');
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  const offset = (new Date(y,m,1).getDay()+6)%7;
+  const nb = new Date(y,m+1,0).getDate();
+  const cells = [];
+  for(let i=0;i<offset;i++) cells.push(null);
+  for(let d=1;d<=nb;d++) cells.push(`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+  while(cells.length<42) cells.push(null);
+  const days = document.getElementById('calDays');
+  days.innerHTML = cells.map(c=>{
+    if(!c) return `<button class="jr-calday othermonth" disabled></button>`;
+    const isToday = c===todayKey;
+    const isSel = c===selectedDay;
+    const has = dataDays.has(c);
+    const otherMonth = !c.startsWith(`${y}-${String(m+1).padStart(2,'0')}`);
+    return `<button class="jr-calday ${isToday?'today':''} ${isSel?'selected':''} ${otherMonth?'othermonth':''} ${has?'hasdata':''}" data-day="${c}">${Number(c.slice(8))}</button>`;
+  }).join('');
+  days.querySelectorAll('button[data-day]').forEach(b=>{
+    b.onclick = ()=>{ selectedDay = b.dataset.day; periodFilter='day'; syncPeriodChips(); closeCal(); update(); triggerLoad(); renderActiveFilters(); };
+  });
+}
+function openCal(){ document.getElementById('calOverlay').hidden=false; renderCal(); }
+function closeCal(){ document.getElementById('calOverlay').hidden=true; }
+
+function syncPeriodChips(){
+  document.querySelectorAll('#periodRow .jr-fchip').forEach(c=>c.classList.remove('active'));
+  const target = document.querySelector(`#periodRow .jr-fchip[data-period="${periodFilter}"]`);
+  if(target) target.classList.add('active');
+}
+
+function update(){
+  document.getElementById('dayLabel').textContent = selectedDay ? dayLabel(selectedDay) : (periodFilter==='all'?'Toutes dates':'Période');
+  document.getElementById('allDatesChip').classList.toggle('active', selectedDay===null && periodFilter!=='day');
+  document.getElementById('prevDay').disabled = !selectedDay;
+  document.getElementById('nextDay').disabled = !selectedDay || selectedDay===todayKey;
+}
+
+// ── Events ──
+document.getElementById('openCal').onclick = openCal;
+document.getElementById('calClose').onclick = closeCal;
+document.getElementById('calOverlay').onclick = (e)=>{ if(e.target.id==='calOverlay') closeCal(); };
+document.getElementById('calPrev').onclick = ()=>{ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderCal(); };
+document.getElementById('calNext').onclick = ()=>{ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderCal(); };
+document.getElementById('calClear').onclick = ()=>{ selectedDay=null; periodFilter='all'; syncPeriodChips(); closeCal(); update(); triggerLoad(); renderActiveFilters(); };
+document.querySelectorAll('.jr-calshortcut').forEach(b=>{
+  b.onclick = ()=>{
+    const t = b.dataset.day;
+    if(t==='today'){ selectedDay = todayKey; periodFilter='day'; }
+    else if(t==='yesterday'){ selectedDay = shiftDay(todayKey,-1); periodFilter='day'; }
+    else if(t==='week'){ selectedDay=null; periodFilter='7'; }
+    syncPeriodChips(); closeCal(); update(); triggerLoad(); renderActiveFilters();
+  };
+});
+document.getElementById('prevDay').onclick = ()=>{ if(selectedDay){ selectedDay=shiftDay(selectedDay,-1); periodFilter='day'; syncPeriodChips(); update(); triggerLoad(); renderActiveFilters(); } };
+document.getElementById('nextDay').onclick = ()=>{ if(selectedDay && selectedDay!==todayKey){ selectedDay=shiftDay(selectedDay,1); periodFilter='day'; syncPeriodChips(); update(); triggerLoad(); renderActiveFilters(); } };
+document.getElementById('allDatesChip').onclick = ()=>{ selectedDay=null; periodFilter='all'; syncPeriodChips(); update(); triggerLoad(); renderActiveFilters(); };
+
+document.querySelectorAll('#userRow .jr-uchip').forEach(b=>{
+  b.onclick = ()=>{ document.querySelectorAll('#userRow .jr-uchip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); userFilter=b.dataset.user; renderActiveFilters(); triggerLoad(); };
+});
+
+document.querySelectorAll('#periodRow .jr-fchip').forEach(b=>{
+  b.onclick = ()=>{ document.querySelectorAll('#periodRow .jr-fchip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); periodFilter=b.dataset.period; if(b.dataset.period!=='day' && b.dataset.period!=='all') selectedDay=null; syncPeriodChips(); update(); triggerLoad(); renderActiveFilters(); };
+});
+document.querySelectorAll('#familyRow .jr-fchip').forEach(b=>{
+  b.onclick = ()=>{ document.querySelectorAll('#familyRow .jr-fchip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); familyFilter=b.dataset.fam; renderActiveFilters(); triggerLoad(); };
+});
+document.querySelectorAll('#typeRow .jr-fchip').forEach(b=>{
+  b.onclick = ()=>{ document.querySelectorAll('#typeRow .jr-fchip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); typeFilter=b.dataset.type; renderActiveFilters(); triggerLoad(); };
+});
+
+document.getElementById('searchInput').oninput = ()=>{ renderActiveFilters(); renderList(); };
+
+// filter drawer toggle
+document.getElementById('filterToggle').onclick = ()=>{
+  drawerOpen = !drawerOpen;
+  document.getElementById('drawer').classList.toggle('open', drawerOpen);
+  document.getElementById('filterToggle').classList.toggle('active', drawerOpen);
+};
+
+document.getElementById('loadMoreBtn').onclick = ()=>{
+  if(loadMoreBusy) return;
+  loadMoreBusy = true;
+  const btn = document.getElementById('loadMoreBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite"></span> Chargement…';
+  setTimeout(()=>{ shownCount = Math.min(shownCount+8, TOTAL); btn.disabled=false; btn.textContent='Charger plus'; loadMoreBusy=false; renderList(); }, 600);
+};
+
+// init
+update();
+renderCal();
+renderActiveFilters();
+// initial loading spinner
+setLoading(true);
+setTimeout(()=>{ setLoading(false); renderList(); }, 700);
+</script>
+</body>
+</html>

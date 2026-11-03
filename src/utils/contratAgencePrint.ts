@@ -202,7 +202,7 @@ export function buildContratAgenceHtml(ctx: PrintContratAgenceContext): string {
     break-after: avoid; break-inside: avoid;
   }
   h2.article .n { color: #c9a227; }
-  p { margin: 0 0 6px; text-align: justify; hyphens: auto; }
+  p { margin: 0 0 6px; text-align: justify; hyphens: auto; orphans: 3; widows: 3; }
   .field { display: inline-block; min-width: 110px; border-bottom: 1px dotted #111827; padding: 0 3px 1px; font-weight: 700; color: #0c1f3f; }
   .field.small { min-width: 80px; }
   .field.wide { min-width: 200px; }
@@ -229,22 +229,22 @@ export function buildContratAgenceHtml(ctx: PrintContratAgenceContext): string {
   }
   .footer strong { color: #0c1f3f; }
   section { break-inside: avoid; }
-  /* Page 1 (Employé) : +15% vertical */
-  .sheet:first-of-type h1.doc-title { margin: 14px 0 7px; }
-  .sheet:first-of-type p { margin-bottom: 7px; }
-  .sheet:first-of-type .parties { padding: 10px 8px; margin-bottom: 10px; }
-  .sheet:first-of-type .sign-grid { margin-top: 18px; }
-  .sheet:first-of-type .sig { min-height: 138px; }
-  .sheet:first-of-type .sig-line { margin-top: 23px; }
-  .sheet:first-of-type .footer { margin-top: 14px; padding: 9px 14px 11px; }
-  /* Page 2 (Employeur) : +30% vertical */
-  .sheet:last-of-type h1.doc-title { margin: 16px 0 8px; }
-  .sheet:last-of-type p { margin-bottom: 8px; }
-  .sheet:last-of-type .parties { padding: 12px 8px; margin-bottom: 12px; }
-  .sheet:last-of-type .sign-grid { margin-top: 21px; }
-  .sheet:last-of-type .sig { min-height: 156px; }
-  .sheet:last-of-type .sig-line { margin-top: 26px; }
-  .sheet:last-of-type .footer { margin-top: 16px; padding: 10px 14px 12px; }
+  /* Page 1 (Employé) : espacement modéré */
+  .sheet:first-of-type h1.doc-title { margin: 12px 0 6px; }
+  .sheet:first-of-type p { margin-bottom: 6px; }
+  .sheet:first-of-type .parties { padding: 9px 8px; margin-bottom: 9px; }
+  .sheet:first-of-type .sign-grid { margin-top: 14px; }
+  .sheet:first-of-type .sig { min-height: 120px; }
+  .sheet:first-of-type .sig-line { margin-top: 20px; }
+  .sheet:first-of-type .footer { margin-top: 12px; padding: 8px 14px 10px; }
+  /* Page 2 (Employeur) : espacement modéré */
+  .sheet:last-of-type h1.doc-title { margin: 12px 0 6px; }
+  .sheet:last-of-type p { margin-bottom: 6px; }
+  .sheet:last-of-type .parties { padding: 9px 8px; margin-bottom: 9px; }
+  .sheet:last-of-type .sign-grid { margin-top: 14px; }
+  .sheet:last-of-type .sig { min-height: 120px; }
+  .sheet:last-of-type .sig-line { margin-top: 20px; }
+  .sheet:last-of-type .footer { margin-top: 12px; padding: 8px 14px 10px; }
   @media print {
     body { background: #fff; }
     .sheet { width: 100%; margin: 0; border: none; box-shadow: none; border-radius: 0; page-break-after: always; }

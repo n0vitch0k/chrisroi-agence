@@ -306,70 +306,52 @@ export const logAction = async (params: {
   }
 };
 
-export const getJournalActions = async (filters: {
-  userId?: string;
-  actionType?: string;
-  dateDebut?: string;
-  dateFin?: string;
-} = {}): Promise<any[]> => {
+// ============== JOURNAL D'ACTIONS ==============
+// Pagination serveur (comme getCahierPage). Le tri et les filtres sont poussés
+// côté serveur : PB v0.39 accepte sort=-created et les filtres combinés.
+export interface JournalPage {
+  items: any[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  suite: number; // prochaine page, ou 0 si fin
+}
+
+export const getJournalPage = async (
+  filters: {
+    userId?: string;
+    actionType?: string;
+    actionTypes?: string[];
+    search?: string;
+    dateDebut?: string;
+    dateFin?: string;
+  } = {},
+  page = 1,
+  perPage = 50,
+): Promise<JournalPage> => {
   try {
     const pb = getPb();
-    
-    // Test d'accès à la collection
-    try {
-      console.log('[journal] Test accès collection...');
-      await pb.collection('journal_actions').getList(1, 1);
-      console.log('[journal] Collection accessible');
-    } catch (e: any) {
-      console.error('[journal] Test accès échoué:', e?.status, e?.message);
-      if (e?.status === 404) {
-        console.warn('[journal] Collection non trouvée');
-        return [];
-      }
-      if (e?.status === 403) {
-        console.warn('[journal] Accès refusé');
-        return [];
-      }
-      if (e?.status === 400) {
-        console.error('[journal] Erreur 400 - problème de schéma ou de requête');
-        return [];
-      }
+    const parts: string[] = [];
+    if (filters.dateDebut) parts.push(`created >= "${filters.dateDebut}"`);
+    if (filters.dateFin) parts.push(`created <= "${filters.dateFin}"`);
+    if (filters.userId) parts.push(`user_id = "${filters.userId}"`);
+    if (filters.actionType) parts.push(`action_type = "${filters.actionType}"`);
+    else if (filters.actionTypes && filters.actionTypes.length) {
+      parts.push(`(` + filters.actionTypes.map((t) => `action_type = "${t}"`).join(' || ') + `)`);
     }
-    
-    // Récupérer les records via getList (compatible avec PB v0.39)
-    // getFullList utilise un format incompatible (400) — on contourne
-    // Filtre date poussé côté serveur (filtre seul, sans tri = 200 sur pb2) :
-    // indispensable pour consulter une date ancienne au-delà des 500 derniers.
-    console.log('[journal] Récupération des records...');
-    const pbFilterParts: string[] = [];
-    if (filters.dateDebut) pbFilterParts.push(`created >= "${filters.dateDebut}"`);
-    if (filters.dateFin) pbFilterParts.push(`created <= "${filters.dateFin}"`);
-    const result = pbFilterParts.length > 0
-      ? await pb.collection('journal_actions').getList(1, 500, { filter: pbFilterParts.join(' && ') })
-      : await pb.collection('journal_actions').getList(1, 500);
-    let records = result.items;
-    console.log(`[journal] ${records.length} records récupérés (total: ${result.totalItems})`);
-    
-    // Tri côté client (le sort côté serveur cause un 400 avec PB v0.39)
-    records.sort((a: any, b: any) => new Date(b.created).getTime() - new Date(a.created).getTime());
+    if (filters.search && filters.search.trim()) {
+      const q = filters.search.trim().replace(/"/g, '\\"');
+      parts.push(`(description ~ "${q}" || user_display ~ "${q}")`);
+    }
+    const filter = parts.length ? parts.join(' && ') : undefined;
 
-    
-    // Filtrage côté client
-    let filtered = records;
-    if (filters.userId) {
-      filtered = filtered.filter((r: any) => r.user_id === filters.userId);
-    }
-    if (filters.actionType) {
-      filtered = filtered.filter((r: any) => r.action_type === filters.actionType);
-    }
-    if (filters.dateDebut) {
-      filtered = filtered.filter((r: any) => r.created >= filters.dateDebut!);
-    }
-    if (filters.dateFin) {
-      filtered = filtered.filter((r: any) => r.created <= filters.dateFin!);
-    }
-    
-    return filtered.map((r: any) => ({
+    const result: any = await pb.collection('journal_actions').getList(page, perPage, {
+      filter,
+      sort: '-created',
+    });
+    const totalItems = result.totalItems ?? result.items.length;
+    const totalPages = result.totalPages ?? 1;
+    const items = (result.items as any[]).map((r: any) => ({
       id: r.id,
       user_id: r.user_id,
       user_display: r.user_display,
@@ -380,13 +362,29 @@ export const getJournalActions = async (filters: {
       details: r.details,
       created: r.created,
     }));
+    return {
+      items,
+      page: result.page ?? page,
+      totalPages,
+      totalItems,
+      suite: page < totalPages ? page + 1 : 0,
+    };
   } catch (err: any) {
-    console.error('[journal] Erreur getJournalActions:', err?.status, err?.message);
-    if (err?.data) {
-      console.error('[journal] Data:', JSON.stringify(err.data).substring(0, 200));
-    }
-    return [];
+    console.error('[journal] getJournalPage:', err?.status, err?.message);
+    if (err?.data) console.error('[journal] Data:', JSON.stringify(err.data).substring(0, 200));
+    return { items: [], page: 1, totalPages: 0, totalItems: 0, suite: 0 };
   }
+};
+
+// Rétro-compat : renvoie un tableau (page 1, jusqu'à 500).
+export const getJournalActions = async (filters: {
+  userId?: string;
+  actionType?: string;
+  dateDebut?: string;
+  dateFin?: string;
+} = {}): Promise<any[]> => {
+  const p = await getJournalPage(filters, 1, 500);
+  return p.items;
 };
 
 export const getEntityHistory = async (entiteType: string, entiteId: string): Promise<any[]> => {

@@ -10,6 +10,7 @@ import {
   Linking,
   TextInput,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Card } from 'react-native-paper';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -289,23 +290,32 @@ const aRelancer = commissions.filter((c: any) => now >= dueTime(c));
 
       {/* ─── Liste ─── */}
       <View style={styles.listContent}>
-        {sections.map((section) => (
-          <View key={section.key} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <Text style={styles.sectionMontant}>{formatMoney(section.montant)} F CFA</Text>
-            </View>
-            {section.data.map((item: any) => (
-              <View key={item.id}>{renderCommission(item)}</View>
+        {loading && commissions.length === 0 ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Chargement des commissions…</Text>
+          </View>
+        ) : (
+          <>
+            {sections.map((section) => (
+              <View key={section.key} style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  <Text style={styles.sectionMontant}>{formatMoney(section.montant)} F CFA</Text>
+                </View>
+                {section.data.map((item: any) => (
+                  <View key={item.id}>{renderCommission(item)}</View>
+                ))}
+              </View>
             ))}
-          </View>
-        ))}
-        {!loading && sections.length === 0 && (
-          <View style={styles.empty}>
-            <Icon name="check-circle-outline" size={64} color={Colors.success} />
-            <Text style={styles.emptyTitle}>Tout est à jour</Text>
-            <Text style={styles.emptySub}>Aucune commission en attente</Text>
-          </View>
+            {!loading && sections.length === 0 && (
+              <View style={styles.empty}>
+                <Icon name="check-circle-outline" size={64} color={Colors.success} />
+                <Text style={styles.emptyTitle}>Tout est à jour</Text>
+                <Text style={styles.emptySub}>Aucune commission en attente</Text>
+              </View>
+            )}
+          </>
         )}
       </View>
     </ScrollView>
@@ -388,4 +398,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: Colors.textSecondary, marginTop: Spacing.lg },
   emptySub: { fontSize: 13, color: Colors.textTertiary, marginTop: Spacing.sm },
+  // Chargement
+  loadingBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: Spacing.md },
+  loadingText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
 });
